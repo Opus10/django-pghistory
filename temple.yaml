@@ -4,4 +4,4 @@ _template: git@github.com:jyveapp/public-django-app-template.git
 _version: 9ae71a807024c76f05bdd47d357d9d1a30ef25f4
 module_name: pghistory
 repo_name: django-pghistory
-short_description: Track historical events to Django models using Postgres triggers.
+short_description: History tracking for Django and Postgres
