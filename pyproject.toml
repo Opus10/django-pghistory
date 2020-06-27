@@ -12,7 +12,7 @@ name = "django-pghistory"
 packages = [
   { include = "pghistory" }
 ]
-version = "0.0.0"
+version = "1.0.0"
 description = "History tracking for Django and Postgres"
 authors = ["Wes Kendall"]
 classifiers = [
