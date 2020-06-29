@@ -1,4 +1,8 @@
 # Changelog
+## 1.0.1 (2020-06-28)
+### Trivial
+  - Updated with the latest public django app template. [Wes Kendall, fc1f3e4]
+
 ## 1.0.0 (2020-06-27)
 ### Api-Break
   - Initial release of django-pghistory. [Wes Kendall, ecfcf96]
