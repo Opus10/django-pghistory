@@ -1,5 +1,13 @@
 # Changelog
-## 1.0.1 (2020-06-28)
+## 1.1.0 (2020-08-03)
+### Bug
+  - Escape single quotes in tracked context [Wes Kendall, 40f758e]
+
+    Invalid SQL was generated from context values with single quotes when
+    using ``pghistory.context``. Single quotes are now properly escaped, and
+    a failing test case was created to cover this scenario.
+
+## 1.0.1 (2020-06-29)
 ### Trivial
   - Updated with the latest public django app template. [Wes Kendall, fc1f3e4]
 
