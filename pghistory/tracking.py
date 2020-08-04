@@ -37,9 +37,13 @@ def _inject_history_context(sql, sql_vars, cursor):
         # setting. Ignore this specific statement for now
         return None
 
+    # Metadata is stored as a serialized JSON string with escaped
+    # single quotes
+    metadata_str = json.dumps(_tracker.value.metadata).replace("'", "''")
+
     sql = (
         f'SET LOCAL pghistory.context_id=\'{_tracker.value.id}\';'
-        f'SET LOCAL pghistory.context_metadata=\'{json.dumps(_tracker.value.metadata)}\';'
+        f'SET LOCAL pghistory.context_metadata=\'{metadata_str}\';'
     ) + sql
 
     return sql, sql_vars
