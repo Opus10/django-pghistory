@@ -1,5 +1,12 @@
 # Changelog
-## 1.1.0 (2020-08-03)
+## 1.2.0 (2020-10-23)
+### Feature
+  - Upgrade pgtrigger and test against Django 3.1 [Wes Kendall, 176fb13]
+
+    Uses the latest version of django-pgtrigger. Also tests against Django 3.1
+    and fixes a few bugs related to internal changes in the Django codebase.
+
+## 1.1.0 (2020-08-04)
 ### Bug
   - Escape single quotes in tracked context [Wes Kendall, 40f758e]
 
