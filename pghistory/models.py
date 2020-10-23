@@ -5,7 +5,6 @@ import uuid
 
 import django
 from django.apps import apps
-from django.contrib.postgres.fields import JSONField
 from django.db import connection
 from django.db import connections
 from django.db import models
@@ -16,12 +15,25 @@ from django.db.models.sql.compiler import SQLCompiler
 import pghistory.constants
 import pghistory.trigger
 
+# Django>=3.1 changes the location of JSONField
+if django.VERSION[0] >= 3 and django.VERSION[1] >= 1:
+    from django.db.models import JSONField
+else:
+    from django.contrib.postgres.fields import JSONField
+
+
+# Create a consistent load path for JSONField regardless of django
+# version. This is just to prevent migration issues for people
+# on different django versions
+class PGHistoryJSONField(JSONField):
+    pass
+
 
 class Context(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    metadata = JSONField(default=dict)
+    metadata = PGHistoryJSONField(default=dict)
 
     @classmethod
     def install_pgh_attach_context_func(cls):
@@ -590,8 +602,8 @@ class BaseAggregateEvent(Event):
     pgh_table = models.CharField(
         max_length=64, help_text='The table under which the event is stored'
     )
-    pgh_data = JSONField(help_text='The raw data of the event row')
-    pgh_diff = JSONField(
+    pgh_data = PGHistoryJSONField(help_text='The raw data of the event row')
+    pgh_diff = PGHistoryJSONField(
         help_text='The diff between the previous event and the current event'
     )
     pgh_context = models.ForeignKey(

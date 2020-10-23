@@ -1,4 +1,6 @@
 """Core functionality and interface of pghistory"""
+import re
+
 from django.db import connection
 from django.db import models
 from django.db.models import sql
@@ -10,6 +12,14 @@ import pghistory.constants
 
 
 _registered_events = {}
+
+
+def _get_name_from_label(label):
+    """Given a history event label, generate a trigger name"""
+    if label:
+        return re.sub('[^0-9a-zA-Z]+', '_', label)
+    else:  # pragma: no cover
+        return None
 
 
 class Event:
@@ -65,6 +75,7 @@ class DatabaseEvent(Event):
             pghistory.trigger.Event(
                 event_model=event_model,
                 label=self.label,
+                name=_get_name_from_label(self.label),
                 snapshot=self.snapshot,
                 when=self.when,
                 operation=self.operation,
@@ -92,6 +103,7 @@ class Snapshot(DatabaseEvent):
         insert_trigger = pghistory.trigger.Event(
             event_model=event_model,
             label=self.label,
+            name=_get_name_from_label(f'{self.label}_insert'),
             snapshot='NEW',
             when=pgtrigger.After,
             operation=pgtrigger.Insert,
@@ -111,6 +123,7 @@ class Snapshot(DatabaseEvent):
         update_trigger = pghistory.trigger.Event(
             event_model=event_model,
             label=self.label,
+            name=_get_name_from_label(f'{self.label}_update'),
             snapshot='NEW',
             when=pgtrigger.After,
             operation=pgtrigger.Update,
@@ -388,12 +401,17 @@ def create_event(obj, *, label, using='default'):
     vals = _InsertEventCompiler(
         query, connection, using='default'
     ).execute_sql(event_model._meta.fields)
+
     # Django <= 2.2 does not support returning fields from a bulk create,
     # which requires us to fetch fields again to populate the context
     # NOTE (@wesleykendall): We will eventually test multiple Django versions
     if isinstance(vals, int):  # pragma: no cover
         return event_model.objects.get(pgh_id=vals)
     else:
+        # Django >= 3.1 returns the values as a list of one element
+        if isinstance(vals, list) and len(vals) == 1:
+            vals = vals[0]
+
         for field, val in zip(event_model._meta.fields, vals):
             setattr(event_obj, field.attname, val)
 
