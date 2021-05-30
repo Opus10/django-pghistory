@@ -94,7 +94,10 @@ def test_track_context_metadata_single_quote(mocker):
     Verifies that context metadata with single quotes is properly
     escaped
     """
-    with pghistory.context(key1="can't", key2="''quoted''",) as ctx:
+    with pghistory.context(
+        key1="can't",
+        key2="''quoted''",
+    ) as ctx:
         # Creating the EventModel will trigger an event, which will
         # attach the current context
         ddf.G('tests.EventModel')

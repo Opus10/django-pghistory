@@ -10,7 +10,7 @@ Setup
 
 Set up your development environment with::
 
-    git clone git@github.com:jyveapp/django-pghistory.git
+    git clone git@github.com:Opus10/django-pghistory.git
     cd django-pghistory
     make setup
 
