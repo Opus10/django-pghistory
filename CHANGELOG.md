@@ -1,4 +1,8 @@
 # Changelog
+## 1.2.1 (2021-05-30)
+### Trivial
+  - Updated with latest python template [Wes Kendall, 09f6cfb]
+
 ## 1.2.0 (2020-10-23)
 ### Feature
   - Upgrade pgtrigger and test against Django 3.1 [Wes Kendall, 176fb13]
