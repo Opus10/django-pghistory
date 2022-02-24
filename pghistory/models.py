@@ -16,7 +16,9 @@ import pghistory.constants
 import pghistory.trigger
 
 # Django>=3.1 changes the location of JSONField
-if django.VERSION[0] >= 3 and django.VERSION[1] >= 1:
+if django.VERSION[0] > 4:
+    from django.db.models import JSONField
+elif django.VERSION[0] >= 3 and django.VERSION[1] >= 1:
     from django.db.models import JSONField
 else:
     from django.contrib.postgres.fields import JSONField
