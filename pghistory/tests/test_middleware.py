@@ -43,7 +43,30 @@ def test_middleware(rf, mocker):
     assert resp.metadata == {'url': '/post/url/', 'user': None}
 
     # Authenticated users will be tracked
+    mock_user_id = 3
+    mock_user = mocker.Mock(id=mock_user_id)
     request = rf.post('/post/url2/')
-    request.user = mocker.Mock(id=3)
+    request.user = mock_user
     resp = pghistory.middleware.HistoryMiddleware(get_response)(request)
-    assert resp.metadata == {'url': '/post/url2/', 'user': 3}
+    assert resp.metadata == {'url': '/post/url2/', 'user': mock_user_id}
+
+    # PATCH requests initiate the tracker
+    patch_url = '/patch/url/'
+    request = rf.patch(patch_url)
+    request.user = mock_user
+    resp = pghistory.middleware.HistoryMiddleware(get_response)(request)
+    assert resp.metadata == {'url': patch_url, 'user': mock_user_id}
+
+    # PUT requests initiate the tracker
+    put_url = '/put/url/'
+    request = rf.put(put_url)
+    request.user = mock_user
+    resp = pghistory.middleware.HistoryMiddleware(get_response)(request)
+    assert resp.metadata == {'url': put_url, 'user': mock_user_id}
+
+    # DELETE requests initiate the tracker
+    delete_url = '/delete/url/'
+    request = rf.delete(delete_url)
+    request.user = mock_user
+    resp = pghistory.middleware.HistoryMiddleware(get_response)(request)
+    assert resp.metadata == {'url': delete_url, 'user': mock_user_id}

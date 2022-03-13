@@ -28,7 +28,7 @@ def HistoryMiddleware(get_response):
     """
 
     def middleware(request):
-        if request.method in ('POST', 'PUT', 'PATCH'):
+        if request.method in ('POST', 'PUT', 'PATCH', 'DELETE'):
             with pghistory.context(
                 user=request.user.id if hasattr(request, 'user') else None,
                 url=request.path,
