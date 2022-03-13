@@ -112,9 +112,7 @@ def test_aggregate_events_joining_filtering(django_assert_num_queries, mocker):
 
 
 @pytest.mark.django_db(transaction=True)
-def test_aggregate_events_joining_filtering_multiple_targets(
-    django_assert_num_queries, mocker
-):
+def test_aggregate_events_joining_filtering_multiple_targets(django_assert_num_queries, mocker):
     """
     Test joining and other filtering for the AggregateEvent proxy with multiple targets.
     """
@@ -206,9 +204,7 @@ def test_aggregate_events_joining_filtering_multiple_targets(
 
     assert (
         list(
-            pghistory.models.AggregateEvent.objects.target(
-                test_models.SnapshotModel.objects.all()
-            )
+            pghistory.models.AggregateEvent.objects.target(test_models.SnapshotModel.objects.all())
             .filter(pgh_label='snapshot')
             .order_by('pgh_created_at')
             .values()

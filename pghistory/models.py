@@ -488,8 +488,7 @@ class AggregateEventQueryCompiler(SQLCompiler):
                 if issubclass(model, Event)
                 and not issubclass(model, BaseAggregateEvent)
                 and any(
-                    getattr(field, 'related_model', None) == cls
-                    for field in model._meta.fields
+                    getattr(field, 'related_model', None) == cls for field in model._meta.fields
                 )
             ]
 
