@@ -222,6 +222,25 @@ def test_events_on_event_model(mocker):
         }
     ]
 
+    # Verify a "before_delete" is fired
+    m_id = m.id
+    dt_field = m.dt_field
+    m.delete()
+    assert list(
+        test_models.EventModelEvent.objects.filter(pgh_label='before_delete').values()
+    ) == [
+        {
+            'pgh_created_at': mocker.ANY,
+            'dt_field': dt_field,
+            'pgh_id': mocker.ANY,
+            'pgh_label': 'before_delete',
+            'int_field': orig_int,
+            'pgh_obj_id': m_id,
+            'pgh_context_id': None,
+            'id': m_id,
+        },
+    ]
+
 
 @pytest.mark.django_db
 def test_dt_field_snapshot_tracking(mocker):

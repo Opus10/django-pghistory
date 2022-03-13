@@ -104,6 +104,7 @@ class CustomSnapshotModel(
     pghistory.Event('manual_event'),
     pghistory.AfterInsert('model.create'),
     pghistory.BeforeUpdate('before_update'),
+    pghistory.BeforeDelete('before_delete'),
     pghistory.AfterUpdate(
         'after_update',
         condition=pgtrigger.Q(old__dt_field__df=pgtrigger.F('new__dt_field')),

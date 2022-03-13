@@ -45,7 +45,7 @@ class Event(pgtrigger.Trigger):
         fields['pgh_label'] = f"'{self.label}'"
 
         if hasattr(self.event_model, 'pgh_obj'):
-            fields['pgh_obj_id'] = f'NEW."{_get_pgh_obj_pk_col(self.event_model)}"'
+            fields['pgh_obj_id'] = f'{self.snapshot}."{_get_pgh_obj_pk_col(self.event_model)}"'
 
         if hasattr(self.event_model, 'pgh_context'):
             fields['pgh_context_id'] = '_pgh_attach_context()'
