@@ -104,9 +104,7 @@ class context(contextlib.ContextDecorator):
 
     def __enter__(self):
         if not hasattr(_tracker, 'value'):
-            self._pre_execute_hook = pgconnection.pre_execute_hook(
-                _inject_history_context
-            )
+            self._pre_execute_hook = pgconnection.pre_execute_hook(_inject_history_context)
             self._pre_execute_hook.__enter__()
             _tracker.value = Context(id=uuid.uuid4(), metadata=self.metadata)
 

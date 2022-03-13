@@ -16,7 +16,7 @@ import pghistory.constants
 import pghistory.trigger
 
 # Django>=3.1 changes the location of JSONField
-if django.VERSION[0] >= 3 and django.VERSION[1] >= 1:
+if (django.VERSION[0] >= 3 and django.VERSION[1] >= 1) or django.VERSION[0] >= 4:
     from django.db.models import JSONField
 else:
     from django.contrib.postgres.fields import JSONField
@@ -196,13 +196,9 @@ def create_event_model(
             Meta
     """
     related_name = related_name or _generate_related_name(base_class, fields)
-    name = name or _generate_event_model_name(
-        base_class, tracked_model, fields
-    )
+    name = name or _generate_event_model_name(base_class, tracked_model, fields)
     app_label = app_label or tracked_model._meta.app_label
-    _validate_event_model_path(
-        app_label=app_label, name=name, abstract=abstract
-    )
+    _validate_event_model_path(app_label=app_label, name=name, abstract=abstract)
     app = apps.app_configs[app_label]
     models_module = app.module.__name__ + '.models'
 
@@ -232,20 +228,13 @@ def create_event_model(
         else obj_fk
     )
     exclude = exclude or []
-    fields = fields or [
-        f.name for f in tracked_model._meta.fields if f.name not in exclude
-    ]
+    fields = fields or [f.name for f in tracked_model._meta.fields if f.name not in exclude]
 
     class_attrs = {
         '__module__': models_module,
-        'Meta': type(
-            'Meta', (), {'abstract': abstract, 'app_label': app_label, **meta}
-        ),
+        'Meta': type('Meta', (), {'abstract': abstract, 'app_label': app_label, **meta}),
         'pgh_tracked_model': tracked_model,
-        **{
-            field: _generate_history_field(tracked_model, field)
-            for field in fields
-        },
+        **{field: _generate_history_field(tracked_model, field) for field in fields},
         **attrs,
     }
 
@@ -296,9 +285,7 @@ class Event(models.Model):
         Called when the class is prepared (see apps.py)
         to finalize setup of the model and register triggers
         """
-        if (  # pragma: no branch
-            not cls._meta.abstract or not cls._meta.managed
-        ):
+        if not cls._meta.abstract or not cls._meta.managed:  # pragma: no branch
             for event in cls.pgh_events or []:
                 event.setup(cls)
 
@@ -341,9 +328,7 @@ class AggregateEventQueryCompiler(SQLCompiler):
         schema of the AggregateEvent table. Note that it's impossible to
         create an empty CTE, so we select NULL VALUES and LIMIT to 0.
         """
-        col_name_clause = ', '.join(
-            [field.column for field in self.query.model._meta.fields]
-        )
+        col_name_clause = ', '.join([field.column for field in self.query.model._meta.fields])
         col_select_clause = ',\n'.join(
             [
                 f'_pgh_obj_event.{field.column}::'
@@ -368,15 +353,10 @@ class AggregateEventQueryCompiler(SQLCompiler):
             if getattr(field, 'related_model', None) == obj.__class__
         ]
         if not related_fields:
-            raise ValueError(
-                f'Event model {event_model} does not'
-                f' reference {obj.__class__}'
-            )
+            raise ValueError(f'Event model {event_model} does not' f' reference {obj.__class__}')
 
         event_table = event_model._meta.db_table
-        where_filter = ' OR '.join(
-            f'_event.{col} = \'{obj.pk}\'' for col in related_fields
-        )
+        where_filter = ' OR '.join(f'_event.{col} = \'{obj.pk}\'' for col in related_fields)
 
         context_join_clause = ''
         final_context_columns_clause = ''.join(
@@ -411,8 +391,7 @@ class AggregateEventQueryCompiler(SQLCompiler):
             # make them null since there is no context on this event
             annotated_context_columns_clause = ''.join(
                 [
-                    f'NULL::{field.rel_db_type(self.connection)}'
-                    f' AS {field.attname},\n'
+                    f'NULL::{field.rel_db_type(self.connection)}' f' AS {field.attname},\n'
                     for field in self.query.model._meta.fields
                     if not field.attname.startswith('pgh_')
                 ]
@@ -483,9 +462,7 @@ class AggregateEventQueryCompiler(SQLCompiler):
         """
         obj = self.query.target
         if not obj:
-            raise ValueError(
-                'Must use .target() to target an object for event aggregation'
-            )
+            raise ValueError('Must use .target() to target an object for event aggregation')
 
         event_models = self.query.across
         if not event_models:
@@ -502,10 +479,7 @@ class AggregateEventQueryCompiler(SQLCompiler):
 
         agg_event_table = self.query.model._meta.db_table
         inner_cte = 'UNION ALL '.join(
-            [
-                self._get_aggregate_event_select(obj, event_model)
-                for event_model in event_models
-            ]
+            [self._get_aggregate_event_select(obj, event_model) for event_model in event_models]
         )
         if not inner_cte:
             inner_cte = self._get_empty_aggregate_event_select()
