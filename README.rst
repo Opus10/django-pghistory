@@ -79,3 +79,9 @@ Primary Authors
 ===============
 
 - @wesleykendall (Wes Kendall)
+
+Other Contributors
+==================
+
+- @asucrews
+- @Azurency
