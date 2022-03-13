@@ -346,17 +346,32 @@ class AggregateEventQueryCompiler(SQLCompiler):
             WHERE pgh_table IS NOT NULL
         '''
 
+    def _class_for_target(self, obj):
+        if isinstance(obj, models.QuerySet):
+            return obj.model
+        elif isinstance(obj, list):
+            return obj[0].__class__
+        return obj.__class__
+
     def _get_aggregate_event_select(self, obj, event_model):
+        cls = self._class_for_target(obj)
         related_fields = [
             field.column
             for field in event_model._meta.fields
-            if getattr(field, 'related_model', None) == obj.__class__
+            if getattr(field, 'related_model', None) == cls
         ]
         if not related_fields:
-            raise ValueError(f'Event model {event_model} does not' f' reference {obj.__class__}')
+            raise ValueError(f'Event model {event_model} does not reference {cls}')
 
         event_table = event_model._meta.db_table
-        where_filter = ' OR '.join(f'_event.{col} = \'{obj.pk}\'' for col in related_fields)
+        if isinstance(obj, models.QuerySet) or isinstance(obj, list):
+            opt = 'IN'
+            pks = "','".join(f'{o.pk}' for o in obj)
+            pks = f'(\'{pks}\')'
+        else:
+            opt = '='
+            pks = f'\'{obj.pk}\''
+        where_filter = ' OR '.join(f'_event.{col} {opt} {pks}' for col in related_fields)
 
         context_join_clause = ''
         final_context_columns_clause = ''.join(
@@ -465,6 +480,7 @@ class AggregateEventQueryCompiler(SQLCompiler):
             raise ValueError('Must use .target() to target an object for event aggregation')
 
         event_models = self.query.across
+        cls = self._class_for_target(obj)
         if not event_models:
             event_models = [
                 model
@@ -472,7 +488,7 @@ class AggregateEventQueryCompiler(SQLCompiler):
                 if issubclass(model, Event)
                 and not issubclass(model, BaseAggregateEvent)
                 and any(
-                    getattr(field, 'related_model', None) == obj.__class__
+                    getattr(field, 'related_model', None) == cls
                     for field in model._meta.fields
                 )
             ]

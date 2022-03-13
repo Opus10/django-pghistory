@@ -111,6 +111,112 @@ def test_aggregate_events_joining_filtering(django_assert_num_queries, mocker):
     ) == {'https://url.com', None}
 
 
+@pytest.mark.django_db(transaction=True)
+def test_aggregate_events_joining_filtering_multiple_targets(
+    django_assert_num_queries, mocker
+):
+    """
+    Test joining and other filtering for the AggregateEvent proxy with multiple targets.
+    """
+    user1 = ddf.G('auth.User')
+    user2 = ddf.G('auth.User')
+    sm1 = ddf.G(
+        test_models.SnapshotModel,
+        dt_field=dt.datetime(2020, 6, 17, tzinfo=dt.timezone.utc),
+        int_field=1,
+        fk_field=user1,
+    )
+    sm2 = ddf.G(
+        test_models.SnapshotModel,
+        dt_field=dt.datetime(2020, 6, 22, tzinfo=dt.timezone.utc),
+        int_field=10,
+        fk_field=user2,
+    )
+
+    sm1.int_field = 3
+    sm1.save()
+    sm2.int_field = 33
+    sm2.fk_field = user1
+    sm2.save()
+
+    default = {
+        'pgh_context_id': None,
+        'pgh_created_at': mocker.ANY,
+        'pgh_id': mocker.ANY,
+        'pgh_label': 'snapshot',
+        'pgh_table': 'tests_snapshotmodelsnapshot',
+    }
+    wanted_result = [
+        {
+            **default,
+            'pgh_data': {
+                'dt_field': '2020-06-17T00:00:00+00:00',
+                'fk_field_id': user1.id,
+                'id': sm1.id,
+                'int_field': 1,
+            },
+            'pgh_diff': None,
+        },
+        {
+            **default,
+            'pgh_data': {
+                'dt_field': '2020-06-22T00:00:00+00:00',
+                'fk_field_id': user2.id,
+                'id': sm2.id,
+                'int_field': 10,
+            },
+            'pgh_diff': None,
+        },
+        {
+            **default,
+            'pgh_data': {
+                'dt_field': '2020-06-17T00:00:00+00:00',
+                'fk_field_id': user1.id,
+                'id': sm1.id,
+                'int_field': 3,
+            },
+            'pgh_diff': {
+                'int_field': [1, 3],
+            },
+        },
+        {
+            **default,
+            'pgh_data': {
+                'dt_field': '2020-06-22T00:00:00+00:00',
+                'fk_field_id': user1.id,
+                'id': sm2.id,
+                'int_field': 33,
+            },
+            'pgh_diff': {
+                'int_field': [10, 33],
+                'fk_field_id': [user2.id, user1.id],
+            },
+        },
+    ]
+
+    assert (
+        list(
+            pghistory.models.AggregateEvent.objects.target([sm1, sm2])
+            .filter(pgh_label='snapshot')
+            .order_by('pgh_created_at')
+            .values()
+        )
+        == wanted_result
+    )
+
+    assert (
+        list(
+            pghistory.models.AggregateEvent.objects.target(
+                test_models.SnapshotModel.objects.all()
+            )
+            .filter(pgh_label='snapshot')
+            .order_by('pgh_created_at')
+            .values()
+        )
+        == wanted_result
+    )
+
+
 @pytest.mark.django_db
 def test_aggregate_events_custom_pk(mocker):
     """

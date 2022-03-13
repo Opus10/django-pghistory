@@ -54,7 +54,8 @@ event stream looks like:
     print(pghistory.models.AggregateEvent.objects.target(user).order_by('pgh_created_at').values())
 
 
-We use the special ``target`` method to target a single object.
+We use the special ``target`` method to target a single object;
+a queryset or list of objects in the same class can also be provided.
 The aggregate events for this code would look something like this::
 
     [{
@@ -93,7 +94,7 @@ In the second row, however, the ``pgh_diff`` shows that the ``username`` field
 was changed from ``hello`` to ``hi``.
 
 By default, the ``AggregateEvent`` proxy will explore *all* event models
-that reference the target object. For example, let's make a completely
+that reference the target object(s). For example, let's make a completely
 separate model that has a foreign key to ``User`` and track that model.
 
 .. code-block:: python
