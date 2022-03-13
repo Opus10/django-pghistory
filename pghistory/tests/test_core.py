@@ -38,17 +38,13 @@ def test_m2m_through_tracking():
     user.groups.add(g1)
     assert test_models.UserGroupsEvent.objects.count() == 1
     assert list(
-        test_models.UserGroupsEvent.objects.values(
-            'user', 'pgh_label', 'group'
-        ).order_by('pgh_id')
+        test_models.UserGroupsEvent.objects.values('user', 'pgh_label', 'group').order_by('pgh_id')
     ) == [{'user': user.id, 'group': g1.id, 'pgh_label': 'group.add'}]
 
     user.groups.remove(g1)
     assert test_models.UserGroupsEvent.objects.count() == 2
     assert list(
-        test_models.UserGroupsEvent.objects.values(
-            'user', 'pgh_label', 'group'
-        ).order_by('pgh_id')
+        test_models.UserGroupsEvent.objects.values('user', 'pgh_label', 'group').order_by('pgh_id')
     ) == [
         {'user': user.id, 'group': g1.id, 'pgh_label': 'group.add'},
         {'user': user.id, 'group': g1.id, 'pgh_label': 'group.remove'},
@@ -57,9 +53,7 @@ def test_m2m_through_tracking():
     user.groups.add(g2)
     assert test_models.UserGroupsEvent.objects.count() == 3
     assert list(
-        test_models.UserGroupsEvent.objects.values(
-            'user', 'pgh_label', 'group'
-        ).order_by('pgh_id')
+        test_models.UserGroupsEvent.objects.values('user', 'pgh_label', 'group').order_by('pgh_id')
     ) == [
         {'user': user.id, 'group': g1.id, 'pgh_label': 'group.add'},
         {'user': user.id, 'group': g1.id, 'pgh_label': 'group.remove'},
@@ -84,9 +78,7 @@ def test_custom_pk_and_custom_column():
     m.save()
 
     assert m.snapshot.count() == 2
-    assert list(
-        m.snapshot.values_list('pgh_obj_id', flat=True).distinct()
-    ) == [m.pk]
+    assert list(m.snapshot.values_list('pgh_obj_id', flat=True).distinct()) == [m.pk]
 
     assert m.event.count() == 1
     assert m.event.get().int_field == 2
@@ -290,9 +282,7 @@ def test_dt_field_int_field_snapshot_tracking(mocker):
     tracking.int_field = 1
     tracking.save()
 
-    assert list(
-        tracking.dt_field_int_field_snapshot.order_by('pgh_id').values()
-    ) == [
+    assert list(tracking.dt_field_int_field_snapshot.order_by('pgh_id').values()) == [
         {
             'pgh_id': mocker.ANY,
             'dt_field': dt.datetime(2020, 1, 1, tzinfo=dt.timezone.utc),
@@ -336,15 +326,11 @@ def test_fk_cascading(mocker):
     orig_user_id = orig_user.id
 
     assert orig_user is not None
+    assert list(tracking.snapshot.order_by('pgh_id').values('fk_field_id', 'pgh_obj_id')) == [
+        {'fk_field_id': tracking.fk_field_id, 'pgh_obj_id': tracking.id}
+    ]
     assert list(
-        tracking.snapshot.order_by('pgh_id').values(
-            'fk_field_id', 'pgh_obj_id'
-        )
-    ) == [{'fk_field_id': tracking.fk_field_id, 'pgh_obj_id': tracking.id}]
-    assert list(
-        tracking.custom_related_name.order_by('pgh_id').values(
-            'fk_field_id', 'pgh_obj_id'
-        )
+        tracking.custom_related_name.order_by('pgh_id').values('fk_field_id', 'pgh_obj_id')
     ) == [{'fk_field_id': tracking.fk_field_id, 'pgh_obj_id': tracking.id}]
     original_custom_pgh_id = tracking.custom_related_name.get().pk
 
@@ -353,27 +339,19 @@ def test_fk_cascading(mocker):
     tracking.refresh_from_db()
     assert tracking.fk_field_id is None
     # The tracked history should retain the original user
-    assert list(
-        tracking.snapshot.order_by('pgh_id').values(
-            'fk_field_id', 'pgh_obj_id'
-        )
-    ) == [
+    assert list(tracking.snapshot.order_by('pgh_id').values('fk_field_id', 'pgh_obj_id')) == [
         {'fk_field_id': orig_user_id, 'pgh_obj_id': tracking.id},
         {'fk_field_id': None, 'pgh_obj_id': tracking.id},
     ]
 
     # The custom tracking model is set to cascade delete whenever users
     # are deleted. The original tracking row should be gone
-    assert not tracking.custom_related_name.filter(
-        pk=original_custom_pgh_id
-    ).exists()
+    assert not tracking.custom_related_name.filter(pk=original_custom_pgh_id).exists()
 
     # A new tracking row is still created for the new SnapshotModel that has
     # its user value set to None because of the cascade
     assert list(
-        tracking.custom_related_name.order_by('pgh_id').values(
-            'fk_field_id', 'pgh_obj_id'
-        )
+        tracking.custom_related_name.order_by('pgh_id').values('fk_field_id', 'pgh_obj_id')
     ) == [{'fk_field_id': None, 'pgh_obj_id': tracking.id}]
 
 
@@ -443,9 +421,7 @@ def test_model_snapshot_tracking(mocker):
 
     # Deleting the model will not delete history by default
     tracking.delete()
-    assert (
-        apps.get_model('tests', 'SnapshotModelSnapshot').objects.count() == 3
-    )
+    assert apps.get_model('tests', 'SnapshotModelSnapshot').objects.count() == 3
 
 
 @pytest.mark.django_db
@@ -486,9 +462,7 @@ def test_custom_snapshot_model_tracking(mocker):
             'pgh_created_at': mocker.ANY,
         },
     ]
-    assert list(
-        tracking.custom_related_name.order_by('pgh_id').values()
-    ) == list(
+    assert list(tracking.custom_related_name.order_by('pgh_id').values()) == list(
         test_models.CustomSnapshotModel.objects.order_by('pgh_id').values()
     )
 

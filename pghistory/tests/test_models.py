@@ -16,10 +16,7 @@ def test_aggregate_events_no_history():
     Tests the AggregateEvent proxy on a model that has no history tracking
     """
     untracked = ddf.G(test_models.UntrackedModel)
-    assert (
-        list(pghistory.models.AggregateEvent.objects.target(untracked).all())
-        == []
-    )
+    assert list(pghistory.models.AggregateEvent.objects.target(untracked).all()) == []
 
 
 @pytest.mark.django_db(transaction=True)
@@ -126,9 +123,7 @@ def test_aggregate_events_custom_pk(mocker):
     cm.save()
 
     assert list(
-        pghistory.models.AggregateEvent.objects.target(cm)
-        .order_by('pgh_table', 'pgh_id')
-        .values()
+        pghistory.models.AggregateEvent.objects.target(cm).order_by('pgh_table', 'pgh_id').values()
     ) == [
         {
             'pgh_context_id': None,
@@ -641,9 +636,7 @@ def test_custom_foreign_key_to_m2m_through():
         ),
     ],
 )
-def test_validate_event_model_path(
-    app_label, name, abstract, expected_exception
-):
+def test_validate_event_model_path(app_label, name, abstract, expected_exception):
     """Tests pghistory.models._validate_event_model_path"""
     with expected_exception:
         pghistory.models._validate_event_model_path(
@@ -691,15 +684,10 @@ def test_pascalcase(val, expected_output):
         ),
     ],
 )
-def test_factory(
-    model_name, obj_fk, fields, expected_model_name, expected_related_name
-):
+def test_factory(model_name, obj_fk, fields, expected_model_name, expected_related_name):
     cls = pghistory.models.Event.factory(
         test_models.EventModel, name=model_name, obj_fk=obj_fk, fields=fields
     )
 
     assert cls.__name__ == expected_model_name
-    assert (
-        cls._meta.get_field('pgh_obj').remote_field.related_name
-        == expected_related_name
-    )
+    assert cls._meta.get_field('pgh_obj').remote_field.related_name == expected_related_name

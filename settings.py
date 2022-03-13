@@ -21,3 +21,5 @@ TIMEZONE = 'UTC'
 # For testing middleware
 ROOT_URLCONF = 'pghistory.tests.urls'
 MIDDLEWARE = ['pghistory.middleware.HistoryMiddleware']
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'

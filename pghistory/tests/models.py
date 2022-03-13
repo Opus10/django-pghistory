@@ -16,9 +16,7 @@ class UntrackedModel(models.Model):
 @pghistory.track(
     pghistory.AfterUpdate(
         'int_field_updated',
-        condition=pgtrigger.Q(
-            old__int_field__df=pgtrigger.F('new__int_field')
-        ),
+        condition=pgtrigger.Q(old__int_field__df=pgtrigger.F('new__int_field')),
     )
 )
 class CustomModel(models.Model):
@@ -72,9 +70,7 @@ class SnapshotModel(models.Model):
 
     dt_field = models.DateTimeField()
     int_field = models.IntegerField()
-    fk_field = models.ForeignKey(
-        'auth.User', on_delete=models.SET_NULL, null=True
-    )
+    fk_field = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True)
 
 
 class CustomSnapshotModel(
@@ -91,9 +87,7 @@ class CustomSnapshotModel(
         context_fk=None,
     )
 ):
-    fk_field = models.ForeignKey(
-        'auth.User', on_delete=models.CASCADE, null=True
-    )
+    fk_field = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True)
     # Add an extra field that's not on the original model to try to throw
     # tests off
     fk_field2 = models.ForeignKey(
@@ -148,9 +142,7 @@ class CustomEventModel(
 
 
 class CustomAggregateEvent(pghistory.models.BaseAggregateEvent):
-    user = models.ForeignKey(
-        'auth.User', on_delete=models.DO_NOTHING, null=True
-    )
+    user = models.ForeignKey('auth.User', on_delete=models.DO_NOTHING, null=True)
     url = models.TextField(null=True)
 
     class Meta:

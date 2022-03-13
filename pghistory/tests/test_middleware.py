@@ -22,12 +22,7 @@ def test_post(client):
     assert test_models.SnapshotModelSnapshot.objects.count() == 1
 
     user = User.objects.get()
-    assert (
-        test_models.SnapshotModelSnapshot.objects.get().pgh_context.metadata[
-            'user'
-        ]
-        == user.id
-    )
+    assert test_models.SnapshotModelSnapshot.objects.get().pgh_context.metadata['user'] == user.id
 
 
 def test_middleware(rf, mocker):
@@ -39,16 +34,12 @@ def test_middleware(rf, mocker):
     def get_response(request):
         return getattr(pghistory.tracking._tracker, 'value', None)
 
-    resp = pghistory.middleware.HistoryMiddleware(get_response)(
-        rf.get('/get/url/')
-    )
+    resp = pghistory.middleware.HistoryMiddleware(get_response)(rf.get('/get/url/'))
     # No tracking should be happening since this is a GET request
     assert resp is None
 
     # A POST request will initiate the tracker
-    resp = pghistory.middleware.HistoryMiddleware(get_response)(
-        rf.post('/post/url/')
-    )
+    resp = pghistory.middleware.HistoryMiddleware(get_response)(rf.post('/post/url/'))
     assert resp.metadata == {'url': '/post/url/', 'user': None}
 
     # Authenticated users will be tracked

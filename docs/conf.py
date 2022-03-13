@@ -77,7 +77,7 @@ default_role = 'any'
 
 # General information about the project.
 project = u'django-pghistory'
-copyright = u'2021, Opus 10'
+copyright = u'2022, Opus 10'
 author = u'Opus 10 Engineering'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -126,7 +126,7 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
 
 
 # -- Options for HTMLHelp output ------------------------------------------
@@ -158,7 +158,7 @@ latex_elements = {
 latex_documents = [
     (
         master_doc,
-        'cookiecutterrepo_name.tex',
+        'django-pghistory.tex',
         u'django-pghistory Documentation',
         u'Opus 10',
         'manual',
@@ -173,7 +173,7 @@ latex_documents = [
 man_pages = [
     (
         master_doc,
-        'cookiecutterrepo_name',
+        'django-pghistory',
         u'django-pghistory Documentation',
         [author],
         1,
@@ -189,18 +189,14 @@ man_pages = [
 texinfo_documents = [
     (
         master_doc,
-        'cookiecutterrepo_name',
+        'django-pghistory',
         u'django-pghistory Documentation',
         author,
-        'cookiecutterrepo_name',
-        'One line description of project.',
+        'django-pghistory',
+        'History tracking for Django and Postgres',
         'Miscellaneous',
     )
 ]
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/': None}
-
-
-def setup(app):
-    app.add_css_file('css/custom.css')

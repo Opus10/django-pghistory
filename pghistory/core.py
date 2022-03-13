@@ -38,9 +38,7 @@ class Event:
     def __init__(self, label=None):
         self.label = label or self.label
         if not self.label:
-            raise ValueError(
-                f'{self.__class__.__name__} must have "label" attribute'
-            )
+            raise ValueError(f'{self.__class__.__name__} must have "label" attribute')
 
     def setup(self, event_model):
         """Set up the event for the particular event model"""
@@ -113,11 +111,7 @@ class Snapshot(DatabaseEvent):
         for field in event_model._meta.fields:
             if hasattr(event_model.pgh_tracked_model, field.name):
                 condition |= pgtrigger.Q(
-                    **{
-                        f'old__{field.name}__df': pgtrigger.F(
-                            f'new__{field.name}'
-                        )
-                    }
+                    **{f'old__{field.name}__df': pgtrigger.F(f'new__{field.name}')}
                 )
 
         update_trigger = pghistory.trigger.Event(
@@ -130,9 +124,7 @@ class Snapshot(DatabaseEvent):
             condition=condition,
         )
 
-        pgtrigger.register(insert_trigger, update_trigger)(
-            event_model.pgh_tracked_model
-        )
+        pgtrigger.register(insert_trigger, update_trigger)(event_model.pgh_tracked_model)
 
 
 class PreconfiguredDatabaseEvent(DatabaseEvent):
@@ -338,9 +330,7 @@ class _InsertEventCompiler(compiler.SQLInsertCompiler):
         ret = super().as_sql(*args, **kwargs)
         assert len(ret) == 1
         params = [
-            param
-            if field.name != 'pgh_context'
-            else AsIs('_pgh_attach_context()')
+            param if field.name != 'pgh_context' else AsIs('_pgh_attach_context()')
             for field, param in zip(self.query.fields, ret[0][1])
         ]
         return [(ret[0][0], params)]
@@ -365,8 +355,7 @@ def create_event(obj, *, label, using='default'):
     # Verify that the provided event is registered to the object model
     if (obj.__class__, label) not in _registered_events:
         raise ValueError(
-            f'"{label}" is not a registered event for model'
-            f' {obj._meta.object_name}.'
+            f'"{label}" is not a registered event for model' f' {obj._meta.object_name}.'
         )
 
     event_model = _registered_events[(obj.__class__, label)]
@@ -390,17 +379,13 @@ def create_event(obj, *, label, using='default'):
     # inject it with a custom SQL compiler here.
     query = sql.InsertQuery(event_model)
     query.insert_values(
-        [
-            field
-            for field in event_model._meta.fields
-            if not isinstance(field, models.AutoField)
-        ],
+        [field for field in event_model._meta.fields if not isinstance(field, models.AutoField)],
         [event_obj],
     )
 
-    vals = _InsertEventCompiler(
-        query, connection, using='default'
-    ).execute_sql(event_model._meta.fields)
+    vals = _InsertEventCompiler(query, connection, using='default').execute_sql(
+        event_model._meta.fields
+    )
 
     # Django <= 2.2 does not support returning fields from a bulk create,
     # which requires us to fetch fields again to populate the context
@@ -409,7 +394,7 @@ def create_event(obj, *, label, using='default'):
         return event_model.objects.get(pgh_id=vals)
     else:
         # Django >= 3.1 returns the values as a list of one element
-        if isinstance(vals, list) and len(vals) == 1:
+        if isinstance(vals, list) and len(vals) == 1:  # pragma: no branch
             vals = vals[0]
 
         for field, val in zip(event_model._meta.fields, vals):

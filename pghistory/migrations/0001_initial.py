@@ -28,9 +28,7 @@ class Migration(migrations.Migration):
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 (
                     'metadata',
-                    django.contrib.postgres.fields.jsonb.JSONField(
-                        default=dict
-                    ),
+                    django.contrib.postgres.fields.jsonb.JSONField(default=dict),
                 ),
             ],
         )
