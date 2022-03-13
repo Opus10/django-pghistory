@@ -1,5 +1,13 @@
 # Changelog
-## 1.2.2 (2022-03-12)
+## 1.3.0 (2022-03-12)
+### Bug
+  - Fixed bug in BeforeDelete event [Wes Kendall, aab4182]
+
+    The BeforeDelete event was referencing the wrong trigger value (NEW).
+    Code was updated to reference the proper OLD row for this event,
+    and a failing test case was added.
+
+## 1.2.2 (2022-03-13)
 ### Trivial
   - Updated with latest template, dropping 3.6 support and adding Django 4 support [Wes Kendall, c160973]
 
