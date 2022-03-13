@@ -1,5 +1,17 @@
 # Changelog
-## 1.3.0 (2022-03-12)
+## 1.4.0 (2022-03-13)
+### Feature
+  - Allow target() to receive a queryset or list. [M Somerville, 0f34e91]
+
+    This expands the target() function to accept a queryset or a list of
+    objects on top of the existing one object.
+  - Add support for delete requests in pghistory middleware [Shivananda Sahu, 322d17e]
+
+    Currently the middleware adds a context for POST, PUT, and PATCH requests. This leaves out DELETE requests as the only ones that can affect a model without a context. Updating middleware to add a context for DELETE requests along with POST, PUT and PATCH.
+### Trivial
+  - Minor code formatting fixes [Wes Kendall, d0b7664]
+
+## 1.3.0 (2022-03-13)
 ### Bug
   - Fixed bug in BeforeDelete event [Wes Kendall, aab4182]
 
