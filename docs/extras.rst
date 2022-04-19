@@ -371,7 +371,7 @@ the ``history_view`` method on the model admin like so:
             pghistory.models.AggregateEvent.objects
             .target(self.model(pk=object_id))
             .order_by('pgh_created_at')
-            .select_related('pgh_context', 'user')
+            .select_related('pgh_context')
         )
         return super().history_view(
             request, object_id, extra_context=extra_context
