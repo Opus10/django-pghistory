@@ -239,11 +239,17 @@ diffs:
     {% extends "admin/object_history.html" %}
 
     {% block content %}
-      <style>
-      .pgh-hidden {
-        display: none;
-      }
-      </style>
+      <script>
+        const styleSwitcher = {
+          "none": "",
+          "": "none",
+        };
+
+        function toggleDisplay(elementSelector) {
+          const element = document.querySelector(elementSelector);
+          element.style.display = styleSwitcher[element.style.display];
+        }
+      </script>
 
       <table id="change-history">
         <thead>
@@ -256,23 +262,32 @@ diffs:
         <tbody>
           {% for item in object_history %}
             <tr>
-              <th scope="row">{{ item.pgh_created_at|date:"DATETIME_FORMAT" }}</th>
-              <td>{{ item.pgh_label }}</td>
-              <td align="right">
+              <th scope="row" style="width: 20%;">{{ item.pgh_created_at|date:"DATETIME_FORMAT" }}
+                {% if item.pgh_context%}
+                  <br>
+                    {% if item.pgh_context.metadata.user %}
+                      by user {{item.pgh_context.metadata.user}}
+                    {% elif item.pgh_context.metadata.url and "login" in item.pgh_context.metadata.url %}
+                      login
+                    {% endif %}
+                {% endif %}
+              </th>
+              <td style="width: 10%;">{{ item.pgh_label }}</td>
+              <td align="right" style="width: 70%;">
                 {% if item.pgh_context %}
-                  <button style="align:right" onclick='$("#history-context-{{ forloop.counter0 }}").toggleClass("pgh-hidden")'>Context</button>
+                  <button class="button" style="align: right; padding: 3px;" onclick='toggleDisplay("#history-context-{{ forloop.counter0 }}")'>Context</button>
                 {% endif %}
 
                 {% if item.pgh_data %}
-                  <button style="align:right" onclick='$("#history-data-{{ forloop.counter0 }}").toggleClass("pgh-hidden")'>Data</button>
+                  <button class="button" style="align:right; padding: 3px;" onclick='toggleDisplay("#history-data-{{ forloop.counter0 }}")'>Data</button>
                 {% endif %}
 
                 {% if item.pgh_diff %}
-                  <button style="align:right" onclick='$("#history-diff-{{ forloop.counter0 }}").toggleClass("pgh-hidden")'>Changes</button>
+                  <button class="button" style="align:right; padding: 3px;" onclick='toggleDisplay("#history-diff-{{ forloop.counter0 }}")'>Changes</button>
                 {% endif %}
 
                 {% if item.pgh_context %}
-                  <div class="pgh-hidden" id="history-context-{{ forloop.counter0 }}" style="text-align:left">
+                  <div id="history-context-{{ forloop.counter0 }}" style="display: none; text-align:left">
                     <h5>Context</h5>
                     <table style="width:100%">
                       <thead>
@@ -292,7 +307,7 @@ diffs:
                 {% endif %}
 
                 {% if item.pgh_data %}
-                  <div class="pgh-hidden" id="history-data-{{ forloop.counter0 }}" style="text-align:left">
+                  <div id="history-data-{{ forloop.counter0 }}" style="display: none; text-align:left">
                     <h5>Data</h5>
                     <table style="width:100%">
                       <thead>
@@ -304,7 +319,7 @@ diffs:
                     {% for key, value in item.pgh_data.items %}
                       <tr>
                         <th>{{ key }}</th>
-                        <td>{{ value }}</td>
+                        <td style="overflow-wrap: anywhere; width: 80%;">{{ value }}</td>
                       </tr>
                     {% endfor %}
                     </table>
@@ -312,7 +327,7 @@ diffs:
                 {% endif %}
 
                 {% if item.pgh_diff %}
-                  <div class="pgh-hidden" id="history-diff-{{ forloop.counter0 }}" style="text-align:left">
+                  <div id="history-diff-{{ forloop.counter0 }}" style="display: none; text-align:left">
                     <h5>Changes</h5>
                     <table style="width:100%">
                       <thead>
