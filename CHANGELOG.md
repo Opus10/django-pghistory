@@ -1,4 +1,10 @@
 # Changelog
+## 1.5.0 (2022-05-17)
+### Feature
+  - Add support for GET requests in pghistory middleware [Shivananda Sahu, ae2524e]
+
+    Currently the middleware adds a context for POST, PUT, PATCH and DELETE requests. Updating middleware to add a context for GET requests along with POST, PUT, PATCH and DELETE.
+
 ## 1.4.0 (2022-03-13)
 ### Feature
   - Allow target() to receive a queryset or list. [M Somerville, 0f34e91]
