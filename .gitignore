@@ -342,3 +342,4 @@ tags
 
 # Ignore custom Docker compose DB data
 .db/
+.db

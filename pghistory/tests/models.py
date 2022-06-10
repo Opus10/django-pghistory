@@ -148,3 +148,18 @@ class CustomAggregateEvent(pghistory.models.BaseAggregateEvent):
 
     class Meta:
         managed = False
+
+
+@pghistory.track(pghistory.Snapshot("parentmodel.snapshot"))
+class ParentModel(models.Model):
+    parent_field = models.CharField(max_length=64)
+
+
+@pghistory.track(pghistory.Snapshot("childmodel.snapshot"))
+class ChildModel(ParentModel):
+    child_field = models.CharField(max_length=64)
+
+
+@pghistory.track(pghistory.Snapshot("smallchild.snapshot"))
+class SmallChildModel(ChildModel):
+    small_child_field = models.CharField(max_length=64)

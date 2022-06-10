@@ -114,13 +114,16 @@ def _generate_history_field(tracked_model, field):
     return field
 
 
-def _generate_related_name(base_model, fields):
+def _generate_related_name(base_model, tracked_model, fields):
     """
     Generates a related name to the tracking model based on the base
     model and traked fields
     """
     related_name = base_model._meta.object_name.lower()
-    return '_'.join(fields) + f'_{related_name}' if fields else related_name
+    if tracked_model._meta.parents:
+        name = tracked_model._meta.object_name.lower()
+        related_name = f"{name}_{related_name}"
+    return "_".join(fields) + f"_{related_name}" if fields else related_name
 
 
 def _validate_event_model_path(*, app_label, name, abstract):
@@ -195,7 +198,7 @@ def create_event_model(
         meta (dict, default=None): Additional options to add to the model
             Meta
     """
-    related_name = related_name or _generate_related_name(base_class, fields)
+    related_name = related_name or _generate_related_name(base_class, tracked_model, fields)
     name = name or _generate_event_model_name(base_class, tracked_model, fields)
     app_label = app_label or tracked_model._meta.app_label
     _validate_event_model_path(app_label=app_label, name=name, abstract=abstract)
@@ -228,6 +231,11 @@ def create_event_model(
         else obj_fk
     )
     exclude = exclude or []
+
+    for parent in tracked_model._meta.parents:
+        for field in parent._meta.fields:
+            exclude.append(field.name)
+
     fields = fields or [f.name for f in tracked_model._meta.fields if f.name not in exclude]
 
     class_attrs = {
