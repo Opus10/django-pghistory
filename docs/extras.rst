@@ -366,6 +366,113 @@ the ``history_view`` method on the model admin like so:
 
     One can also override the global "admin/object_history.html" template
     to show the custom history view for every admin page, however, the
-    template will need to be modified to use a template tag to obtain
+    template will need to be modified to use the ``get_aggregate_events`` template tag to obtain
     the ``AggregateEvent`` query (instead of overriding ``history_view``
-    as shown in the example).
+    as shown in the example):
+.. code-block:: jinja
+
+    {% extends "admin/object_history.html" %}
+    {% load pghistory_tags %}
+
+    {% block content %}
+      <style>
+      .pgh-hidden {
+        display: none;
+      }
+      </style>
+
+      {% get_aggregate_events as object_history %}
+
+      <table id="change-history">
+        <thead>
+          <tr>
+            <th scope="col">Time</th>
+            <th scope="col">Event</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in object_history %}
+            <tr>
+              <th scope="row">{{ item.pgh_created_at|date:"DATETIME_FORMAT" }}</th>
+              <td>{{ item.pgh_label }}</td>
+              <td align="right">
+                {% if item.pgh_context %}
+                  <button style="align:right" onclick='$("#history-context-{{ forloop.counter0 }}").toggleClass("pgh-hidden")'>Context</button>
+                {% endif %}
+
+                {% if item.pgh_data %}
+                  <button style="align:right" onclick='$("#history-data-{{ forloop.counter0 }}").toggleClass("pgh-hidden")'>Data</button>
+                {% endif %}
+
+                {% if item.pgh_diff %}
+                  <button style="align:right" onclick='$("#history-diff-{{ forloop.counter0 }}").toggleClass("pgh-hidden")'>Changes</button>
+                {% endif %}
+
+                {% if item.pgh_context %}
+                  <div class="pgh-hidden" id="history-context-{{ forloop.counter0 }}" style="text-align:left">
+                    <h5>Context</h5>
+                    <table style="width:100%">
+                      <thead>
+                        <tr>
+                          <th scole="col">Key</th>
+                          <th scope="col">Value</th>
+                        </tr>
+                      </thead>
+                    {% for key, value in item.pgh_context.metadata.items %}
+                      <tr>
+                        <th>{{ key }}</th>
+                        <td>{{ value }}</td>
+                      </tr>
+                    {% endfor %}
+                    </table>
+                  </div>
+                {% endif %}
+
+                {% if item.pgh_data %}
+                  <div class="pgh-hidden" id="history-data-{{ forloop.counter0 }}" style="text-align:left">
+                    <h5>Data</h5>
+                    <table style="width:100%">
+                      <thead>
+                        <tr>
+                          <th scole="col">Key</th>
+                          <th scope="col">Value</th>
+                        </tr>
+                      </thead>
+                    {% for key, value in item.pgh_data.items %}
+                      <tr>
+                        <th>{{ key }}</th>
+                        <td>{{ value }}</td>
+                      </tr>
+                    {% endfor %}
+                    </table>
+                  </div>
+                {% endif %}
+
+                {% if item.pgh_diff %}
+                  <div class="pgh-hidden" id="history-diff-{{ forloop.counter0 }}" style="text-align:left">
+                    <h5>Changes</h5>
+                    <table style="width:100%">
+                      <thead>
+                        <tr>
+                          <th scole="col">Field</th>
+                          <th scope="col">Before</th>
+                          <th scope="col">After</th>
+                        </tr>
+                      </thead>
+                    {% for key, value in item.pgh_diff.items %}
+                      <tr>
+                        <th>{{ key }}</th>
+                        <td>{{ value.0 }}</td>
+                        <td>{{ value.1 }}</td>
+                      </tr>
+                    {% endfor %}
+                    </table>
+                  </div>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endblock %}
