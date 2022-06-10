@@ -198,7 +198,9 @@ def create_event_model(
         meta (dict, default=None): Additional options to add to the model
             Meta
     """
-    related_name = related_name or _generate_related_name(base_class, tracked_model, fields)
+    related_name = related_name or _generate_related_name(
+        base_class, tracked_model, fields
+    )
     name = name or _generate_event_model_name(base_class, tracked_model, fields)
     app_label = app_label or tracked_model._meta.app_label
     _validate_event_model_path(app_label=app_label, name=name, abstract=abstract)
@@ -236,7 +238,9 @@ def create_event_model(
         for field in parent._meta.fields:
             exclude.append(field.name)
 
-    fields = fields or [f.name for f in tracked_model._meta.fields if f.name not in exclude]
+    fields = fields or [
+        f.name for f in tracked_model._meta.fields if f.name not in exclude
+    ]
 
     class_attrs = {
         '__module__': models_module,
@@ -368,6 +372,16 @@ class AggregateEventQueryCompiler(SQLCompiler):
             for field in event_model._meta.fields
             if getattr(field, 'related_model', None) == cls
         ]
+
+        if not related_fields:
+            for parent in cls._meta.parents:
+                for field in parent._meta.get_fields():
+                    related_model = getattr(field, "related_model", None)
+
+                    if related_model == event_model:
+                        related_fields.append(field.field.column)
+                        break
+
         if not related_fields:
             raise ValueError(f'Event model {event_model} does not reference {cls}')
 
@@ -499,6 +513,17 @@ class AggregateEventQueryCompiler(SQLCompiler):
                     getattr(field, 'related_model', None) == cls for field in model._meta.fields
                 )
             ]
+
+            for parent in cls._meta.parents:
+                for field in parent._meta.get_fields():
+                    related_model = getattr(field, "related_model", None)
+
+                    if (
+                        related_model
+                        and issubclass(related_model, Event)
+                        and not issubclass(related_model, BaseAggregateEvent)
+                    ):
+                        event_models.append(related_model)
 
         agg_event_table = self.query.model._meta.db_table
         inner_cte = 'UNION ALL '.join(
