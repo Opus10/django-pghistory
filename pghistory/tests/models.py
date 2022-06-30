@@ -150,9 +150,27 @@ class CustomAggregateEvent(pghistory.models.BaseAggregateEvent):
         managed = False
 
 
+"""
+Inheritance models:
+
+ParentModel ⟵ ParentModelRelatedModel
+    ↑
+ChildModel ⟵ ChildModelRelatedModel
+    ↑
+SmallChildModel ⟵ SmallChildRelatedModel
+
+"""
 @pghistory.track(pghistory.Snapshot("parentmodel.snapshot"))
 class ParentModel(models.Model):
     parent_field = models.CharField(max_length=64)
+
+
+@pghistory.track(pghistory.Snapshot("parentmodelrelated.snapshot"))
+class ParentModelRelatedModel(models.Model):
+    parent_model = models.ForeignKey(
+        ParentModel,
+        on_delete=models.CASCADE,
+    )
 
 
 @pghistory.track(pghistory.Snapshot("childmodel.snapshot"))
@@ -160,6 +178,22 @@ class ChildModel(ParentModel):
     child_field = models.CharField(max_length=64)
 
 
+@pghistory.track(pghistory.Snapshot("childmodelrelated.snapshot"))
+class ChildModelRelatedModel(models.Model):
+    child_model = models.ForeignKey(
+        ChildModel,
+        on_delete=models.CASCADE,
+    )
+
+
 @pghistory.track(pghistory.Snapshot("smallchild.snapshot"))
 class SmallChildModel(ChildModel):
     small_child_field = models.CharField(max_length=64)
+
+
+@pghistory.track(pghistory.Snapshot("smallchildrelated.snapshot"))
+class SmallChildRelatedModel(models.Model):
+    small_child_model = models.ForeignKey(
+        SmallChildModel,
+        on_delete=models.CASCADE,
+    )
