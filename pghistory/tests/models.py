@@ -160,6 +160,8 @@ ChildModel ⟵ ChildModelRelatedModel
 SmallChildModel ⟵ SmallChildRelatedModel
 
 """
+
+
 @pghistory.track(pghistory.Snapshot("parentmodel.snapshot"))
 class ParentModel(models.Model):
     parent_field = models.CharField(max_length=64)
@@ -171,6 +173,8 @@ class ParentModelRelatedModel(models.Model):
         ParentModel,
         on_delete=models.CASCADE,
     )
+
+    parent_related_field = models.CharField(max_length=64)
 
 
 @pghistory.track(pghistory.Snapshot("childmodel.snapshot"))
@@ -185,6 +189,8 @@ class ChildModelRelatedModel(models.Model):
         on_delete=models.CASCADE,
     )
 
+    child_related_field = models.CharField(max_length=64)
+
 
 @pghistory.track(pghistory.Snapshot("smallchild.snapshot"))
 class SmallChildModel(ChildModel):
@@ -197,3 +203,5 @@ class SmallChildRelatedModel(models.Model):
         SmallChildModel,
         on_delete=models.CASCADE,
     )
+
+    small_child_related_field = models.CharField(max_length=64)

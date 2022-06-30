@@ -5,13 +5,13 @@ import uuid
 
 import django
 from django.apps import apps
+from django.core.exceptions import FieldDoesNotExist
 from django.db import connection
 from django.db import connections
 from django.db import models
 from django.db.models.fields.related import RelatedField
 from django.db.models.sql import Query
 from django.db.models.sql.compiler import SQLCompiler
-from django.core.exceptions import FieldDoesNotExist
 
 import pghistory.constants
 import pghistory.trigger
@@ -199,9 +199,7 @@ def create_event_model(
         meta (dict, default=None): Additional options to add to the model
             Meta
     """
-    related_name = related_name or _generate_related_name(
-        base_class, tracked_model, fields
-    )
+    related_name = related_name or _generate_related_name(base_class, tracked_model, fields)
     name = name or _generate_event_model_name(base_class, tracked_model, fields)
     app_label = app_label or tracked_model._meta.app_label
     _validate_event_model_path(app_label=app_label, name=name, abstract=abstract)
@@ -239,9 +237,7 @@ def create_event_model(
         for field in parent._meta.fields:
             exclude.append(field.name)
 
-    fields = fields or [
-        f.name for f in tracked_model._meta.fields if f.name not in exclude
-    ]
+    fields = fields or [f.name for f in tracked_model._meta.fields if f.name not in exclude]
 
     class_attrs = {
         '__module__': models_module,
@@ -290,12 +286,7 @@ def get_cls_related_event_models(cls):
         for model in apps.get_models()
         if issubclass(model, Event)
         and not issubclass(model, BaseAggregateEvent)
-        and (
-            any(
-                getattr(field, "related_model", None) == cls
-                for field in model._meta.fields
-            )
-        )
+        and (any(getattr(field, "related_model", None) == cls for field in model._meta.fields))
     ]
 
     event_models = []
@@ -400,7 +391,7 @@ class AggregateEventQueryCompiler(SQLCompiler):
             return obj[0].__class__
         return obj.__class__
 
-    def _get_aggregate_event_select(self, obj, event_model):
+    def _get_aggregate_event_select(self, obj, event_model):  # noqa: C901
         cls = self._class_for_target(obj)
         related_fields = [
             field.column
@@ -422,18 +413,35 @@ class AggregateEventQueryCompiler(SQLCompiler):
                 for field in parent._meta.get_fields():
                     related_model = getattr(field, "related_model", None)
 
-                    # If we identify the field that links the ParentModel and the event_model, we add the field column to the related_fields to link
+                    # If we identify the field that links the ParentModel and the event_model,
+                    # we add the field column to the related_fields to link
                     if related_model == event_model:
                         related_fields.append(field.field.column)
                         break
 
-                # If no related field was found yet, we can be in the case of an event_model linked to a ParentModel of our original cls (i.e: ParentModelRelatedModel).
-                # In this case, we must identify the field in our event_model that links the parent model
-                if not related_fields:
-                    for field in event_model._meta.get_fields():
-                        related_model = getattr(field, "related_model", None)
-                        if related_model == parent:
-                            related_fields.append(field.column)
+        if not related_fields:
+            # If no related field was found yet,
+            # we can be in the case of an event_model linked
+            # to a ParentModel of our original cls (i.e: ParentModelRelatedModel).
+            #
+            # In this case,
+            # we must "recursively" identify the field in our event_model that
+            # links the parent model or one of its parents.
+            cls_parents = list(cls._meta.parents)
+            while len(cls_parents) > 0:
+                parent = cls_parents.pop()
+
+                for field in event_model._meta.get_fields():
+                    related_model = getattr(field, "related_model", None)
+                    if related_model == parent:
+                        related_fields.append(field.column)
+                        break
+
+                if related_fields:
+                    break
+
+                for parent_parent in parent._meta.parents:
+                    cls_parents.append(parent_parent)
 
         if not related_fields:
             raise ValueError(f'Event model {event_model} does not reference {cls}')

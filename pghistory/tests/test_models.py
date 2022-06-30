@@ -702,6 +702,158 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
     ]
 
 
+@pytest.mark.django_db(transaction=True)
+def test_aggregate_events_inheritance_models(django_assert_num_queries, mocker):
+    """
+    Check than aggregate event instances can be retrieved,
+    for the whole tree of our inheritance test models
+
+    ParentModel ⟵ ParentModelRelatedModel
+        ↑
+    ChildModel ⟵ ChildModelRelatedModel
+        ↑
+    SmallChildModel ⟵ SmallChildRelatedModel
+
+    """
+    user = ddf.G('auth.User')
+
+    small_child_model_1 = ddf.G(
+        test_models.SmallChildModel,
+        parent_field="parent_field_1_initial",
+        child_field="child_field_1_initial",
+        small_child_field="small_child_field_1_initial",
+    )
+
+    small_child_model_2 = ddf.G(
+        test_models.SmallChildModel,
+        parent_field="parent_field_2_initial",
+        child_field="child_field_2_initial",
+        small_child_field="small_child_field_2_initial",
+    )
+
+    parent_model_related_1 = ddf.G(
+        test_models.ParentModelRelatedModel,
+        parent_model=small_child_model_1,
+        parent_related_field="parent_model_related_1_initial",
+    )
+
+    parent_model_related_2 = ddf.G(
+        test_models.ParentModelRelatedModel,
+        parent_model=small_child_model_2,
+        parent_related_field="parent_model_related_2_initial",
+    )
+
+    child_model_related_1 = ddf.G(
+        test_models.ChildModelRelatedModel,
+        child_model=small_child_model_1,
+        child_related_field="child_model_related_1_initial",
+    )
+
+    child_model_related_2 = ddf.G(
+        test_models.ChildModelRelatedModel,
+        child_model=small_child_model_2,
+        child_related_field="child_model_related_2_initial",
+    )
+
+    small_child_model_related_1 = ddf.G(
+        test_models.SmallChildRelatedModel,
+        small_child_model=small_child_model_1,
+        small_child_related_field="small_child_model_related_1_initial",
+    )
+
+    small_child_model_related_2 = ddf.G(
+        test_models.SmallChildRelatedModel,
+        small_child_model=small_child_model_2,
+        small_child_related_field="small_child_model_related_2_initial",
+    )
+
+    with pghistory.context(key='value1', user=user.id):
+        small_child_model_1.parent_field = "parent_field_1_updated"
+        small_child_model_1.child_field = "child_field_1_updated"
+        small_child_model_1.small_child_field = "small_child_field_1_updated"
+        small_child_model_1.save()
+
+        small_child_model_2.parent_field = "parent_field_2_updated"
+        small_child_model_2.child_field = "child_field_2_updated"
+        small_child_model_2.small_child_field = "small_child_field_2_updated"
+        small_child_model_2.save()
+
+        parent_model_related_1.parent_related_field = "parent_model_related_1_updated"
+        parent_model_related_1.save()
+
+        parent_model_related_2.parent_related_field = "parent_model_related_2_updated"
+        parent_model_related_2.save()
+
+        child_model_related_1.child_related_field = "child_model_related_1_updated"
+        child_model_related_1.save()
+
+        child_model_related_2.child_related_field = "child_model_related_2_updated"
+        child_model_related_2.save()
+
+        small_child_model_related_1.small_child_related_field = (
+            "small_child_model_related_1_updated"
+        )
+        small_child_model_related_1.save()
+
+        small_child_model_related_2.small_child_related_field = (
+            "small_child_model_related_2_updated"
+        )
+        small_child_model_related_2.save()
+
+    # Retrieve the aggregated events
+    aggregate_events = (
+        pghistory.models.AggregateEvent.objects.target(small_child_model_1)
+        .filter(pgh_context__isnull=False)
+        .select_related('pgh_context')
+    )
+
+    # Make sure we can join against our proxy model without performance issues
+    with django_assert_num_queries(1):
+        # We do have 6 events because we made changes
+        # to all of our models and their parents
+        # (the updates done on small_child_model_1 count for 3 changes)
+        assert len(aggregate_events) == 6
+
+    # Check the retrieved event values
+    with django_assert_num_queries(1):
+        assert list(aggregate_events.order_by('pgh_diff').values('pgh_diff')) == [
+            {'pgh_diff': {'child_field': ['child_field_1_initial', 'child_field_1_updated']}},
+            {
+                'pgh_diff': {
+                    'child_related_field': [
+                        'child_model_related_1_initial',
+                        'child_model_related_1_updated',
+                    ]
+                }
+            },
+            {'pgh_diff': {'parent_field': ['parent_field_1_initial', 'parent_field_1_updated']}},
+            {
+                'pgh_diff': {
+                    'parent_related_field': [
+                        'parent_model_related_1_initial',
+                        'parent_model_related_1_updated',
+                    ]
+                }
+            },
+            {
+                'pgh_diff': {
+                    'small_child_field': [
+                        'small_child_field_1_initial',
+                        'small_child_field_1_updated',
+                    ]
+                }
+            },
+            {
+                'pgh_diff': {
+                    'small_child_related_field': [
+                        'small_child_model_related_1_initial',
+                        'small_child_model_related_1_updated',
+                    ]
+                }
+            },
+        ]
+
+
 @pytest.mark.django_db
 def test_custom_foreign_key_to_m2m_through():
     """
