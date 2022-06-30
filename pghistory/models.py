@@ -11,6 +11,7 @@ from django.db import models
 from django.db.models.fields.related import RelatedField
 from django.db.models.sql import Query
 from django.db.models.sql.compiler import SQLCompiler
+from django.core.exceptions import FieldDoesNotExist
 
 import pghistory.constants
 import pghistory.trigger
@@ -277,6 +278,40 @@ def _pascalcase(string):
     )
 
 
+def get_cls_related_event_models(cls):
+    """
+    For a given model-class, returns the related event models pointing at it
+
+    Excludes from this list the event models of this class children if any.
+    """
+
+    all_event_models = [
+        model
+        for model in apps.get_models()
+        if issubclass(model, Event)
+        and not issubclass(model, BaseAggregateEvent)
+        and (
+            any(
+                getattr(field, "related_model", None) == cls
+                for field in model._meta.fields
+            )
+        )
+    ]
+
+    event_models = []
+    for event_model in all_event_models:
+        try:
+            related_cls = event_model._meta.get_field("pgh_obj").related_model
+            if cls in related_cls._meta.parents:
+                continue
+        except FieldDoesNotExist:
+            pass
+
+        event_models.append(event_model)
+
+    return event_models
+
+
 class Event(models.Model):
     """
     An abstract model for base elements of a event
@@ -373,14 +408,32 @@ class AggregateEventQueryCompiler(SQLCompiler):
             if getattr(field, 'related_model', None) == cls
         ]
 
+        """
+            Special case to add cls parents event models
+            Handle this kind of relations:
+
+            ParentModel ⟵ ParentModelRelatedModel
+                ↑
+            ChildModel ⟵ ChildModelRelatedModel
+
+        """
         if not related_fields:
             for parent in cls._meta.parents:
                 for field in parent._meta.get_fields():
                     related_model = getattr(field, "related_model", None)
 
+                    # If we identify the field that links the ParentModel and the event_model, we add the field column to the related_fields to link
                     if related_model == event_model:
                         related_fields.append(field.field.column)
                         break
+
+                # If no related field was found yet, we can be in the case of an event_model linked to a ParentModel of our original cls (i.e: ParentModelRelatedModel).
+                # In this case, we must identify the field in our event_model that links the parent model
+                if not related_fields:
+                    for field in event_model._meta.get_fields():
+                        related_model = getattr(field, "related_model", None)
+                        if related_model == parent:
+                            related_fields.append(field.column)
 
         if not related_fields:
             raise ValueError(f'Event model {event_model} does not reference {cls}')
