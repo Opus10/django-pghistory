@@ -88,3 +88,4 @@ Other Contributors
 - @Azurency
 - @dracos
 - @adamchainz
+- @eeriksp
