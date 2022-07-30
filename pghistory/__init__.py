@@ -1,3 +1,5 @@
+import django
+
 from pghistory.core import AfterInsert
 from pghistory.core import AfterInsertOrUpdate
 from pghistory.core import AfterUpdate
@@ -26,4 +28,8 @@ __all__ = [
     'Event',
     'track',
 ]
-default_app_config = 'pghistory.apps.PGHistoryConfig'
+
+if django.VERSION < (3, 2):
+    default_app_config = 'pghistory.apps.PGHistoryConfig'
+
+del django
