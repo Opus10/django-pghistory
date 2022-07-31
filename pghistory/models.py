@@ -391,7 +391,7 @@ class AggregateEventQueryCompiler(SQLCompiler):
             return obj[0].__class__
         return obj.__class__
 
-    def _get_aggregate_event_select(self, obj, event_model):  # noqa: C901
+    def _get_aggregate_event_select(self, obj, event_model):
         cls = self._class_for_target(obj)
         related_fields = [
             field.column

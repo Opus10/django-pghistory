@@ -93,16 +93,11 @@ setup: teardown docker-start lock dependencies
 shell:
 	$(DOCKER_EXEC_WRAPPER) /bin/bash
 
-# Run test folder migrations generation
-.PHONY: migrations
-migrations:
-	$(DOCKER_EXEC_WRAPPER) poetry run python manage.py makemigrations
-
 
 # Run pytest
 .PHONY: test
 test:
-	$(DOCKER_EXEC_WRAPPER) pytest -s
+	$(DOCKER_EXEC_WRAPPER) pytest
 
 
 # Run full test suite
