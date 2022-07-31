@@ -1,4 +1,9 @@
 # Changelog
+## 1.5.1 (2022-07-30)
+### Trivial
+  - Use `pk` instead of `id` to get the user's primary key [Eerik Sven Puudist, f105828]
+  - Fix default_app_config warning on Django 3.2+ [Adam Johnson, 8753bc4]
+
 ## 1.5.0 (2022-05-17)
 ### Feature
   - Add support for GET requests in pghistory middleware [Shivananda Sahu, ae2524e]
