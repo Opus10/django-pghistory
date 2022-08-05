@@ -358,41 +358,37 @@ Advanced Usage Examples
 -----------------------
 
 Tracking Third-Party Model Changes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``django-pghistory`` can track changes to third-party models like Django's
-``User`` model. There are two things to keep in mind when tracking
-events to a model outside of your application:
-
-1. You must register the tracking in the ``.ready()`` of an app config
-   in your project.
-2. You must provide an app label that is inside of your project to
-   use for the generated model. This is
-   required to ensure that migrations for the event model are created
-   inside of your project and not in a folder of a third-party app.
-
-Here's an example of configuring events for the Django ``User`` model:
+``User`` model by using a proxy model. Below we show how to track
+the default Django ``User`` model:
 
 
 .. code-block:: python
 
-  import django.apps
-  from django.contrib.auth import get_user_model
+  from django.contrib.auth.models import User
 
   import pghistory
 
 
-  class MyAppConfig(django.apps.AppConfig):
-      name = 'my_app'
+  # Track the user model, excluding the password field
+  @pghistory.track(
+      pghistory.Snapshot('user.snapshot'),
+      exclude=['password'],
+  )
+  class UserProxy(User):
+      class Meta:
+          proxy = True
 
-      def ready(self):
-          User = get_user_model()
-          # Snapshot the user model and exclude password updates
-          pghistory.track(
-              pghistory.Snapshot('user.snapshot'),
-              exclude=['password'],
-              app_label='my_app'
-          )(User)
+
+.. note::
+
+    Although it's possible to track the models directly
+    with ``pghistory.track(...)(model_name)``, doing so would
+    create migrations in a third-party app. Using proxy models
+    ensures that the migration files are created inside your
+    project.  
 
 
 Tracking Many-To-Many Events
@@ -405,38 +401,31 @@ automatically generates a "through" model that is populated based
 on changes to the many-to-many field (and one can override this behavior
 with their own custom "through" model).
 
-``django-pghistory``'s tracking functions can be called manually on
-the "through" model or used as a decorator on any custom "through" models.
-Here we show an example of how to track group "add" and "remove" events
-for Django's ``User`` model.
-
-As discussed in the previous section, we need to set up a ``.ready()``
-handler in an app config of our project to track third-party model changes
-and pass it a custom ``app_label`` to use.
-Here we reference the "through" model with ``User.groups.through``:
+``django-pghistory``'s tracking functions can be used as
+a decorator on any custom "through" models, and a proxy model
+can be created for any default "through" models.
+Here we show an example of how to track
+group "add" and "remove" events for users:
 
 .. code-block:: python
 
-  import django.apps
-  from django.contrib.auth import get_user_model
-  from django.db import models
+  from django.contrib.auth.models import User
+
+  import pghistory
 
 
-  class MyAppConfig(django.apps.AppConfig):
-      name = 'my_app'
-
-      def ready(self):
-          User = get_user_model()
-          # Track events to user group relationships
-          pghistory.track(
-              pghistory.AfterInsert('group.add'),
-              pghistory.BeforeDelete('group.remove'),
-              obj_fk=None,
-              app_label='my_app',
-          )(User.groups.through)
+  # Track add and remove events to user groups
+  @pghistory.track(
+      pghistory.AfterInsert('group.add'),
+      pghistory.BeforeDelete('group.remove'),
+      obj_fk=None,
+  )
+  class UserGroups(User.groups.through):
+      class Meta:
+          proxy = True
 
 Two events are set up to track additions and deletions to the "through" model,
-which will in turn track every time a user is added or removed from a group.
+which will track every time a user is added or removed from a group.
 
 .. note::
 
@@ -465,8 +454,8 @@ will show tracked changes to user group relationships:
 Configuring Context Collection
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When using `pghistory.middleware.HistoryMiddleware`, all POST, PUT,
-and PATCH requests
+When using `pghistory.middleware.HistoryMiddleware`, all GET, POST, PUT,
+PATCH, and DELETE requests
 will automatically be tracked with `pghistory.context` and events will
 reference the same context object in their associated models (i.e.
 the ``pgh_context`` foreign key). By default, the
