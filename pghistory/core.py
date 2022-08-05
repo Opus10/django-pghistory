@@ -56,6 +56,7 @@ class DatabaseEvent(Event):
     def __init__(
         self,
         label=None,
+        *,
         when=None,
         condition=None,
         operation=None,
@@ -133,7 +134,7 @@ class PreconfiguredDatabaseEvent(DatabaseEvent):
     preconfigure the other parameters
     """
 
-    def __init__(self, label=None, condition=None):
+    def __init__(self, label=None, *, condition=None):
         return super().__init__(label=label, condition=condition)
 
 

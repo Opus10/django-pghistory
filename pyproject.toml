@@ -51,8 +51,7 @@ documentation = "https://django-pghistory.readthedocs.io"
 python = ">=3.7.0,<4"
 django = ">=2"
 importlib_metadata = { version = ">=4", python = "~3.7" }
-django-pgconnection = ">=1.0.0"
-django-pgtrigger = ">=2.1.0"
+django-pgtrigger = ">=3.0.0"
 
 [tool.poetry.dev-dependencies]
 black = "22.6.0"

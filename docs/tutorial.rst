@@ -361,13 +361,13 @@ Tracking Third-Party Model Changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``django-pghistory`` can track changes to third-party models like Django's
-``User`` model. There are only two things to keep in mind when tracking
+``User`` model. There are two things to keep in mind when tracking
 events to a model outside of your application:
 
 1. You must register the tracking in the ``.ready()`` of an app config
    in your project.
-2. You must specify the app label of one of your internal project
-   apps to be the app label of the generated event model. This is
+2. You must provide an app label that is inside of your project to
+   use for the generated model. This is
    required to ensure that migrations for the event model are created
    inside of your project and not in a folder of a third-party app.
 
