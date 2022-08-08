@@ -4,7 +4,7 @@ import json
 import threading
 import uuid
 
-import pgconnection
+from django.db import connection
 
 _tracker = threading.local()
 
@@ -20,33 +20,30 @@ def _is_concurrent_statement(sql):
     return sql.startswith('create') and 'concurrently' in sql
 
 
-def _inject_history_context(sql, sql_vars, cursor):
-    if cursor.name:
-        # A named cursor automatically prepends
-        # "NO SCROLL CURSOR WITHOUT HOLD FOR" to the query, which
-        # causes invalid SQL to be generated. There is no way
-        # to override this behavior in psycopg2, so context tracking
-        # is ignored for named cursors. Django only names cursors
-        # for iterators and other statements that read the database,
-        # so it seems to be safe to ignore named cursors.
-        # TODO(@wesleykendall): Find a way to generate valid SQL
-        # for local variables within a named cursor declaration.
-        return None
-    elif _is_concurrent_statement(sql):
-        # Concurrent index creation is incompatible with local variable
-        # setting. Ignore this specific statement for now
-        return None
+def _inject_history_context(execute, sql, params, many, context):
+    cursor = context['cursor']
 
-    # Metadata is stored as a serialized JSON string with escaped
-    # single quotes
-    metadata_str = json.dumps(_tracker.value.metadata).replace("'", "''")
+    # A named cursor automatically prepends
+    # "NO SCROLL CURSOR WITHOUT HOLD FOR" to the query, which
+    # causes invalid SQL to be generated. There is no way
+    # to override this behavior in psycopg2, so context tracking
+    # cannot happen for named cursors. Django only names cursors
+    # for iterators and other statements that read the database,
+    # so it seems to be safe to ignore named cursors.
+    #
+    # Concurrent index creation is also incompatible with local variable
+    # setting. Ignore these cases for now.
+    if not cursor.name and not _is_concurrent_statement(sql):
+        # Metadata is stored as a serialized JSON string with escaped
+        # single quotes
+        metadata_str = json.dumps(_tracker.value.metadata).replace("'", "''")
 
-    sql = (
-        f'SET LOCAL pghistory.context_id=\'{_tracker.value.id}\';'
-        f'SET LOCAL pghistory.context_metadata=\'{metadata_str}\';'
-    ) + sql
+        sql = (
+            f'SET LOCAL pghistory.context_id=\'{_tracker.value.id}\';'
+            f'SET LOCAL pghistory.context_metadata=\'{metadata_str}\';'
+        ) + sql
 
-    return sql, sql_vars
+    return execute(sql, params, many, context)
 
 
 class context(contextlib.ContextDecorator):
@@ -104,7 +101,7 @@ class context(contextlib.ContextDecorator):
 
     def __enter__(self):
         if not hasattr(_tracker, 'value'):
-            self._pre_execute_hook = pgconnection.pre_execute_hook(_inject_history_context)
+            self._pre_execute_hook = connection.execute_wrapper(_inject_history_context)
             self._pre_execute_hook.__enter__()
             _tracker.value = Context(id=uuid.uuid4(), metadata=self.metadata)
 

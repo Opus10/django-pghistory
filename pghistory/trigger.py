@@ -19,9 +19,17 @@ class Event(pgtrigger.Trigger):
     event_model = None
     when = pgtrigger.After
 
-    def __init__(self, label=None, snapshot=None, event_model=None, **kwargs):
-        super().__init__(**kwargs)
-
+    def __init__(
+        self,
+        *,
+        name=None,
+        operation=None,
+        condition=None,
+        when=None,
+        label=None,
+        snapshot=None,
+        event_model=None,
+    ):
         self.label = label or self.label
         if not self.label:  # pragma: no cover
             raise ValueError('Must provide "label"')
@@ -33,6 +41,8 @@ class Event(pgtrigger.Trigger):
         self.snapshot = snapshot or self.snapshot
         if not self.snapshot:  # pragma: no cover
             raise ValueError('Must provide "snapshot"')
+
+        super().__init__(name=name, operation=operation, condition=condition, when=when)
 
     def get_func(self, model):
         fields = {
