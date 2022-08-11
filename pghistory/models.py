@@ -391,7 +391,7 @@ class AggregateEventQueryCompiler(SQLCompiler):
             return obj[0].__class__
         return obj.__class__
 
-    def _get_aggregate_event_select(self, obj, event_model):
+    def _get_aggregate_event_select(self, obj, event_model):   # noqa: C901
         cls = self._class_for_target(obj)
         related_fields = [
             field.column
@@ -565,26 +565,23 @@ class AggregateEventQueryCompiler(SQLCompiler):
         event_models = self.query.across
         cls = self._class_for_target(obj)
         if not event_models:
-            event_models = [
-                model
-                for model in apps.get_models()
-                if issubclass(model, Event)
-                and not issubclass(model, BaseAggregateEvent)
-                and any(
-                    getattr(field, 'related_model', None) == cls for field in model._meta.fields
-                )
-            ]
+            event_models = get_cls_related_event_models(cls)
 
-            for parent in cls._meta.parents:
-                for field in parent._meta.get_fields():
-                    related_model = getattr(field, "related_model", None)
+            # Special case to "recursively" extract parents event_models,
+            # calling the get_cls_related_event_models on each parent and their parents
+            related_event_parents = event_models.copy()
+            while len(related_event_parents) > 0:
+                related_event = related_event_parents.pop()
+                try:
+                    related_cls = related_event._meta.get_field('pgh_obj').related_model
 
-                    if (
-                        related_model
-                        and issubclass(related_model, Event)
-                        and not issubclass(related_model, BaseAggregateEvent)
-                    ):
-                        event_models.append(related_model)
+                    for parent in related_cls._meta.parents:
+                        parent_event_models = get_cls_related_event_models(parent)
+                        event_models += parent_event_models
+                        related_event_parents += parent_event_models
+
+                except FieldDoesNotExist:
+                    pass
 
         agg_event_table = self.query.model._meta.db_table
         inner_cte = 'UNION ALL '.join(
