@@ -1,4 +1,31 @@
 # Changelog
+## 2.0.0 (2022-08-08)
+### Api-Break
+  - Integration with Django's migration system [Wes Kendall, e0acead]
+
+    ``django-pghistory`` upgrades ``django-pgtrigger``, which now integrates
+    with the Django migration system.
+
+    Run ``python manage.py makemigrations`` to make migrations for the triggers
+    created by ``django-pghistory`` in order to upgrade.
+
+    If you are tracking changes to third-party models, register the tracker on
+    a proxy model so that migrations are created in the proper app.
+### Feature
+  - Remove dependency on ``django-pgconnection`` [Wes Kendall, aea6056]
+
+    ``django-pghistory`` no longer requires that users wrap ``settings.DATABASES``
+    with ``django-pgconnection``.
+
+## 1.5.2 (2022-07-31)
+### Trivial
+  - Updated with latest Django template, fixing doc builds [Wes Kendall, 42cbc3c]
+
+## 1.5.1 (2022-07-31)
+### Trivial
+  - Use `pk` instead of `id` to get the user's primary key [Eerik Sven Puudist, f105828]
+  - Fix default_app_config warning on Django 3.2+ [Adam Johnson, 8753bc4]
+
 ## 1.5.0 (2022-05-17)
 ### Feature
   - Add support for GET requests in pghistory middleware [Shivananda Sahu, ae2524e]

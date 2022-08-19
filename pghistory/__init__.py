@@ -1,3 +1,5 @@
+import django
+
 from pghistory.core import AfterInsert
 from pghistory.core import AfterInsertOrUpdate
 from pghistory.core import AfterUpdate
@@ -10,6 +12,7 @@ from pghistory.core import get_event_model
 from pghistory.core import Snapshot
 from pghistory.core import track
 from pghistory.tracking import context
+from pghistory.version import __version__
 
 
 __all__ = [
@@ -25,5 +28,10 @@ __all__ = [
     'Snapshot',
     'Event',
     'track',
+    '__version__',
 ]
-default_app_config = 'pghistory.apps.PGHistoryConfig'
+
+if django.VERSION < (3, 2):
+    default_app_config = 'pghistory.apps.PGHistoryConfig'
+
+del django

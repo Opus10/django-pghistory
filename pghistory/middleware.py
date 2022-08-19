@@ -30,7 +30,7 @@ def HistoryMiddleware(get_response):
     def middleware(request):
         if request.method in ('GET', 'POST', 'PUT', 'PATCH', 'DELETE'):
             with pghistory.context(
-                user=request.user.id if hasattr(request, 'user') else None,
+                user=request.user.pk if hasattr(request, 'user') else None,
                 url=request.path,
             ):
                 if isinstance(request, DjangoWSGIRequest):  # pragma: no branch

@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.db import models
 import pgtrigger
 
@@ -150,6 +151,16 @@ class CustomAggregateEvent(pghistory.models.BaseAggregateEvent):
         managed = False
 
 
+@pghistory.track(
+    pghistory.AfterInsert('group.add'),
+    pghistory.BeforeDelete('group.remove'),
+    obj_fk=None,
+)
+class UserGroups(User.groups.through):
+    class Meta:
+        proxy = True
+
+
 """
 Inheritance models:
 
@@ -205,3 +216,4 @@ class SmallChildRelatedModel(models.Model):
     )
 
     small_child_related_field = models.CharField(max_length=64)
+

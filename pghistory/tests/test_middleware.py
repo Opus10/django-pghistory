@@ -44,7 +44,7 @@ def test_middleware(rf, mocker):
 
     # Authenticated users will be tracked
     mock_user_id = 3
-    mock_user = mocker.Mock(id=mock_user_id)
+    mock_user = mocker.Mock(pk=mock_user_id)
     request = rf.post('/post/url2/')
     request.user = mock_user
     resp = pghistory.middleware.HistoryMiddleware(get_response)(request)
