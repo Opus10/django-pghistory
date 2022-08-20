@@ -9,17 +9,17 @@ def install_pgh_attach_context_func(**kwargs):
     it easier to manually and automatically construct context for
     history
     """
-    Context = django.apps.apps.get_model('pghistory', 'Context')
+    Context = django.apps.apps.get_model("pghistory", "Context")
     Context.install_pgh_attach_context_func()
 
 
 def pgh_setup(sender, **kwargs):
-    if hasattr(sender, 'pghistory_setup'):
+    if hasattr(sender, "pghistory_setup"):
         sender.pghistory_setup()
 
 
 class PGHistoryConfig(django.apps.AppConfig):
-    name = 'pghistory'
+    name = "pghistory"
 
     def __init__(self, *args, **kwargs):
         """

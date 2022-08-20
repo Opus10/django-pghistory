@@ -29,9 +29,9 @@ import sphinx_rtd_theme
 import pghistory
 
 
-sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('..'))
-os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+sys.path.insert(0, os.path.abspath("."))
+sys.path.insert(0, os.path.abspath(".."))
+os.environ["DJANGO_SETTINGS_MODULE"] = "settings"
 django.setup()
 
 
@@ -41,7 +41,7 @@ django.setup()
 def _shell_stdout(cmd):
     """Runs a shell command and returns stdout"""
     ret = subprocess.run(cmd, shell=True, check=True, stdout=subprocess.PIPE)
-    return ret.stdout.decode('utf-8').strip()
+    return ret.stdout.decode("utf-8").strip()
 
 
 # -- General configuration ------------------------------------------------
@@ -54,33 +54,34 @@ def _shell_stdout(cmd):
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.todo',
-    'sphinx.ext.viewcode',
+    "myst_parser",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.todo",
+    "sphinx.ext.viewcode",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_suffix = ".rst"
 
 # The master toctree document.
-master_doc = 'toc'
+master_doc = "toc"
 
 # default role for "`" (makes it attempt to match against references
 # within project)
-default_role = 'any'
+default_role = "any"
 
 # General information about the project.
-project = u'django-pghistory'
-copyright = u'2022, Opus 10'
-author = u'Opus 10 Engineering'
+project = "django-pghistory"
+copyright = "2022, Opus 10"
+author = "Opus 10 Engineering"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -102,10 +103,10 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = "sphinx"
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
@@ -116,7 +117,7 @@ todo_include_todos = True
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -134,7 +135,7 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'django-pghistorydoc'
+htmlhelp_basename = "django-pghistorydoc"
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -160,10 +161,10 @@ latex_elements = {
 latex_documents = [
     (
         master_doc,
-        'django-pghistory.tex',
-        u'django-pghistory Documentation',
-        u'Opus 10',
-        'manual',
+        "django-pghistory.tex",
+        "django-pghistory Documentation",
+        "Opus 10",
+        "manual",
     )
 ]
 
@@ -175,8 +176,8 @@ latex_documents = [
 man_pages = [
     (
         master_doc,
-        'django-pghistory',
-        u'django-pghistory Documentation',
+        "django-pghistory",
+        "django-pghistory Documentation",
         [author],
         1,
     )
@@ -191,14 +192,14 @@ man_pages = [
 texinfo_documents = [
     (
         master_doc,
-        'django-pghistory',
-        u'django-pghistory Documentation',
+        "django-pghistory",
+        "django-pghistory Documentation",
         author,
-        'django-pghistory',
-        'History tracking for Django and Postgres',
-        'Miscellaneous',
+        "django-pghistory",
+        "History tracking for Django and Postgres",
+        "Miscellaneous",
     )
 ]
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
+intersphinx_mapping = {"https://docs.python.org/": None}

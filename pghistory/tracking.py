@@ -9,19 +9,19 @@ from django.db import connection
 _tracker = threading.local()
 
 
-Context = collections.namedtuple('Context', ['id', 'metadata'])
+Context = collections.namedtuple("Context", ["id", "metadata"])
 
 
 def _is_concurrent_statement(sql):
     """
     True if the sql statement is concurrent and cannot be ran in a transaction
     """
-    sql = sql.strip().lower() if sql else ''
-    return sql.startswith('create') and 'concurrently' in sql
+    sql = sql.strip().lower() if sql else ""
+    return sql.startswith("create") and "concurrently" in sql
 
 
 def _inject_history_context(execute, sql, params, many, context):
-    cursor = context['cursor']
+    cursor = context["cursor"]
 
     # A named cursor automatically prepends
     # "NO SCROLL CURSOR WITHOUT HOLD FOR" to the query, which
@@ -39,8 +39,8 @@ def _inject_history_context(execute, sql, params, many, context):
         metadata_str = json.dumps(_tracker.value.metadata).replace("'", "''")
 
         sql = (
-            f'SET LOCAL pghistory.context_id=\'{_tracker.value.id}\';'
-            f'SET LOCAL pghistory.context_metadata=\'{metadata_str}\';'
+            f"SET LOCAL pghistory.context_id='{_tracker.value.id}';"
+            f"SET LOCAL pghistory.context_metadata='{metadata_str}';"
         ) + sql
 
     return execute(sql, params, many, context)
@@ -96,11 +96,11 @@ class context(contextlib.ContextDecorator):
         self.metadata = metadata
         self._pre_execute_hook = None
 
-        if hasattr(_tracker, 'value'):
+        if hasattr(_tracker, "value"):
             _tracker.value.metadata.update(**self.metadata)
 
     def __enter__(self):
-        if not hasattr(_tracker, 'value'):
+        if not hasattr(_tracker, "value"):
             self._pre_execute_hook = connection.execute_wrapper(_inject_history_context)
             self._pre_execute_hook.__enter__()
             _tracker.value = Context(id=uuid.uuid4(), metadata=self.metadata)
@@ -109,5 +109,5 @@ class context(contextlib.ContextDecorator):
 
     def __exit__(self, *exc):
         if self._pre_execute_hook:
-            delattr(_tracker, 'value')
+            delattr(_tracker, "value")
             self._pre_execute_hook.__exit__(*exc)

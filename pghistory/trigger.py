@@ -6,7 +6,7 @@ def _get_pgh_obj_pk_col(history_model):
     """
     Returns the column name of the PK field tracked by the history model
     """
-    return history_model._meta.get_field('pgh_obj').related_model._meta.pk.column
+    return history_model._meta.get_field("pgh_obj").related_model._meta.pk.column
 
 
 class Event(pgtrigger.Trigger):
@@ -15,7 +15,7 @@ class Event(pgtrigger.Trigger):
     """
 
     label = None
-    snapshot = 'NEW'
+    snapshot = "NEW"
     event_model = None
     when = pgtrigger.After
 
@@ -51,19 +51,19 @@ class Event(pgtrigger.Trigger):
             if not isinstance(f, models.AutoField)
             and hasattr(self.event_model.pgh_tracked_model, f.name)
         }
-        fields['pgh_created_at'] = 'NOW()'
-        fields['pgh_label'] = f"'{self.label}'"
+        fields["pgh_created_at"] = "NOW()"
+        fields["pgh_label"] = f"'{self.label}'"
 
-        if hasattr(self.event_model, 'pgh_obj'):
-            fields['pgh_obj_id'] = f'{self.snapshot}."{_get_pgh_obj_pk_col(self.event_model)}"'
+        if hasattr(self.event_model, "pgh_obj"):
+            fields["pgh_obj_id"] = f'{self.snapshot}."{_get_pgh_obj_pk_col(self.event_model)}"'
 
-        if hasattr(self.event_model, 'pgh_context'):
-            fields['pgh_context_id'] = '_pgh_attach_context()'
+        if hasattr(self.event_model, "pgh_context"):
+            fields["pgh_context_id"] = "_pgh_attach_context()"
 
-        cols = ', '.join(f'"{col}"' for col in fields)
-        vals = ', '.join(val for val in fields.values())
-        return f'''
+        cols = ", ".join(f'"{col}"' for col in fields)
+        vals = ", ".join(val for val in fields.values())
+        return f"""
             INSERT INTO "{self.event_model._meta.db_table}"
                 ({cols}) VALUES ({vals});
             RETURN NULL;
-        '''
+        """
