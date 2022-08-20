@@ -1,4 +1,8 @@
 # Changelog
+## 2.0.1 (2022-08-20)
+### Trivial
+  - Fix release note rendering and code formatting changes [Wes Kendall, 7043553]
+
 ## 2.0.0 (2022-08-08)
 ### Api-Break
   - Integration with Django's migration system [Wes Kendall, e0acead]
