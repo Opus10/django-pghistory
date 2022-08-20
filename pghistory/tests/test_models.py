@@ -26,11 +26,11 @@ def test_aggregate_events_joining_filtering(django_assert_num_queries, mocker):
     Use the CustomAggregateEvent subclass to verify we can filter/join on
     context metadata
     """
-    actor = ddf.G('auth.User')
+    actor = ddf.G("auth.User")
     # Create an event trail under various contexts
-    with pghistory.context(key='value1', user=actor.id):
-        user1 = ddf.G('auth.User')
-        user2 = ddf.G('auth.User')
+    with pghistory.context(key="value1", user=actor.id):
+        user1 = ddf.G("auth.User")
+        user2 = ddf.G("auth.User")
         sm1 = ddf.G(
             test_models.SnapshotModel,
             dt_field=dt.datetime(2020, 6, 17, tzinfo=dt.timezone.utc),
@@ -44,13 +44,13 @@ def test_aggregate_events_joining_filtering(django_assert_num_queries, mocker):
             fk_field=user2,
         )
 
-    with pghistory.context(key='value2', url='https://url.com', user=0):
+    with pghistory.context(key="value2", url="https://url.com", user=0):
         sm1.int_field = 2
         sm1.save()
         sm2.int_field = 22
         sm2.save()
 
-    with pghistory.context(key='value3', user=actor.id):
+    with pghistory.context(key="value3", user=actor.id):
         sm1.dt_field = dt.datetime(2020, 6, 19, tzinfo=dt.timezone.utc)
         sm1.int_field = 3
         sm1.save()
@@ -62,36 +62,36 @@ def test_aggregate_events_joining_filtering(django_assert_num_queries, mocker):
     # Make sure we can join against our proxy model without performance issues
     with django_assert_num_queries(1):
         assert {
-            e.pgh_context.metadata['key']
+            e.pgh_context.metadata["key"]
             for e in pghistory.models.AggregateEvent.objects.target(sm1)
             .filter(pgh_context__isnull=False)
-            .select_related('pgh_context')
-        } == {'value1', 'value2', 'value3'}
+            .select_related("pgh_context")
+        } == {"value1", "value2", "value3"}
 
     assert list(
         pghistory.models.AggregateEvent.objects.target(user1)
-        .filter(pgh_label='snapshot', pgh_data__int_field=3)
+        .filter(pgh_label="snapshot", pgh_data__int_field=3)
         .values()
     ) == [
         {
-            'pgh_context_id': mocker.ANY,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'dt_field': '2020-06-19T00:00:00+00:00',
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 3,
+            "pgh_context_id": mocker.ANY,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "dt_field": "2020-06-19T00:00:00+00:00",
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 3,
             },
-            'pgh_diff': {
-                'dt_field': [
-                    '2020-06-17T00:00:00+00:00',
-                    '2020-06-19T00:00:00+00:00',
+            "pgh_diff": {
+                "dt_field": [
+                    "2020-06-17T00:00:00+00:00",
+                    "2020-06-19T00:00:00+00:00",
                 ],
-                'int_field': [2, 3],
+                "int_field": [2, 3],
             },
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'snapshot',
-            'pgh_table': 'tests_snapshotmodelsnapshot',
+            "pgh_id": mocker.ANY,
+            "pgh_label": "snapshot",
+            "pgh_table": "tests_snapshotmodelsnapshot",
         }
     ]
 
@@ -100,15 +100,15 @@ def test_aggregate_events_joining_filtering(django_assert_num_queries, mocker):
     # Since we provided an invalid user for an event, "None" is returned
     assert set(
         test_models.CustomAggregateEvent.objects.target(user1)
-        .values_list('user__email', flat=True)
+        .values_list("user__email", flat=True)
         .distinct()
     ) == {actor.email, None}
 
     assert set(
         test_models.CustomAggregateEvent.objects.target(user1)
-        .values_list('url', flat=True)
+        .values_list("url", flat=True)
         .distinct()
-    ) == {'https://url.com', None}
+    ) == {"https://url.com", None}
 
 
 @pytest.mark.django_db(transaction=True)
@@ -116,8 +116,8 @@ def test_aggregate_events_joining_filtering_multiple_targets(django_assert_num_q
     """
     Test joining and other filtering for the AggregateEvent proxy with multiple targets.
     """
-    user1 = ddf.G('auth.User')
-    user2 = ddf.G('auth.User')
+    user1 = ddf.G("auth.User")
+    user2 = ddf.G("auth.User")
     sm1 = ddf.G(
         test_models.SnapshotModel,
         dt_field=dt.datetime(2020, 6, 17, tzinfo=dt.timezone.utc),
@@ -138,56 +138,56 @@ def test_aggregate_events_joining_filtering_multiple_targets(django_assert_num_q
     sm2.save()
 
     default = {
-        'pgh_context_id': None,
-        'pgh_created_at': mocker.ANY,
-        'pgh_id': mocker.ANY,
-        'pgh_label': 'snapshot',
-        'pgh_table': 'tests_snapshotmodelsnapshot',
+        "pgh_context_id": None,
+        "pgh_created_at": mocker.ANY,
+        "pgh_id": mocker.ANY,
+        "pgh_label": "snapshot",
+        "pgh_table": "tests_snapshotmodelsnapshot",
     }
     wanted_result = [
         {
             **default,
-            'pgh_data': {
-                'dt_field': '2020-06-17T00:00:00+00:00',
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 1,
+            "pgh_data": {
+                "dt_field": "2020-06-17T00:00:00+00:00",
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 1,
             },
-            'pgh_diff': None,
+            "pgh_diff": None,
         },
         {
             **default,
-            'pgh_data': {
-                'dt_field': '2020-06-22T00:00:00+00:00',
-                'fk_field_id': user2.id,
-                'id': sm2.id,
-                'int_field': 10,
+            "pgh_data": {
+                "dt_field": "2020-06-22T00:00:00+00:00",
+                "fk_field_id": user2.id,
+                "id": sm2.id,
+                "int_field": 10,
             },
-            'pgh_diff': None,
+            "pgh_diff": None,
         },
         {
             **default,
-            'pgh_data': {
-                'dt_field': '2020-06-17T00:00:00+00:00',
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 3,
+            "pgh_data": {
+                "dt_field": "2020-06-17T00:00:00+00:00",
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 3,
             },
-            'pgh_diff': {
-                'int_field': [1, 3],
+            "pgh_diff": {
+                "int_field": [1, 3],
             },
         },
         {
             **default,
-            'pgh_data': {
-                'dt_field': '2020-06-22T00:00:00+00:00',
-                'fk_field_id': user1.id,
-                'id': sm2.id,
-                'int_field': 33,
+            "pgh_data": {
+                "dt_field": "2020-06-22T00:00:00+00:00",
+                "fk_field_id": user1.id,
+                "id": sm2.id,
+                "int_field": 33,
             },
-            'pgh_diff': {
-                'int_field': [10, 33],
-                'fk_field_id': [user2.id, user1.id],
+            "pgh_diff": {
+                "int_field": [10, 33],
+                "fk_field_id": [user2.id, user1.id],
             },
         },
     ]
@@ -195,8 +195,8 @@ def test_aggregate_events_joining_filtering_multiple_targets(django_assert_num_q
     assert (
         list(
             pghistory.models.AggregateEvent.objects.target([sm1, sm2])
-            .filter(pgh_label='snapshot')
-            .order_by('pgh_created_at')
+            .filter(pgh_label="snapshot")
+            .order_by("pgh_created_at")
             .values()
         )
         == wanted_result
@@ -205,8 +205,8 @@ def test_aggregate_events_joining_filtering_multiple_targets(django_assert_num_q
     assert (
         list(
             pghistory.models.AggregateEvent.objects.target(test_models.SnapshotModel.objects.all())
-            .filter(pgh_label='snapshot')
-            .order_by('pgh_created_at')
+            .filter(pgh_label="snapshot")
+            .order_by("pgh_created_at")
             .values()
         )
         == wanted_result
@@ -225,34 +225,34 @@ def test_aggregate_events_custom_pk(mocker):
     cm.save()
 
     assert list(
-        pghistory.models.AggregateEvent.objects.target(cm).order_by('pgh_table', 'pgh_id').values()
+        pghistory.models.AggregateEvent.objects.target(cm).order_by("pgh_table", "pgh_id").values()
     ) == [
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {'integer_field': 2, 'my_pk': str(cm.pk)},
-            'pgh_diff': None,
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'int_field_updated',
-            'pgh_table': 'tests_custommodelevent',
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {"integer_field": 2, "my_pk": str(cm.pk)},
+            "pgh_diff": None,
+            "pgh_id": mocker.ANY,
+            "pgh_label": "int_field_updated",
+            "pgh_table": "tests_custommodelevent",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {'integer_field': 1, 'my_pk': str(cm.pk)},
-            'pgh_diff': None,
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'snapshot',
-            'pgh_table': 'tests_custommodelsnapshot',
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {"integer_field": 1, "my_pk": str(cm.pk)},
+            "pgh_diff": None,
+            "pgh_id": mocker.ANY,
+            "pgh_label": "snapshot",
+            "pgh_table": "tests_custommodelsnapshot",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {'integer_field': 2, 'my_pk': str(cm.pk)},
-            'pgh_diff': {'integer_field': [1, 2]},
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'snapshot',
-            'pgh_table': 'tests_custommodelsnapshot',
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {"integer_field": 2, "my_pk": str(cm.pk)},
+            "pgh_diff": {"integer_field": [1, 2]},
+            "pgh_id": mocker.ANY,
+            "pgh_label": "snapshot",
+            "pgh_table": "tests_custommodelsnapshot",
         },
     ]
 
@@ -260,11 +260,11 @@ def test_aggregate_events_custom_pk(mocker):
 @pytest.mark.django_db
 def test_aggregate_events_usage():
     """Verifies the AggregateEvent queryset is used properly"""
-    with pytest.raises(ValueError, match='.target()'):
+    with pytest.raises(ValueError, match=".target()"):
         list(pghistory.models.AggregateEvent.objects.all())
 
     cm = ddf.G(test_models.CustomModel, int_field=1)
-    with pytest.raises(ValueError, match='does not reference'):
+    with pytest.raises(ValueError, match="does not reference"):
         list(
             pghistory.models.AggregateEvent.objects.target(cm).across(
                 test_models.CustomSnapshotModel
@@ -278,8 +278,8 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
     Verify that the AggregateEvent proxy model properly aggregates
     events even when the event models have no pgh_obj reference
     """
-    user1 = ddf.G('auth.User')
-    user2 = ddf.G('auth.User')
+    user1 = ddf.G("auth.User")
+    user2 = ddf.G("auth.User")
     sm1 = ddf.G(
         test_models.SnapshotModel,
         dt_field=dt.datetime(2020, 6, 17, tzinfo=dt.timezone.utc),
@@ -307,163 +307,163 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
 
     assert list(
         pghistory.models.AggregateEvent.objects.target(sm1)
-        .order_by('pgh_table', 'pgh_id')
+        .order_by("pgh_table", "pgh_id")
         .values()
     ) == [
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'fk_field2_id': None,
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 1,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "fk_field2_id": None,
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 1,
             },
-            'pgh_diff': None,
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'custom_snapshot',
-            'pgh_table': 'tests_customsnapshotmodel',
+            "pgh_diff": None,
+            "pgh_id": mocker.ANY,
+            "pgh_label": "custom_snapshot",
+            "pgh_table": "tests_customsnapshotmodel",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'fk_field2_id': None,
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 2,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "fk_field2_id": None,
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 2,
             },
-            'pgh_diff': {'int_field': [1, 2]},
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'custom_snapshot',
-            'pgh_table': 'tests_customsnapshotmodel',
+            "pgh_diff": {"int_field": [1, 2]},
+            "pgh_id": mocker.ANY,
+            "pgh_label": "custom_snapshot",
+            "pgh_table": "tests_customsnapshotmodel",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'fk_field2_id': None,
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 3,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "fk_field2_id": None,
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 3,
             },
-            'pgh_diff': {'int_field': [2, 3]},
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'custom_snapshot',
-            'pgh_table': 'tests_customsnapshotmodel',
+            "pgh_diff": {"int_field": [2, 3]},
+            "pgh_id": mocker.ANY,
+            "pgh_label": "custom_snapshot",
+            "pgh_table": "tests_customsnapshotmodel",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {'dt_field': '2020-06-17T00:00:00+00:00'},
-            'pgh_diff': None,
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'dt_field_snapshot',
-            'pgh_table': 'tests_snapshotmodeldtfieldevent',
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {"dt_field": "2020-06-17T00:00:00+00:00"},
+            "pgh_diff": None,
+            "pgh_id": mocker.ANY,
+            "pgh_label": "dt_field_snapshot",
+            "pgh_table": "tests_snapshotmodeldtfieldevent",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {'dt_field': '2020-06-19T00:00:00+00:00'},
-            'pgh_diff': {
-                'dt_field': [
-                    '2020-06-17T00:00:00+00:00',
-                    '2020-06-19T00:00:00+00:00',
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {"dt_field": "2020-06-19T00:00:00+00:00"},
+            "pgh_diff": {
+                "dt_field": [
+                    "2020-06-17T00:00:00+00:00",
+                    "2020-06-19T00:00:00+00:00",
                 ]
             },
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'dt_field_snapshot',
-            'pgh_table': 'tests_snapshotmodeldtfieldevent',
+            "pgh_id": mocker.ANY,
+            "pgh_label": "dt_field_snapshot",
+            "pgh_table": "tests_snapshotmodeldtfieldevent",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'dt_field': '2020-06-17T00:00:00+00:00',
-                'int_field': 1,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "dt_field": "2020-06-17T00:00:00+00:00",
+                "int_field": 1,
             },
-            'pgh_diff': None,
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'dt_field_int_field_snapshot',
-            'pgh_table': 'tests_snapshotmodeldtfieldintfieldevent',
+            "pgh_diff": None,
+            "pgh_id": mocker.ANY,
+            "pgh_label": "dt_field_int_field_snapshot",
+            "pgh_table": "tests_snapshotmodeldtfieldintfieldevent",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'dt_field': '2020-06-17T00:00:00+00:00',
-                'int_field': 2,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "dt_field": "2020-06-17T00:00:00+00:00",
+                "int_field": 2,
             },
-            'pgh_diff': {'int_field': [1, 2]},
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'dt_field_int_field_snapshot',
-            'pgh_table': 'tests_snapshotmodeldtfieldintfieldevent',
+            "pgh_diff": {"int_field": [1, 2]},
+            "pgh_id": mocker.ANY,
+            "pgh_label": "dt_field_int_field_snapshot",
+            "pgh_table": "tests_snapshotmodeldtfieldintfieldevent",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'dt_field': '2020-06-19T00:00:00+00:00',
-                'int_field': 3,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "dt_field": "2020-06-19T00:00:00+00:00",
+                "int_field": 3,
             },
-            'pgh_diff': {
-                'dt_field': [
-                    '2020-06-17T00:00:00+00:00',
-                    '2020-06-19T00:00:00+00:00',
+            "pgh_diff": {
+                "dt_field": [
+                    "2020-06-17T00:00:00+00:00",
+                    "2020-06-19T00:00:00+00:00",
                 ],
-                'int_field': [2, 3],
+                "int_field": [2, 3],
             },
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'dt_field_int_field_snapshot',
-            'pgh_table': 'tests_snapshotmodeldtfieldintfieldevent',
+            "pgh_id": mocker.ANY,
+            "pgh_label": "dt_field_int_field_snapshot",
+            "pgh_table": "tests_snapshotmodeldtfieldintfieldevent",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'dt_field': '2020-06-17T00:00:00+00:00',
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 1,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "dt_field": "2020-06-17T00:00:00+00:00",
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 1,
             },
-            'pgh_diff': None,
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'snapshot',
-            'pgh_table': 'tests_snapshotmodelsnapshot',
+            "pgh_diff": None,
+            "pgh_id": mocker.ANY,
+            "pgh_label": "snapshot",
+            "pgh_table": "tests_snapshotmodelsnapshot",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'dt_field': '2020-06-17T00:00:00+00:00',
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 2,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "dt_field": "2020-06-17T00:00:00+00:00",
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 2,
             },
-            'pgh_diff': {'int_field': [1, 2]},
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'snapshot',
-            'pgh_table': 'tests_snapshotmodelsnapshot',
+            "pgh_diff": {"int_field": [1, 2]},
+            "pgh_id": mocker.ANY,
+            "pgh_label": "snapshot",
+            "pgh_table": "tests_snapshotmodelsnapshot",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'dt_field': '2020-06-19T00:00:00+00:00',
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 3,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "dt_field": "2020-06-19T00:00:00+00:00",
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 3,
             },
-            'pgh_diff': {
-                'dt_field': [
-                    '2020-06-17T00:00:00+00:00',
-                    '2020-06-19T00:00:00+00:00',
+            "pgh_diff": {
+                "dt_field": [
+                    "2020-06-17T00:00:00+00:00",
+                    "2020-06-19T00:00:00+00:00",
                 ],
-                'int_field': [2, 3],
+                "int_field": [2, 3],
             },
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'snapshot',
-            'pgh_table': 'tests_snapshotmodelsnapshot',
+            "pgh_id": mocker.ANY,
+            "pgh_label": "snapshot",
+            "pgh_table": "tests_snapshotmodelsnapshot",
         },
     ]
 
@@ -471,182 +471,182 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
     # that have no pgh_obj. All events here will have a reference to user1
     assert list(
         pghistory.models.AggregateEvent.objects.target(user1)
-        .order_by('pgh_table', 'pgh_id')
+        .order_by("pgh_table", "pgh_id")
         .values()
     ) == [
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'fk_field2_id': None,
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 1,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "fk_field2_id": None,
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 1,
             },
-            'pgh_diff': None,
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'custom_snapshot',
-            'pgh_table': 'tests_customsnapshotmodel',
+            "pgh_diff": None,
+            "pgh_id": mocker.ANY,
+            "pgh_label": "custom_snapshot",
+            "pgh_table": "tests_customsnapshotmodel",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'fk_field2_id': None,
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 2,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "fk_field2_id": None,
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 2,
             },
-            'pgh_diff': {'int_field': [1, 2]},
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'custom_snapshot',
-            'pgh_table': 'tests_customsnapshotmodel',
+            "pgh_diff": {"int_field": [1, 2]},
+            "pgh_id": mocker.ANY,
+            "pgh_label": "custom_snapshot",
+            "pgh_table": "tests_customsnapshotmodel",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'fk_field2_id': None,
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 3,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "fk_field2_id": None,
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 3,
             },
-            'pgh_diff': {'int_field': [2, 3]},
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'custom_snapshot',
-            'pgh_table': 'tests_customsnapshotmodel',
+            "pgh_diff": {"int_field": [2, 3]},
+            "pgh_id": mocker.ANY,
+            "pgh_label": "custom_snapshot",
+            "pgh_table": "tests_customsnapshotmodel",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'fk_field2_id': None,
-                'fk_field_id': user1.id,
-                'id': sm2.id,
-                'int_field': 33,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "fk_field2_id": None,
+                "fk_field_id": user1.id,
+                "id": sm2.id,
+                "int_field": 33,
             },
-            'pgh_diff': None,
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'custom_snapshot',
-            'pgh_table': 'tests_customsnapshotmodel',
+            "pgh_diff": None,
+            "pgh_id": mocker.ANY,
+            "pgh_label": "custom_snapshot",
+            "pgh_table": "tests_customsnapshotmodel",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'dt_field': '2020-06-17T00:00:00+00:00',
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 1,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "dt_field": "2020-06-17T00:00:00+00:00",
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 1,
             },
-            'pgh_diff': None,
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'no_pgh_obj_snapshot',
-            'pgh_table': 'tests_nopghobjsnapshot',
+            "pgh_diff": None,
+            "pgh_id": mocker.ANY,
+            "pgh_label": "no_pgh_obj_snapshot",
+            "pgh_table": "tests_nopghobjsnapshot",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'dt_field': '2020-06-17T00:00:00+00:00',
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 2,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "dt_field": "2020-06-17T00:00:00+00:00",
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 2,
             },
-            'pgh_diff': None,
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'no_pgh_obj_snapshot',
-            'pgh_table': 'tests_nopghobjsnapshot',
+            "pgh_diff": None,
+            "pgh_id": mocker.ANY,
+            "pgh_label": "no_pgh_obj_snapshot",
+            "pgh_table": "tests_nopghobjsnapshot",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'dt_field': '2020-06-19T00:00:00+00:00',
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 3,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "dt_field": "2020-06-19T00:00:00+00:00",
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 3,
             },
-            'pgh_diff': None,
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'no_pgh_obj_snapshot',
-            'pgh_table': 'tests_nopghobjsnapshot',
+            "pgh_diff": None,
+            "pgh_id": mocker.ANY,
+            "pgh_label": "no_pgh_obj_snapshot",
+            "pgh_table": "tests_nopghobjsnapshot",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'dt_field': '2020-06-22T00:00:00+00:00',
-                'fk_field_id': user1.id,
-                'id': sm2.id,
-                'int_field': 33,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "dt_field": "2020-06-22T00:00:00+00:00",
+                "fk_field_id": user1.id,
+                "id": sm2.id,
+                "int_field": 33,
             },
-            'pgh_diff': None,
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'no_pgh_obj_snapshot',
-            'pgh_table': 'tests_nopghobjsnapshot',
+            "pgh_diff": None,
+            "pgh_id": mocker.ANY,
+            "pgh_label": "no_pgh_obj_snapshot",
+            "pgh_table": "tests_nopghobjsnapshot",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'dt_field': '2020-06-17T00:00:00+00:00',
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 1,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "dt_field": "2020-06-17T00:00:00+00:00",
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 1,
             },
-            'pgh_diff': None,
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'snapshot',
-            'pgh_table': 'tests_snapshotmodelsnapshot',
+            "pgh_diff": None,
+            "pgh_id": mocker.ANY,
+            "pgh_label": "snapshot",
+            "pgh_table": "tests_snapshotmodelsnapshot",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'dt_field': '2020-06-17T00:00:00+00:00',
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 2,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "dt_field": "2020-06-17T00:00:00+00:00",
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 2,
             },
-            'pgh_diff': {'int_field': [1, 2]},
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'snapshot',
-            'pgh_table': 'tests_snapshotmodelsnapshot',
+            "pgh_diff": {"int_field": [1, 2]},
+            "pgh_id": mocker.ANY,
+            "pgh_label": "snapshot",
+            "pgh_table": "tests_snapshotmodelsnapshot",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'dt_field': '2020-06-19T00:00:00+00:00',
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 3,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "dt_field": "2020-06-19T00:00:00+00:00",
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 3,
             },
-            'pgh_diff': {
-                'dt_field': [
-                    '2020-06-17T00:00:00+00:00',
-                    '2020-06-19T00:00:00+00:00',
+            "pgh_diff": {
+                "dt_field": [
+                    "2020-06-17T00:00:00+00:00",
+                    "2020-06-19T00:00:00+00:00",
                 ],
-                'int_field': [2, 3],
+                "int_field": [2, 3],
             },
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'snapshot',
-            'pgh_table': 'tests_snapshotmodelsnapshot',
+            "pgh_id": mocker.ANY,
+            "pgh_label": "snapshot",
+            "pgh_table": "tests_snapshotmodelsnapshot",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'dt_field': '2020-06-22T00:00:00+00:00',
-                'fk_field_id': user1.id,
-                'id': sm2.id,
-                'int_field': 33,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "dt_field": "2020-06-22T00:00:00+00:00",
+                "fk_field_id": user1.id,
+                "id": sm2.id,
+                "int_field": 33,
             },
-            'pgh_diff': None,
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'snapshot',
-            'pgh_table': 'tests_snapshotmodelsnapshot',
+            "pgh_diff": None,
+            "pgh_id": mocker.ANY,
+            "pgh_label": "snapshot",
+            "pgh_table": "tests_snapshotmodelsnapshot",
         },
     ]
 
@@ -654,50 +654,50 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
     assert list(
         pghistory.models.AggregateEvent.objects.target(sm1)
         .across(test_models.CustomSnapshotModel)
-        .order_by('pgh_table', 'pgh_id')
+        .order_by("pgh_table", "pgh_id")
         .values()
     ) == [
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'fk_field2_id': None,
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 1,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "fk_field2_id": None,
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 1,
             },
-            'pgh_diff': None,
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'custom_snapshot',
-            'pgh_table': 'tests_customsnapshotmodel',
+            "pgh_diff": None,
+            "pgh_id": mocker.ANY,
+            "pgh_label": "custom_snapshot",
+            "pgh_table": "tests_customsnapshotmodel",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'fk_field2_id': None,
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 2,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "fk_field2_id": None,
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 2,
             },
-            'pgh_diff': {'int_field': [1, 2]},
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'custom_snapshot',
-            'pgh_table': 'tests_customsnapshotmodel',
+            "pgh_diff": {"int_field": [1, 2]},
+            "pgh_id": mocker.ANY,
+            "pgh_label": "custom_snapshot",
+            "pgh_table": "tests_customsnapshotmodel",
         },
         {
-            'pgh_context_id': None,
-            'pgh_created_at': mocker.ANY,
-            'pgh_data': {
-                'fk_field2_id': None,
-                'fk_field_id': user1.id,
-                'id': sm1.id,
-                'int_field': 3,
+            "pgh_context_id": None,
+            "pgh_created_at": mocker.ANY,
+            "pgh_data": {
+                "fk_field2_id": None,
+                "fk_field_id": user1.id,
+                "id": sm1.id,
+                "int_field": 3,
             },
-            'pgh_diff': {'int_field': [2, 3]},
-            'pgh_id': mocker.ANY,
-            'pgh_label': 'custom_snapshot',
-            'pgh_table': 'tests_customsnapshotmodel',
+            "pgh_diff": {"int_field": [2, 3]},
+            "pgh_id": mocker.ANY,
+            "pgh_label": "custom_snapshot",
+            "pgh_table": "tests_customsnapshotmodel",
         },
     ]
 
@@ -710,31 +710,31 @@ def test_custom_foreign_key_to_m2m_through():
     We exercise this test by running a mangement command that
     will perform model checks using Django's check framework
     """
-    call_command('check')
+    call_command("check")
 
 
 @pytest.mark.parametrize(
-    'app_label, name, abstract, expected_exception',
+    "app_label, name, abstract, expected_exception",
     [
-        ('tests', 'Valid', False, no_exception()),
+        ("tests", "Valid", False, no_exception()),
         (
-            'tests',
-            'CustomModel',
+            "tests",
+            "CustomModel",
             False,
-            pytest.raises(ValueError, match='already has'),
+            pytest.raises(ValueError, match="already has"),
         ),
-        ('tests', 'CustomModel', True, no_exception()),
+        ("tests", "CustomModel", True, no_exception()),
         (
-            'invalid',
-            'CustomModel',
+            "invalid",
+            "CustomModel",
             False,
-            pytest.raises(ValueError, match='is invalid'),
+            pytest.raises(ValueError, match="is invalid"),
         ),
         (
-            'auth',
-            'CustomModel',
+            "auth",
+            "CustomModel",
             False,
-            pytest.raises(ValueError, match='under third'),
+            pytest.raises(ValueError, match="under third"),
         ),
     ],
 )
@@ -747,42 +747,42 @@ def test_validate_event_model_path(app_label, name, abstract, expected_exception
 
 
 @pytest.mark.parametrize(
-    'val, expected_output',
-    [('', ''), ('hello_world', 'HelloWorld'), ('Hello', 'Hello')],
+    "val, expected_output",
+    [("", ""), ("hello_world", "HelloWorld"), ("Hello", "Hello")],
 )
 def test_pascalcase(val, expected_output):
     assert pghistory.models._pascalcase(val) == expected_output
 
 
 @pytest.mark.parametrize(
-    'model_name, obj_fk, fields, expected_model_name, expected_related_name',
+    "model_name, obj_fk, fields, expected_model_name, expected_related_name",
     [
-        (None, pghistory.constants.unset, None, 'EventModelEvent', 'event'),
+        (None, pghistory.constants.unset, None, "EventModelEvent", "event"),
         (
             None,
             models.ForeignKey(
-                'tests.EventModelEvent',
+                "tests.EventModelEvent",
                 on_delete=models.CASCADE,
-                related_name='r',
+                related_name="r",
             ),
             None,
-            'EventModelEvent',
-            'r',
+            "EventModelEvent",
+            "r",
         ),
-        ('Name', pghistory.constants.unset, None, 'Name', 'event'),
+        ("Name", pghistory.constants.unset, None, "Name", "event"),
         (
             None,
             pghistory.constants.unset,
-            ['int_field'],
-            'EventModelIntFieldEvent',
-            'int_field_event',
+            ["int_field"],
+            "EventModelIntFieldEvent",
+            "int_field_event",
         ),
         (
             None,
             pghistory.constants.unset,
-            ['int_field', 'dt_field'],
-            'EventModelIntFieldDtFieldEvent',
-            'int_field_dt_field_event',
+            ["int_field", "dt_field"],
+            "EventModelIntFieldDtFieldEvent",
+            "int_field_dt_field_event",
         ),
     ],
 )
@@ -792,4 +792,4 @@ def test_factory(model_name, obj_fk, fields, expected_model_name, expected_relat
     )
 
     assert cls.__name__ == expected_model_name
-    assert cls._meta.get_field('pgh_obj').remote_field.related_name == expected_related_name
+    assert cls._meta.get_field("pgh_obj").remote_field.related_name == expected_related_name

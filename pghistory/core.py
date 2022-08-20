@@ -17,7 +17,7 @@ _registered_events = {}
 def _get_name_from_label(label):
     """Given a history event label, generate a trigger name"""
     if label:
-        return re.sub('[^0-9a-zA-Z]+', '_', label)
+        return re.sub("[^0-9a-zA-Z]+", "_", label)
     else:  # pragma: no cover
         return None
 
@@ -102,8 +102,8 @@ class Snapshot(DatabaseEvent):
         insert_trigger = pghistory.trigger.Event(
             event_model=event_model,
             label=self.label,
-            name=_get_name_from_label(f'{self.label}_insert'),
-            snapshot='NEW',
+            name=_get_name_from_label(f"{self.label}_insert"),
+            snapshot="NEW",
             when=pgtrigger.After,
             operation=pgtrigger.Insert,
         )
@@ -112,14 +112,14 @@ class Snapshot(DatabaseEvent):
         for field in event_model._meta.fields:
             if hasattr(event_model.pgh_tracked_model, field.name):
                 condition |= pgtrigger.Q(
-                    **{f'old__{field.name}__df': pgtrigger.F(f'new__{field.name}')}
+                    **{f"old__{field.name}__df": pgtrigger.F(f"new__{field.name}")}
                 )
 
         update_trigger = pghistory.trigger.Event(
             event_model=event_model,
             label=self.label,
-            name=_get_name_from_label(f'{self.label}_update'),
-            snapshot='NEW',
+            name=_get_name_from_label(f"{self.label}_update"),
+            snapshot="NEW",
             when=pgtrigger.After,
             operation=pgtrigger.Update,
             condition=condition,
@@ -144,14 +144,14 @@ class AfterInsertOrUpdate(PreconfiguredDatabaseEvent):
     """
 
     operation = pgtrigger.Insert | pgtrigger.Update
-    snapshot = 'NEW'
+    snapshot = "NEW"
 
 
 class AfterInsert(PreconfiguredDatabaseEvent):
     """For events that happen after a database insert"""
 
     operation = pgtrigger.Insert
-    snapshot = 'NEW'
+    snapshot = "NEW"
 
 
 class BeforeUpdate(PreconfiguredDatabaseEvent):
@@ -161,7 +161,7 @@ class BeforeUpdate(PreconfiguredDatabaseEvent):
     """
 
     operation = pgtrigger.Update
-    snapshot = 'OLD'
+    snapshot = "OLD"
 
 
 class AfterUpdate(PreconfiguredDatabaseEvent):
@@ -171,7 +171,7 @@ class AfterUpdate(PreconfiguredDatabaseEvent):
     """
 
     operation = pgtrigger.Update
-    snapshot = 'NEW'
+    snapshot = "NEW"
 
 
 class BeforeDelete(PreconfiguredDatabaseEvent):
@@ -180,7 +180,7 @@ class BeforeDelete(PreconfiguredDatabaseEvent):
     """
 
     operation = pgtrigger.Delete
-    snapshot = 'OLD'
+    snapshot = "OLD"
 
 
 def get_event_model(
@@ -331,13 +331,13 @@ class _InsertEventCompiler(compiler.SQLInsertCompiler):
         ret = super().as_sql(*args, **kwargs)
         assert len(ret) == 1
         params = [
-            param if field.name != 'pgh_context' else AsIs('_pgh_attach_context()')
+            param if field.name != "pgh_context" else AsIs("_pgh_attach_context()")
             for field, param in zip(self.query.fields, ret[0][1])
         ]
         return [(ret[0][0], params)]
 
 
-def create_event(obj, *, label, using='default'):
+def create_event(obj, *, label, using="default"):
     """Manually create a event for an object.
 
     Events are automatically linked with any context being tracked
@@ -356,20 +356,20 @@ def create_event(obj, *, label, using='default'):
     # Verify that the provided event is registered to the object model
     if (obj.__class__, label) not in _registered_events:
         raise ValueError(
-            f'"{label}" is not a registered event for model' f' {obj._meta.object_name}.'
+            f'"{label}" is not a registered event for model' f" {obj._meta.object_name}."
         )
 
     event_model = _registered_events[(obj.__class__, label)]
     event_model_kwargs = {
-        'pgh_label': label,
+        "pgh_label": label,
         **{
             field.attname: getattr(obj, field.attname)
             for field in event_model._meta.fields
-            if not field.name.startswith('pgh_')
+            if not field.name.startswith("pgh_")
         },
     }
-    if hasattr(event_model, 'pgh_obj'):
-        event_model_kwargs['pgh_obj'] = obj
+    if hasattr(event_model, "pgh_obj"):
+        event_model_kwargs["pgh_obj"] = obj
 
     event_obj = event_model(**event_model_kwargs)
 
@@ -384,7 +384,7 @@ def create_event(obj, *, label, using='default'):
         [event_obj],
     )
 
-    vals = _InsertEventCompiler(query, connection, using='default').execute_sql(
+    vals = _InsertEventCompiler(query, connection, using="default").execute_sql(
         event_model._meta.fields
     )
 

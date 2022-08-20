@@ -47,7 +47,7 @@ class Context(models.Model):
         """
         with connection.cursor() as cursor:
             cursor.execute(
-                f'''
+                f"""
                 CREATE OR REPLACE FUNCTION _pgh_attach_context()
                 RETURNS {cls._meta.db_table}.id%TYPE AS $$
                     DECLARE
@@ -73,7 +73,7 @@ class Context(models.Model):
                         END IF;
                     END;
                 $$ LANGUAGE plpgsql;
-                '''
+                """
             )
 
 
@@ -81,9 +81,9 @@ def _generate_event_model_name(base_model, tracked_model, fields):
     """Generates a default history model name"""
     name = tracked_model._meta.object_name
     if fields:
-        name += '_' + '_'.join(fields)
+        name += "_" + "_".join(fields)
 
-    name += f'_{base_model._meta.object_name.lower()}'
+    name += f"_{base_model._meta.object_name.lower()}"
     return _pascalcase(name)
 
 
@@ -103,8 +103,8 @@ def _generate_history_field(tracked_model, field):
     if isinstance(field, RelatedField):
         field.db_constraint = False
         field.remote_field.on_delete = models.DO_NOTHING
-        field.remote_field.related_name = '+'
-        field.remote_field.related_query_name = '+'
+        field.remote_field.related_name = "+"
+        field.remote_field.related_query_name = "+"
     else:
         field.db_index = False
 
@@ -120,7 +120,7 @@ def _generate_related_name(base_model, fields):
     model and traked fields
     """
     related_name = base_model._meta.object_name.lower()
-    return '_'.join(fields) + f'_{related_name}' if fields else related_name
+    return "_".join(fields) + f"_{related_name}" if fields else related_name
 
 
 def _validate_event_model_path(*, app_label, name, abstract):
@@ -128,17 +128,17 @@ def _validate_event_model_path(*, app_label, name, abstract):
         raise ValueError(f'App label "{app_label}" is invalid')
 
     app = apps.app_configs[app_label]
-    models_module = app.module.__name__ + '.models'
+    models_module = app.module.__name__ + ".models"
     if not abstract and hasattr(sys.modules[models_module], name):
         raise ValueError(
-            f'App {app_label} already has {name} model. You must'
-            ' explicitly declare an unused model name for the pghistory model.'
+            f"App {app_label} already has {name} model. You must"
+            " explicitly declare an unused model name for the pghistory model."
         )
-    elif models_module.startswith('django.'):
+    elif models_module.startswith("django."):
         raise ValueError(
-            'A history model cannot be generated under third party app'
+            "A history model cannot be generated under third party app"
             f' "{app_label}". You must explicitly pass an app label'
-            ' when configuring tracking.'
+            " when configuring tracking."
         )
 
 
@@ -200,7 +200,7 @@ def create_event_model(
     app_label = app_label or tracked_model._meta.app_label
     _validate_event_model_path(app_label=app_label, name=name, abstract=abstract)
     app = apps.app_configs[app_label]
-    models_module = app.module.__name__ + '.models'
+    models_module = app.module.__name__ + ".models"
 
     attrs = attrs or {}
     meta = meta or {}
@@ -209,7 +209,7 @@ def create_event_model(
             Context,
             null=True,
             on_delete=models.DO_NOTHING,
-            related_name='+',
+            related_name="+",
             db_constraint=False,
         )
         if context_fk is pghistory.constants.unset
@@ -231,18 +231,18 @@ def create_event_model(
     fields = fields or [f.name for f in tracked_model._meta.fields if f.name not in exclude]
 
     class_attrs = {
-        '__module__': models_module,
-        'Meta': type('Meta', (), {'abstract': abstract, 'app_label': app_label, **meta}),
-        'pgh_tracked_model': tracked_model,
+        "__module__": models_module,
+        "Meta": type("Meta", (), {"abstract": abstract, "app_label": app_label, **meta}),
+        "pgh_tracked_model": tracked_model,
         **{field: _generate_history_field(tracked_model, field) for field in fields},
         **attrs,
     }
 
     if context_fk:
-        class_attrs['pgh_context'] = context_fk
+        class_attrs["pgh_context"] = context_fk
 
     if obj_fk:
-        class_attrs['pgh_obj'] = obj_fk
+        class_attrs["pgh_obj"] = obj_fk
 
     event_model = type(name, (base_class,), class_attrs)
     if not abstract:
@@ -254,12 +254,12 @@ def create_event_model(
 def _pascalcase(string):
     """Convert string into pascal case."""
 
-    string = re.sub(r'^[\-_\.]', '', str(string))
+    string = re.sub(r"^[\-_\.]", "", str(string))
     if not string:  # pragma: no branch
         return string
 
     return string[0].upper() + re.sub(
-        r'[\-_\.\s]([a-z])',
+        r"[\-_\.\s]([a-z])",
         lambda matched: matched.group(1).upper(),
         string[1:],
     )
@@ -272,7 +272,7 @@ class Event(models.Model):
 
     pgh_id = models.AutoField(primary_key=True)
     pgh_created_at = models.DateTimeField(auto_now_add=True)
-    pgh_label = models.TextField(help_text='The event label.')
+    pgh_label = models.TextField(help_text="The event label.")
     pgh_events = None
     pgh_tracked_model = None
 
@@ -314,7 +314,7 @@ class Event(models.Model):
             related_name=related_name,
             name=name,
             app_label=app_label,
-            attrs={'pgh_events': events},
+            attrs={"pgh_events": events},
         )
 
 
@@ -328,23 +328,23 @@ class AggregateEventQueryCompiler(SQLCompiler):
         schema of the AggregateEvent table. Note that it's impossible to
         create an empty CTE, so we select NULL VALUES and LIMIT to 0.
         """
-        col_name_clause = ', '.join([field.column for field in self.query.model._meta.fields])
-        col_select_clause = ',\n'.join(
+        col_name_clause = ", ".join([field.column for field in self.query.model._meta.fields])
+        col_select_clause = ",\n".join(
             [
-                f'_pgh_obj_event.{field.column}::'
-                f'{field.rel_db_type(self.connection)} AS {field.attname}'
+                f"_pgh_obj_event.{field.column}::"
+                f"{field.rel_db_type(self.connection)} AS {field.attname}"
                 for field in self.query.model._meta.fields
             ]
         )
-        values_list = ['(NULL)' for field in self.query.model._meta.fields]
-        return f'''
+        values_list = ["(NULL)" for field in self.query.model._meta.fields]
+        return f"""
             SELECT
               {col_select_clause}
             FROM (
               VALUES ({', '.join(values_list)}) LIMIT 0
             ) AS _pgh_obj_event({col_name_clause})
             WHERE pgh_table IS NOT NULL
-        '''
+        """
 
     def _class_for_target(self, obj):
         if isinstance(obj, models.QuerySet):
@@ -358,71 +358,71 @@ class AggregateEventQueryCompiler(SQLCompiler):
         related_fields = [
             field.column
             for field in event_model._meta.fields
-            if getattr(field, 'related_model', None) == cls
+            if getattr(field, "related_model", None) == cls
         ]
         if not related_fields:
-            raise ValueError(f'Event model {event_model} does not reference {cls}')
+            raise ValueError(f"Event model {event_model} does not reference {cls}")
 
         event_table = event_model._meta.db_table
         if isinstance(obj, models.QuerySet) or isinstance(obj, list):
-            opt = 'IN'
-            pks = "','".join(f'{o.pk}' for o in obj)
-            pks = f'(\'{pks}\')'
+            opt = "IN"
+            pks = "','".join(f"{o.pk}" for o in obj)
+            pks = f"('{pks}')"
         else:
-            opt = '='
-            pks = f'\'{obj.pk}\''
-        where_filter = ' OR '.join(f'_event.{col} {opt} {pks}' for col in related_fields)
+            opt = "="
+            pks = f"'{obj.pk}'"
+        where_filter = " OR ".join(f"_event.{col} {opt} {pks}" for col in related_fields)
 
-        context_join_clause = ''
-        final_context_columns_clause = ''.join(
+        context_join_clause = ""
+        final_context_columns_clause = "".join(
             [
-                f'_pgh_obj_event.{field.column},\n'
+                f"_pgh_obj_event.{field.column},\n"
                 for field in self.query.model._meta.fields
-                if not field.attname.startswith('pgh_')
+                if not field.attname.startswith("pgh_")
             ]
         )
-        if hasattr(event_model, 'pgh_context_id'):
-            context_column_clause = 'pgh_context_id'
+        if hasattr(event_model, "pgh_context_id"):
+            context_column_clause = "pgh_context_id"
 
             # If the aggregate event model has any non-pgh fields,
             # pull these directly from the context metadata
-            annotated_context_columns_clause = ''.join(
+            annotated_context_columns_clause = "".join(
                 [
-                    f'(_pgh_context.metadata->>\'{field.name}\')::'
-                    f'{field.rel_db_type(self.connection)} AS {field.column},\n'
+                    f"(_pgh_context.metadata->>'{field.name}')::"
+                    f"{field.rel_db_type(self.connection)} AS {field.column},\n"
                     for field in self.query.model._meta.fields
-                    if not field.attname.startswith('pgh_')
+                    if not field.attname.startswith("pgh_")
                 ]
             )
             if annotated_context_columns_clause:
-                context_join_clause = f'''
+                context_join_clause = f"""
                     LEFT OUTER JOIN {Context._meta.db_table} _pgh_context
                         ON _pgh_context.id = _event.pgh_context_id
-                '''
+                """
         else:
-            context_column_clause = 'NULL::uuid AS pgh_context_id'
+            context_column_clause = "NULL::uuid AS pgh_context_id"
 
             # If the aggregate event model has any non-pgh fields,
             # make them null since there is no context on this event
-            annotated_context_columns_clause = ''.join(
+            annotated_context_columns_clause = "".join(
                 [
-                    f'NULL::{field.rel_db_type(self.connection)}' f' AS {field.attname},\n'
+                    f"NULL::{field.rel_db_type(self.connection)}" f" AS {field.attname},\n"
                     for field in self.query.model._meta.fields
-                    if not field.attname.startswith('pgh_')
+                    if not field.attname.startswith("pgh_")
                 ]
             )
 
-        prev_data_clause = '''
+        prev_data_clause = """
             LAG(row_to_json(_event))
               OVER (
                 PARTITION BY _event.pgh_obj_id, _event.pgh_label
                 ORDER BY _event.pgh_id
               ) AS _prev_data
-        '''
-        if not hasattr(event_model, 'pgh_obj_id'):
-            prev_data_clause = 'NULL::jsonb AS _prev_data'
+        """
+        if not hasattr(event_model, "pgh_obj_id"):
+            prev_data_clause = "NULL::jsonb AS _prev_data"
 
-        return f'''
+        return f"""
             SELECT
               _pgh_obj_event.pgh_id,
               _pgh_obj_event.pgh_created_at,
@@ -469,7 +469,7 @@ class AggregateEventQueryCompiler(SQLCompiler):
               {context_join_clause}
               WHERE {where_filter}
             ) _pgh_obj_event
-        '''
+        """
 
     def get_aggregate_event_cte(self):
         """
@@ -477,7 +477,7 @@ class AggregateEventQueryCompiler(SQLCompiler):
         """
         obj = self.query.target
         if not obj:
-            raise ValueError('Must use .target() to target an object for event aggregation')
+            raise ValueError("Must use .target() to target an object for event aggregation")
 
         event_models = self.query.across
         cls = self._class_for_target(obj)
@@ -488,18 +488,18 @@ class AggregateEventQueryCompiler(SQLCompiler):
                 if issubclass(model, Event)
                 and not issubclass(model, BaseAggregateEvent)
                 and any(
-                    getattr(field, 'related_model', None) == cls for field in model._meta.fields
+                    getattr(field, "related_model", None) == cls for field in model._meta.fields
                 )
             ]
 
         agg_event_table = self.query.model._meta.db_table
-        inner_cte = 'UNION ALL '.join(
+        inner_cte = "UNION ALL ".join(
             [self._get_aggregate_event_select(obj, event_model) for event_model in event_models]
         )
         if not inner_cte:
             inner_cte = self._get_empty_aggregate_event_select()
 
-        return f'WITH {agg_event_table} AS (\n' + inner_cte + '\n)\n'
+        return f"WITH {agg_event_table} AS (\n" + inner_cte + "\n)\n"
 
     def as_sql(self, *args, **kwargs):
         base_sql, base_params = super().as_sql(*args, **kwargs)
@@ -530,7 +530,7 @@ class AggregateEventQuery(Query):
         # Copy the body of this method from Django except the final
         # return statement.
         if using is None and connection is None:
-            raise ValueError('Need either using or connection')
+            raise ValueError("Need either using or connection")
 
         if using:
             connection = connections[using]
@@ -551,12 +551,12 @@ class AggregateEventQuery(Query):
     if django.VERSION < (2, 0):  # pragma: no cover
 
         def clone(self, klass=None, *args, **kwargs):
-            return self.__chain('clone', klass, *args, **kwargs)
+            return self.__chain("clone", klass, *args, **kwargs)
 
     else:
 
         def chain(self, klass=None):
-            return self.__chain('chain', klass)
+            return self.__chain("chain", klass)
 
 
 class AggregateEventQuerySet(models.QuerySet):
@@ -589,16 +589,16 @@ class BaseAggregateEvent(Event):
     """
 
     pgh_table = models.CharField(
-        max_length=64, help_text='The table under which the event is stored'
+        max_length=64, help_text="The table under which the event is stored"
     )
-    pgh_data = PGHistoryJSONField(help_text='The raw data of the event row')
+    pgh_data = PGHistoryJSONField(help_text="The raw data of the event row")
     pgh_diff = PGHistoryJSONField(
-        help_text='The diff between the previous event and the current event'
+        help_text="The diff between the previous event and the current event"
     )
     pgh_context = models.ForeignKey(
         Context,
         null=True,
-        help_text='The context, if any, associated with the event',
+        help_text="The context, if any, associated with the event",
         on_delete=models.DO_NOTHING,
     )
 
