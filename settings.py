@@ -1,3 +1,5 @@
+import os
+
 import dj_database_url
 
 
@@ -7,10 +9,15 @@ INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "pghistory",
-    "pghistory.tests",
     "pgtrigger",
     "django_extensions",
 ]
+
+# Conditionally add the test app when we aren't building docs,
+# otherwise sphinx builds won't work
+if not os.environ.get("SPHINX"):
+    INSTALLED_APPS += ["pghistory.tests"]
+
 # Database url comes from the DATABASE_URL env var
 DATABASES = {"default": dj_database_url.config()}
 # Force postgres timezones to be UTC for tests
