@@ -1,4 +1,9 @@
 # Changelog
+
+## Pending
+### Feature
+  - Django 4.1 support.
+
 ## 2.0.2 (2022-08-24)
 ### Trivial
   - Fix ReadTheDocs builds [Wes Kendall, afbc33e]
