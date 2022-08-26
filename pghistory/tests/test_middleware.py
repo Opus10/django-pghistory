@@ -14,6 +14,7 @@ def test_post(client):
     The user created and set as the request user in the view.
     It should still be tracked in the history context
     """
+    raise Exception
     assert not User.objects.exists()
     client.post(urls.reverse("test_view"))
 
