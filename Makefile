@@ -103,7 +103,7 @@ test:
 # Run full test suite
 .PHONY: full-test-suite
 full-test-suite:
-	$(DOCKER_EXEC_WRAPPER) tox -p 1
+	$(DOCKER_EXEC_WRAPPER) tox
 
 
 # Clean the documentation folder
