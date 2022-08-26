@@ -33,6 +33,11 @@ version = "2.0.2"
 description = "History tracking for Django and Postgres"
 authors = ["Wes Kendall"]
 classifiers = [
+  "Framework :: Django",
+  "Framework :: Django :: 2.2",
+  "Framework :: Django :: 3.2",
+  "Framework :: Django :: 4.0",
+  "Framework :: Django :: 4.1",
   "Intended Audience :: Developers",
   "Operating System :: OS Independent",
   "Programming Language :: Python",
