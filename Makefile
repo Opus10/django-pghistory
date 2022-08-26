@@ -103,7 +103,7 @@ test:
 # Run full test suite
 .PHONY: full-test-suite
 full-test-suite:
-	$(DOCKER_EXEC_WRAPPER) tox -p 4
+	$(DOCKER_EXEC_WRAPPER) TOX_PARALLEL_NO_SPINNER=1 tox -p 4
 
 
 # Clean the documentation folder
