@@ -10,7 +10,7 @@ executors:
           DOCKER_EXEC_WRAPPER: ''
           DATABASE_URL: postgres://root@localhost/circle_test?sslmode=disable
           TOX_PARALLEL_NO_SPINNER: 1
-      - image: cimg/postgres:14.4
+      - image: circleci/postgres:13-ram
         environment:
           POSTGRES_USER: root
           POSTGRES_DB: circle_test
