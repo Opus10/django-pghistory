@@ -65,7 +65,7 @@ endif
 # Pull the latest container and start a detached run
 .PHONY: docker-start
 docker-start:
-	$(DOCKER_CMD) pull opus10/circleci-public-django-app
+	$(DOCKER_CMD)-compose pull
 	$(DOCKER_RUN_CMD)
 
 
