@@ -1,4 +1,17 @@
 # Changelog
+## 2.1.0 (2022-08-27)
+### Feature
+  - Add setting to configure JSON encoder for context. [Zac Miller, 430225f]
+
+    ``django-pghistory`` now uses Django's default JSON encoder
+    to serialize contexts, which supports datetimes, UUIDs,
+    and other fields.
+
+    You can override the JSON encoder by setting
+    ``PGHISTORY_JSON_ENCODER`` to the path of the class.
+### Trivial
+  - Local development enhancements [Wes Kendall, 95a5b1d]
+
 ## 2.0.3 (2022-08-26)
 ### Trivial
   - Test against Django 4.1 and other CI improvements [Wes Kendall, 953fe1d]
