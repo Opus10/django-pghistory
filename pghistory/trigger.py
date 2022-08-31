@@ -62,8 +62,9 @@ class Event(pgtrigger.Trigger):
 
         cols = ", ".join(f'"{col}"' for col in fields)
         vals = ", ".join(val for val in fields.values())
-        return f"""
+        sql = f"""
             INSERT INTO "{self.event_model._meta.db_table}"
                 ({cols}) VALUES ({vals});
             RETURN NULL;
         """
+        return " ".join(line.strip() for line in sql.split("\n") if line.strip()).strip()
