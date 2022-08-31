@@ -1,4 +1,8 @@
 # Changelog
+## 2.1.1 (2022-08-31)
+### Trivial
+  - Format trigger SQL for better compatibility with ``django-pgtrigger``>=4.5 [Wes Kendall, fa04191]
+
 ## 2.1.0 (2022-08-27)
 ### Feature
   - Add setting to configure JSON encoder for context. [Zac Miller, 430225f]
