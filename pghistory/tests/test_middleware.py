@@ -22,7 +22,7 @@ def test_post(client):
     assert test_models.SnapshotModelSnapshot.objects.count() == 1
 
     user = User.objects.get()
-    assert test_models.SnapshotModelSnapshot.objects.get().pgh_context.metadata["user"] == user.id
+    assert test_models.SnapshotModelSnapshot.objects.get().pgh_context.metadata["user"] == user.pk
 
 
 def test_middleware(rf, mocker):
