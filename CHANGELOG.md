@@ -1,4 +1,11 @@
 # Changelog
+## 2.2.0 (2022-09-02)
+### Feature
+  - Configure middleware tracked methods [Wes Kendall, e931757]
+
+    Use ``settings.PGHISTORY_MIDDLEWARE_METHODS`` to configure which methods
+    are tracked in the middleware. Defaults to ``("GET", "POST", "PUT", "PATCH", "DELETE")``.
+
 ## 2.1.1 (2022-08-31)
 ### Trivial
   - Format trigger SQL for better compatibility with ``django-pgtrigger``>=4.5 [Wes Kendall, fa04191]
