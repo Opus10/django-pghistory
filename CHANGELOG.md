@@ -1,4 +1,8 @@
 # Changelog
+## 2.2.2 (2022-09-02)
+### Trivial
+  - Reference PK of user instead of ID in middleware for DRF-based flows [Wes Kendall, 2193e2b]
+
 ## 2.2.1 (2022-09-02)
 ### Trivial
   - Do additional safety checks in middleware [Wes Kendall, 9678d83]
