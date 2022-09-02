@@ -1,4 +1,8 @@
 # Changelog
+## 2.2.1 (2022-09-02)
+### Trivial
+  - Do additional safety checks in middleware [Wes Kendall, 9678d83]
+
 ## 2.2.0 (2022-09-02)
 ### Feature
   - Configure middleware tracked methods [Wes Kendall, e931757]
