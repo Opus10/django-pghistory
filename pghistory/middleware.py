@@ -17,7 +17,7 @@ class WSGIRequest(DjangoWSGIRequest):
 
     def __setattr__(self, attr, value):
         if attr == "user":
-            pghistory.context(user=value.id if value else None)
+            pghistory.context(user=value.pk if value and hasattr(value, "pk") else None)
 
         return super().__setattr__(attr, value)
 
