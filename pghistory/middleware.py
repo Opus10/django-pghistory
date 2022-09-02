@@ -33,10 +33,12 @@ def HistoryMiddleware(get_response):
         )
 
         if request.method in middleware_methods:
-            with pghistory.context(
-                user=request.user.pk if hasattr(request, "user") else None,
-                url=request.path,
-            ):
+            user = (
+                request.user.pk
+                if hasattr(request, "user") and hasattr(request.user, "pk")
+                else None
+            )
+            with pghistory.context(user=user, url=request.path):
                 if isinstance(request, DjangoWSGIRequest):  # pragma: no branch
                     request.__class__ = WSGIRequest
 
