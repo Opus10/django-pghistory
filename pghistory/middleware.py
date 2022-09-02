@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.handlers.wsgi import WSGIRequest as DjangoWSGIRequest
 
 import pghistory
@@ -23,12 +24,15 @@ class WSGIRequest(DjangoWSGIRequest):
 
 def HistoryMiddleware(get_response):
     """
-    Tracks POST requests and annotates the user/url in the pghistory
-    context.
+    Annotates the user/url in the pghistory context.
     """
 
     def middleware(request):
-        if request.method in ("GET", "POST", "PUT", "PATCH", "DELETE"):
+        middleware_methods = getattr(
+            settings, "PGHISTORY_MIDDLEWARE_METHODS", ("GET", "POST", "PUT", "PATCH", "DELETE")
+        )
+
+        if request.method in middleware_methods:
             with pghistory.context(
                 user=request.user.pk if hasattr(request, "user") else None,
                 url=request.path,
