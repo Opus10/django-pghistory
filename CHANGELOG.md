@@ -1,4 +1,17 @@
 # Changelog
+## 2.3.0 (2022-09-06)
+### Bug
+  - Check that "pgtrigger" is in settings.INSTALLED_APPS [Wes Kendall, fa86205]
+
+    A check is registered with Django's check framework to verify that
+    "pgtrigger" is in settings.INSTALLED_APPS when using ``django-pghistory``.
+
+    Docs were also updated to note the requirement of pgtrigger in INSTALLED_APPS.
+  - Install context tracking function in a migration [Wes Kendall, 516dc14]
+
+    The Postgres pghistory function is now installed in a migration, alleviating
+    issues that would happen when trying to migrate pghistory triggers.
+
 ## 2.2.2 (2022-09-02)
 ### Trivial
   - Reference PK of user instead of ID in middleware for DRF-based flows [Wes Kendall, 2193e2b]
