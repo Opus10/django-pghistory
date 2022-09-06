@@ -1,6 +1,6 @@
 import django.apps
 from django.db.models.signals import class_prepared
-from django.db.models.signals import post_migrate
+from django.db.models.signals import pre_migrate
 
 
 def install_pgh_attach_context_func(**kwargs):
@@ -32,4 +32,4 @@ class PGHistoryConfig(django.apps.AppConfig):
         super().__init__(*args, **kwargs)
 
     def ready(self):
-        post_migrate.connect(install_pgh_attach_context_func, sender=self)
+        pre_migrate.connect(install_pgh_attach_context_func, sender=self)
