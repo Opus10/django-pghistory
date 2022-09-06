@@ -1,16 +1,5 @@
 import django.apps
 from django.db.models.signals import class_prepared
-from django.db.models.signals import pre_migrate
-
-
-def install_pgh_attach_context_func(**kwargs):
-    """
-    Installs a special stored procedure used by pghistory that makes
-    it easier to manually and automatically construct context for
-    history
-    """
-    Context = django.apps.apps.get_model("pghistory", "Context")
-    Context.install_pgh_attach_context_func()
 
 
 def pgh_setup(sender, **kwargs):
@@ -32,4 +21,5 @@ class PGHistoryConfig(django.apps.AppConfig):
         super().__init__(*args, **kwargs)
 
     def ready(self):
-        pre_migrate.connect(install_pgh_attach_context_func, sender=self)
+        # Register custom checks
+        from pghistory import checks  # noqa
