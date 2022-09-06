@@ -42,8 +42,7 @@ class Context(models.Model):
         for historical events. The upsert is aware of when tracking is
         enabled in the app (i.e. using pghistory.context())
 
-        This stored procedure is automatically installed in pghistory.apps
-        after migration
+        This stored procedure is automatically installed in pghistory migration 0004.
         """
         with connection.cursor() as cursor:
             cursor.execute(
