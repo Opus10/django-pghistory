@@ -1,4 +1,11 @@
 # Changelog
+## 2.4.0 (2022-09-07)
+### Bug
+  - Fix issues related to the ``dumpdata`` command [Wes Kendall, 8cb8036]
+
+    Django's ``dumpdata`` command is now compatible with pghistory's AggregateEvent
+    model.
+
 ## 2.3.0 (2022-09-06)
 ### Bug
   - Check that "pgtrigger" is in settings.INSTALLED_APPS [Wes Kendall, fa86205]
