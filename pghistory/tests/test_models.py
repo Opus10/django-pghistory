@@ -11,6 +11,12 @@ import pghistory.tests.models as test_models
 
 
 @pytest.mark.django_db
+def test_aggregate_event_default_manager():
+    """Verifies the default manager for aggregate events returns no results"""
+    assert list(pghistory.models.AggregateEvent.no_objects.all()) == []
+
+
+@pytest.mark.django_db
 def test_aggregate_events_no_history():
     """
     Tests the AggregateEvent proxy on a model that has no history tracking

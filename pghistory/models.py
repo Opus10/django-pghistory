@@ -581,6 +581,19 @@ class AggregateEventQuerySet(models.QuerySet):
         return qs
 
 
+class NoObjectsManager(models.Manager):
+    """
+    Django's dumpdata and other commands will not work with AggregateEvent models
+    by default because of how they aggregate multiple tables based on objects.
+
+    We use this as the default manager for aggregate events so that dumpdata
+    and other management commands still work with these models
+    """
+
+    def get_queryset(self, *args, **kwargs):
+        return models.QuerySet(self.model, using=self._db).none()
+
+
 class BaseAggregateEvent(Event):
     """
     A proxy model for aggregating events together across tables and
@@ -602,9 +615,13 @@ class BaseAggregateEvent(Event):
     )
 
     objects = AggregateEventQuerySet.as_manager()
+    no_objects = NoObjectsManager()
 
     class Meta:
         abstract = True
+        # See the docs for NoObjectsManager about why this is the default
+        # manager
+        default_manager_name = "no_objects"
 
 
 class AggregateEvent(BaseAggregateEvent):
