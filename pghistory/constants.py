@@ -1,1 +1,2 @@
+inherit = object()
 unset = object()

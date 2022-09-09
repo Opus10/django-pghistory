@@ -1,7 +1,7 @@
-from django.conf import settings
 from django.core.handlers.wsgi import WSGIRequest as DjangoWSGIRequest
 
 import pghistory
+from pghistory import config
 
 
 class WSGIRequest(DjangoWSGIRequest):
@@ -28,11 +28,7 @@ def HistoryMiddleware(get_response):
     """
 
     def middleware(request):
-        middleware_methods = getattr(
-            settings, "PGHISTORY_MIDDLEWARE_METHODS", ("GET", "POST", "PUT", "PATCH", "DELETE")
-        )
-
-        if request.method in middleware_methods:
+        if request.method in config.middleware_methods():
             user = (
                 request.user.pk
                 if hasattr(request, "user") and hasattr(request.user, "pk")

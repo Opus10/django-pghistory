@@ -11,6 +11,26 @@ class UntrackedModel(models.Model):
 
 @pghistory.track(
     pghistory.Snapshot("snapshot"),
+    context_field=pghistory.ContextJSONField(),
+)
+@pghistory.track(
+    pghistory.Snapshot("snapshot_no_id"),
+    obj_field=pghistory.ObjForeignKey(related_name="event_no_id"),
+    context_field=pghistory.ContextJSONField(),
+    context_id_field=None,
+    model_name="DenormContextEventNoId",
+)
+class DenormContext(models.Model):
+    """
+    For testing denormalized context
+    """
+
+    int_field = models.IntegerField()
+    fk_field = models.ForeignKey("auth.User", on_delete=models.SET_NULL, null=True)
+
+
+@pghistory.track(
+    pghistory.Snapshot("snapshot"),
     model_name="CustomModelSnapshot",
     related_name="snapshot",
 )
@@ -75,7 +95,7 @@ class SnapshotModel(models.Model):
 
 
 class CustomSnapshotModel(
-    pghistory.get_event_model(
+    pghistory.create_event_model(
         SnapshotModel,
         pghistory.Snapshot("custom_snapshot"),
         exclude=["dt_field"],
@@ -127,7 +147,7 @@ class EventModel(models.Model):
 
 
 class CustomEventModel(
-    pghistory.get_event_model(
+    pghistory.create_event_model(
         EventModel,
         pghistory.AfterInsert("model.custom_create"),
         fields=["dt_field"],
@@ -144,6 +164,14 @@ class CustomEventModel(
 
 
 class CustomAggregateEvent(pghistory.models.BaseAggregateEvent):
+    user = models.ForeignKey("auth.User", on_delete=models.DO_NOTHING, null=True)
+    url = models.TextField(null=True)
+
+    class Meta:
+        managed = False
+
+
+class CustomEvents(pghistory.models.BaseEvents):
     user = models.ForeignKey("auth.User", on_delete=models.DO_NOTHING, null=True)
     url = models.TextField(null=True)
 

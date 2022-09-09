@@ -276,7 +276,7 @@ Creating a Custom Event Model
 ``django-pghistory`` also provides the ability for the user to create
 a custom event model if one needs to override field declarations
 or add custom attributes to fields (e.g. an index).
-`pghistory.get_event_model` is used like so:
+`pghistory.create_event_model` is used like so:
 
 
 .. code-block:: python
@@ -285,7 +285,7 @@ or add custom attributes to fields (e.g. an index).
           ...
 
 
-      class MySnapshotModel(pghistory.get_event_model(
+      class MySnapshotModel(pghistory.create_event_model(
           TestModel,
           pghistory.Snapshot('test_model.snapshot'),
           fields=['int_field'],
@@ -293,7 +293,7 @@ or add custom attributes to fields (e.g. an index).
           pass
 
 
-The call signature for `pghistory.get_event_model` is almost
+The call signature for `pghistory.create_event_model` is almost
 identical to `pghistory.track` with the exception that the
 tracked model is the first argument.
 

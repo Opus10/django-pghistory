@@ -1,11 +1,42 @@
+from contextlib import ExitStack as no_exception
 import datetime as dt
+import uuid
 
 import ddf
 from django.apps import apps
+from django.db import models
 import pytest
 
 import pghistory
+import pghistory.core
 import pghistory.tests.models as test_models
+
+
+@pytest.mark.django_db
+def test_denorm_context_tracking():
+    """Test denormalized context tracking"""
+    denorm_model = ddf.G(test_models.DenormContext)
+    assert denorm_model.event.count() == 1
+
+    event = denorm_model.event.first()
+    assert event.pgh_context is None
+    assert event.pgh_context_id is None
+
+    event_no_id = denorm_model.event_no_id.first()
+    assert event_no_id.pgh_context is None
+    assert not hasattr(event_no_id, "pgh_context_id")
+
+    with pghistory.context(hello="world"):
+        denorm_model.int_field += 1
+        denorm_model.save()
+
+    assert denorm_model.event.count() == 2
+    event = denorm_model.event.order_by("pgh_id").last()
+    assert event.pgh_context == {"hello": "world"}
+    assert isinstance(event.pgh_context_id, uuid.UUID)
+
+    event_no_id = denorm_model.event_no_id.order_by("pgh_id").last()
+    assert event_no_id.pgh_context == {"hello": "world"}
 
 
 @pytest.mark.django_db
@@ -489,3 +520,85 @@ def test_custom_snapshot_model_tracking(mocker):
     # has a custom foreign key
     tracking.delete()
     assert test_models.CustomSnapshotModel.objects.count() == 2
+
+
+@pytest.mark.parametrize(
+    "val, expected_output",
+    [("", ""), ("hello_world", "HelloWorld"), ("Hello", "Hello")],
+)
+def test_pascalcase(val, expected_output):
+    assert pghistory.core._pascalcase(val) == expected_output
+
+
+@pytest.mark.parametrize(
+    "model_name, obj_fk, fields, expected_model_name, expected_related_name",
+    [
+        (None, pghistory.constants.unset, None, "EventModelEvent", "event"),
+        (
+            None,
+            models.ForeignKey(
+                "tests.EventModelEvent",
+                on_delete=models.CASCADE,
+                related_name="r",
+            ),
+            None,
+            "EventModelEvent",
+            "r",
+        ),
+        ("Name", pghistory.constants.unset, None, "Name", "event"),
+        (
+            None,
+            pghistory.constants.unset,
+            ["int_field"],
+            "EventModelIntFieldEvent",
+            "int_field_event",
+        ),
+        (
+            None,
+            pghistory.constants.unset,
+            ["int_field", "dt_field"],
+            "EventModelIntFieldDtFieldEvent",
+            "int_field_dt_field_event",
+        ),
+    ],
+)
+def test_factory(model_name, obj_fk, fields, expected_model_name, expected_related_name):
+    cls = pghistory.core.create_event_model(
+        test_models.EventModel, model_name=model_name, obj_fk=obj_fk, fields=fields
+    )
+
+    assert cls.__name__ == expected_model_name
+    assert cls._meta.get_field("pgh_obj").remote_field.related_name == expected_related_name
+
+
+@pytest.mark.parametrize(
+    "app_label, model_name, abstract, expected_exception",
+    [
+        ("tests", "Valid", False, no_exception()),
+        (
+            "tests",
+            "CustomModel",
+            False,
+            pytest.raises(ValueError, match="already has"),
+        ),
+        ("tests", "CustomModel", True, no_exception()),
+        (
+            "invalid",
+            "CustomModel",
+            False,
+            pytest.raises(ValueError, match="is invalid"),
+        ),
+        (
+            "auth",
+            "CustomModel",
+            False,
+            pytest.raises(ValueError, match="under third"),
+        ),
+    ],
+)
+def test_validate_event_model_path(app_label, model_name, abstract, expected_exception):
+    """Tests pghistory.models._validate_event_model_path"""
+    with expected_exception:
+        pghistory.core._validate_event_model_path(
+            app_label=app_label, model_name=model_name, abstract=abstract
+        )
