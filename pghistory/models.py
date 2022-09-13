@@ -5,8 +5,7 @@ import uuid
 
 import django
 from django.apps import apps
-from django.db import connection
-from django.db import connections
+from django.db import connections, DEFAULT_DB_ALIAS
 from django.db import models
 from django.db.models.fields.related import RelatedField
 from django.db.models.sql import Query
@@ -36,7 +35,7 @@ class Context(models.Model):
     metadata = PGHistoryJSONField(default=dict)
 
     @classmethod
-    def install_pgh_attach_context_func(cls):
+    def install_pgh_attach_context_func(cls, using=DEFAULT_DB_ALIAS):
         """
         Installs a custom store procedure for upserting context
         for historical events. The upsert is aware of when tracking is
@@ -44,7 +43,7 @@ class Context(models.Model):
 
         This stored procedure is automatically installed in pghistory migration 0004.
         """
-        with connection.cursor() as cursor:
+        with connections[using].cursor() as cursor:
             cursor.execute(
                 f"""
                 CREATE OR REPLACE FUNCTION _pgh_attach_context()

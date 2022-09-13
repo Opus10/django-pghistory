@@ -6,7 +6,7 @@ from pghistory.models import Context
 
 
 def install_pgh_attach_context_func(apps, schema_editor):
-    Context.install_pgh_attach_context_func()
+    Context.install_pgh_attach_context_func(using=schema_editor.connection.alias)
 
 
 class Migration(migrations.Migration):
