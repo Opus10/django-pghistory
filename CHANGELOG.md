@@ -1,4 +1,8 @@
 # Changelog
+## 2.4.1 (2022-09-12)
+### Trivial
+  - Ensure installation of pghistory context function is installed across multiple databases [Wes Kendall, d06c758]
+
 ## 2.4.0 (2022-09-07)
 ### Bug
   - Fix issues related to the ``dumpdata`` command [Wes Kendall, 8cb8036]
