@@ -171,12 +171,12 @@ class CustomAggregateEvent(pghistory.models.BaseAggregateEvent):
         managed = False
 
 
-class CustomEvents(pghistory.models.BaseEvents):
+class CustomEvents(pghistory.models.Events):
     user = models.ForeignKey("auth.User", on_delete=models.DO_NOTHING, null=True)
     url = models.TextField(null=True)
 
     class Meta:
-        managed = False
+        proxy = True
 
 
 @pghistory.track(

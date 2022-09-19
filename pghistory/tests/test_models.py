@@ -160,6 +160,7 @@ def test_events_references_joining_filtering(django_assert_num_queries, mocker):
         .values()
     ) == [
         {
+            "pgh_slug": mocker.ANY,
             "pgh_context_id": mocker.ANY,
             "pgh_context": {"key": "value3", "user": actor.id},
             "pgh_created_at": mocker.ANY,
@@ -178,8 +179,8 @@ def test_events_references_joining_filtering(django_assert_num_queries, mocker):
             },
             "pgh_id": mocker.ANY,
             "pgh_label": "snapshot",
-            "pgh_table": "tests_snapshotmodelsnapshot",
-            "pgh_obj_table": "tests_snapshotmodel",
+            "pgh_model": "tests.SnapshotModelSnapshot",
+            "pgh_obj_model": "tests.SnapshotModel",
             "pgh_obj_id": str(sm1.pk),
         }
     ]
@@ -225,13 +226,14 @@ def test_events_multiple_references(django_assert_num_queries, mocker):
     sm2.save()
 
     default = {
+        "pgh_slug": mocker.ANY,
         "pgh_context_id": None,
         "pgh_context": None,
         "pgh_created_at": mocker.ANY,
         "pgh_id": mocker.ANY,
         "pgh_label": "snapshot",
-        "pgh_table": "tests_snapshotmodelsnapshot",
-        "pgh_obj_table": "tests_snapshotmodel",
+        "pgh_model": "tests.SnapshotModelSnapshot",
+        "pgh_obj_model": "tests.SnapshotModel",
         "pgh_obj_id": str(sm1.pk),
     }
     wanted_result = [
@@ -355,6 +357,7 @@ def test_events_references_denorm_context(django_assert_num_queries, mocker):
         .values()
     ) == [
         {
+            "pgh_slug": mocker.ANY,
             "pgh_context_id": mocker.ANY,
             "pgh_context": {"key": "value3", "user": actor.id},
             "pgh_created_at": mocker.ANY,
@@ -368,8 +371,8 @@ def test_events_references_denorm_context(django_assert_num_queries, mocker):
             },
             "pgh_id": mocker.ANY,
             "pgh_label": "snapshot",
-            "pgh_table": "tests_denormcontextevent",
-            "pgh_obj_table": "tests_denormcontext",
+            "pgh_model": "tests.DenormContextEvent",
+            "pgh_obj_model": "tests.DenormContext",
             "pgh_obj_id": str(dc1.id),
         }
     ]
@@ -400,37 +403,38 @@ def test_events_references_custom_pk(mocker):
     cm.save()
 
     default = {
+        "pgh_slug": mocker.ANY,
         "pgh_context_id": None,
         "pgh_context": None,
         "pgh_created_at": mocker.ANY,
         "pgh_id": mocker.ANY,
-        "pgh_obj_table": "tests_custommodel",
+        "pgh_obj_model": "tests.CustomModel",
         "pgh_obj_id": str(cm.pk),
     }
 
     assert list(
-        pghistory.models.Events.objects.references(cm).order_by("pgh_table", "pgh_id").values()
+        pghistory.models.Events.objects.references(cm).order_by("pgh_model", "pgh_id").values()
     ) == [
         {
             **default,
             "pgh_data": {"integer_field": 2, "my_pk": str(cm.pk)},
             "pgh_diff": None,
             "pgh_label": "int_field_updated",
-            "pgh_table": "tests_custommodelevent",
+            "pgh_model": "tests.CustomModelEvent",
         },
         {
             **default,
             "pgh_data": {"integer_field": 1, "my_pk": str(cm.pk)},
             "pgh_diff": None,
             "pgh_label": "snapshot",
-            "pgh_table": "tests_custommodelsnapshot",
+            "pgh_model": "tests.CustomModelSnapshot",
         },
         {
             **default,
             "pgh_data": {"integer_field": 2, "my_pk": str(cm.pk)},
             "pgh_diff": {"integer_field": [1, 2]},
             "pgh_label": "snapshot",
-            "pgh_table": "tests_custommodelsnapshot",
+            "pgh_model": "tests.CustomModelSnapshot",
         },
     ]
 
@@ -487,16 +491,17 @@ def test_events_references_no_obj_tracking_filters(mocker):
     sm2.save()
 
     default = {
+        "pgh_slug": mocker.ANY,
         "pgh_context_id": None,
         "pgh_context": None,
         "pgh_created_at": mocker.ANY,
         "pgh_id": mocker.ANY,
-        "pgh_obj_table": "tests_snapshotmodel",
+        "pgh_obj_model": "tests.SnapshotModel",
         "pgh_obj_id": str(sm1.pk),
     }
 
     assert list(
-        pghistory.models.Events.objects.references(sm1).order_by("pgh_table", "pgh_id").values()
+        pghistory.models.Events.objects.references(sm1).order_by("pgh_model", "pgh_id").values()
     ) == [
         {
             **default,
@@ -508,7 +513,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": None,
             "pgh_label": "custom_snapshot",
-            "pgh_table": "tests_customsnapshotmodel",
+            "pgh_model": "tests.CustomSnapshotModel",
         },
         {
             **default,
@@ -520,7 +525,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": {"int_field": [1, 2]},
             "pgh_label": "custom_snapshot",
-            "pgh_table": "tests_customsnapshotmodel",
+            "pgh_model": "tests.CustomSnapshotModel",
         },
         {
             **default,
@@ -532,14 +537,14 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": {"int_field": [2, 3]},
             "pgh_label": "custom_snapshot",
-            "pgh_table": "tests_customsnapshotmodel",
+            "pgh_model": "tests.CustomSnapshotModel",
         },
         {
             **default,
             "pgh_data": {"dt_field": "2020-06-17T00:00:00+00:00"},
             "pgh_diff": None,
             "pgh_label": "dt_field_snapshot",
-            "pgh_table": "tests_snapshotmodeldtfieldevent",
+            "pgh_model": "tests.SnapshotModelDtFieldEvent",
         },
         {
             **default,
@@ -551,7 +556,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 ]
             },
             "pgh_label": "dt_field_snapshot",
-            "pgh_table": "tests_snapshotmodeldtfieldevent",
+            "pgh_model": "tests.SnapshotModelDtFieldEvent",
         },
         {
             **default,
@@ -561,7 +566,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": None,
             "pgh_label": "dt_field_int_field_snapshot",
-            "pgh_table": "tests_snapshotmodeldtfieldintfieldevent",
+            "pgh_model": "tests.SnapshotModelDtFieldIntFieldEvent",
         },
         {
             **default,
@@ -571,7 +576,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": {"int_field": [1, 2]},
             "pgh_label": "dt_field_int_field_snapshot",
-            "pgh_table": "tests_snapshotmodeldtfieldintfieldevent",
+            "pgh_model": "tests.SnapshotModelDtFieldIntFieldEvent",
         },
         {
             **default,
@@ -587,7 +592,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": [2, 3],
             },
             "pgh_label": "dt_field_int_field_snapshot",
-            "pgh_table": "tests_snapshotmodeldtfieldintfieldevent",
+            "pgh_model": "tests.SnapshotModelDtFieldIntFieldEvent",
         },
         {
             **default,
@@ -599,7 +604,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": None,
             "pgh_label": "snapshot",
-            "pgh_table": "tests_snapshotmodelsnapshot",
+            "pgh_model": "tests.SnapshotModelSnapshot",
         },
         {
             **default,
@@ -611,7 +616,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": {"int_field": [1, 2]},
             "pgh_label": "snapshot",
-            "pgh_table": "tests_snapshotmodelsnapshot",
+            "pgh_model": "tests.SnapshotModelSnapshot",
         },
         {
             **default,
@@ -629,14 +634,14 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": [2, 3],
             },
             "pgh_label": "snapshot",
-            "pgh_table": "tests_snapshotmodelsnapshot",
+            "pgh_model": "tests.SnapshotModelSnapshot",
         },
     ]
 
     # Check events on the user model, which will aggregate event tables
     # that have no pgh_obj. All events here will have a reference to user1
     assert list(
-        pghistory.models.Events.objects.references(user1).order_by("pgh_table", "pgh_id").values()
+        pghistory.models.Events.objects.references(user1).order_by("pgh_model", "pgh_id").values()
     ) == [
         {
             **default,
@@ -648,7 +653,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": None,
             "pgh_label": "custom_snapshot",
-            "pgh_table": "tests_customsnapshotmodel",
+            "pgh_model": "tests.CustomSnapshotModel",
         },
         {
             **default,
@@ -660,7 +665,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": {"int_field": [1, 2]},
             "pgh_label": "custom_snapshot",
-            "pgh_table": "tests_customsnapshotmodel",
+            "pgh_model": "tests.CustomSnapshotModel",
         },
         {
             **default,
@@ -672,7 +677,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": {"int_field": [2, 3]},
             "pgh_label": "custom_snapshot",
-            "pgh_table": "tests_customsnapshotmodel",
+            "pgh_model": "tests.CustomSnapshotModel",
         },
         {
             **default,
@@ -684,7 +689,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": None,
             "pgh_label": "custom_snapshot",
-            "pgh_table": "tests_customsnapshotmodel",
+            "pgh_model": "tests.CustomSnapshotModel",
             "pgh_obj_id": str(sm2.pk),
         },
         {
@@ -697,7 +702,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": None,
             "pgh_label": "no_pgh_obj_snapshot",
-            "pgh_table": "tests_nopghobjsnapshot",
+            "pgh_model": "tests.NoPghObjSnapshot",
             "pgh_obj_id": None,
         },
         {
@@ -710,7 +715,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": None,
             "pgh_label": "no_pgh_obj_snapshot",
-            "pgh_table": "tests_nopghobjsnapshot",
+            "pgh_model": "tests.NoPghObjSnapshot",
             "pgh_obj_id": None,
         },
         {
@@ -723,7 +728,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": None,
             "pgh_label": "no_pgh_obj_snapshot",
-            "pgh_table": "tests_nopghobjsnapshot",
+            "pgh_model": "tests.NoPghObjSnapshot",
             "pgh_obj_id": None,
         },
         {
@@ -736,7 +741,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": None,
             "pgh_label": "no_pgh_obj_snapshot",
-            "pgh_table": "tests_nopghobjsnapshot",
+            "pgh_model": "tests.NoPghObjSnapshot",
             "pgh_obj_id": None,
         },
         {
@@ -749,7 +754,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": None,
             "pgh_label": "snapshot",
-            "pgh_table": "tests_snapshotmodelsnapshot",
+            "pgh_model": "tests.SnapshotModelSnapshot",
         },
         {
             **default,
@@ -761,7 +766,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": {"int_field": [1, 2]},
             "pgh_label": "snapshot",
-            "pgh_table": "tests_snapshotmodelsnapshot",
+            "pgh_model": "tests.SnapshotModelSnapshot",
         },
         {
             **default,
@@ -779,7 +784,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": [2, 3],
             },
             "pgh_label": "snapshot",
-            "pgh_table": "tests_snapshotmodelsnapshot",
+            "pgh_model": "tests.SnapshotModelSnapshot",
         },
         {
             **default,
@@ -791,7 +796,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": None,
             "pgh_label": "snapshot",
-            "pgh_table": "tests_snapshotmodelsnapshot",
+            "pgh_model": "tests.SnapshotModelSnapshot",
             "pgh_obj_id": str(sm2.pk),
         },
     ]
@@ -800,7 +805,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
     assert list(
         pghistory.models.Events.objects.references(sm1)
         .across(test_models.CustomSnapshotModel)
-        .order_by("pgh_table", "pgh_id")
+        .order_by("pgh_model", "pgh_id")
         .values()
     ) == [
         {
@@ -813,7 +818,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": None,
             "pgh_label": "custom_snapshot",
-            "pgh_table": "tests_customsnapshotmodel",
+            "pgh_model": "tests.CustomSnapshotModel",
         },
         {
             **default,
@@ -825,7 +830,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": {"int_field": [1, 2]},
             "pgh_label": "custom_snapshot",
-            "pgh_table": "tests_customsnapshotmodel",
+            "pgh_model": "tests.CustomSnapshotModel",
         },
         {
             **default,
@@ -837,7 +842,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
             },
             "pgh_diff": {"int_field": [2, 3]},
             "pgh_label": "custom_snapshot",
-            "pgh_table": "tests_customsnapshotmodel",
+            "pgh_model": "tests.CustomSnapshotModel",
         },
     ]
 

@@ -3,6 +3,34 @@ from django.db import models
 from pghistory import config, constants
 
 
+def test_admin_ordering(settings):
+    assert config.admin_ordering() == ["-pgh_created_at"]
+
+    settings.PGHISTORY_ADMIN_ORDERING = ["hello", "world"]
+
+    assert config.admin_ordering() == ["hello", "world"]
+
+
+def test_admin_queryset(settings):
+    settings.PGHISTORY_ADMIN_MODEL = "auth.User"
+    settings.PGHISTORY_ADMIN_ORDERING = None
+
+    assert config.admin_queryset().model._meta.label == "auth.User"
+
+
+def test_admin_list_display(settings):
+    settings.PGHISTORY_ADMIN_MODEL = "pghistory.MiddlewareEvents"
+
+    assert config.admin_list_display() == [
+        "pgh_created_at",
+        "pgh_obj_model",
+        "pgh_obj_id",
+        "pgh_diff",
+        "user",
+        "url",
+    ]
+
+
 def test_field(settings):
     assert config.field().kwargs == {
         "db_index": False,

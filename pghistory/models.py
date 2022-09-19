@@ -2,6 +2,7 @@ import uuid
 
 import django
 from django.apps import apps
+from django.conf import settings
 from django.db import connections, DEFAULT_DB_ALIAS
 from django.db import models
 from django.db.models.sql import Query
@@ -12,6 +13,8 @@ if django.VERSION >= (3, 1):
     from django.db.models import JSONField
 else:
     from django.contrib.postgres.fields import JSONField
+
+from pghistory import core, utils
 
 
 # Create a consistent load path for JSONField regardless of django
@@ -93,12 +96,6 @@ class Event(models.Model):
                 event.setup(cls)
 
 
-def _related_model(field):
-    """Return the concrete model of a field references"""
-    if hasattr(field, "related_model") and field.related_model:
-        return field.related_model._meta.concrete_model
-
-
 class EventsQueryCompiler(SQLCompiler):
     def _get_empty_select(self):
         """
@@ -124,7 +121,7 @@ class EventsQueryCompiler(SQLCompiler):
             FROM (
               VALUES ({', '.join(values_list)}) LIMIT 0
             ) AS _pgh_obj_event({col_name_clause})
-            WHERE pgh_table IS NOT NULL
+            WHERE pgh_model IS NOT NULL
         """
 
     def _validate(self):
@@ -164,30 +161,11 @@ class EventsQueryCompiler(SQLCompiler):
 
     @property
     def across(self):
-        across = self.query.across or [
-            model
-            for model in apps.get_models()
-            if issubclass(model, Event) and not issubclass(model, BaseAggregateEvent)
-        ]
-
-        if self.references:
-            across = [
-                model
-                for model in across
-                if any(
-                    _related_model(field) == self.references_model for field in model._meta.fields
-                )
-            ]
-
-        if self.tracks:
-            across = [
-                model
-                for model in across
-                if "pgh_obj" in (f.name for f in model._meta.fields)
-                and _related_model(model._meta.get_field("pgh_obj")) == self.tracks_model
-            ]
-
-        return across
+        return core.event_models(
+            models=self.query.across,
+            references_model=self.references_model,
+            tracks_model=self.tracks_model,
+        )
 
     def _get_context_clauses(self, event_model):
         """
@@ -269,7 +247,7 @@ class EventsQueryCompiler(SQLCompiler):
             cols = [
                 field.column
                 for field in event_model._meta.fields
-                if _related_model(field) == self.references_model
+                if utils.related_model(field) == self.references_model
             ]
         elif self.tracks:
             rows = self.tracks
@@ -312,16 +290,16 @@ class EventsQueryCompiler(SQLCompiler):
             pgh_obj_id_column_clause = "NULL::TEXT AS pgh_obj_id"
 
         event_table = event_model._meta.db_table
-        obj_table = event_model.pgh_tracked_model._meta.db_table
         return f"""
             SELECT
+              CONCAT('{event_model._meta.label}', ':', _pgh_obj_event.pgh_id) AS pgh_slug,
               _pgh_obj_event.pgh_id,
               _pgh_obj_event.pgh_created_at,
               _pgh_obj_event.pgh_label,
               {final_context_columns_clause}
               _pgh_obj_event.pgh_obj_id,
-              '{event_table}' AS pgh_table,
-              '{obj_table}' AS pgh_obj_table,
+              '{event_model._meta.label}' AS pgh_model,
+              '{event_model.pgh_tracked_model._meta.label}' AS pgh_obj_model,
               (
                   SELECT JSONB_OBJECT_AGG(filtered.key, filtered.value)
                   FROM
@@ -364,6 +342,7 @@ class EventsQueryCompiler(SQLCompiler):
               FROM {event_table} _event
               {context_join_clause}
               {where_clause}
+              ORDER BY _event.pgh_id
             ) _pgh_obj_event
         """
 
@@ -495,51 +474,69 @@ class NoObjectsManager(models.Manager):
         return models.QuerySet(self.model, using=self._db).none()
 
 
-class BaseEvents(models.Model):
+class Events(models.Model):
     """
     A proxy model for aggregating events together across tables and
     rendering diffs
     """
 
-    pgh_id = models.AutoField(primary_key=True)
-    pgh_created_at = models.DateTimeField(auto_now_add=True)
+    pgh_slug = models.TextField(
+        primary_key=True, help_text="The unique identifier across all event tables."
+    )
+    pgh_model = models.CharField(max_length=64, help_text="The event model.")
+    pgh_id = models.BigIntegerField(help_text="The primary key of the event.")
+    pgh_created_at = models.DateTimeField(
+        auto_now_add=True, help_text="When the event was created."
+    )
     pgh_label = models.TextField(help_text="The event label.")
-    pgh_table = models.CharField(
-        max_length=64, help_text="The table under which the event is stored."
-    )
-    pgh_data = PGHistoryJSONField(help_text="The raw data of the event row.")
+    pgh_data = PGHistoryJSONField(help_text="The raw data of the event.")
     pgh_diff = PGHistoryJSONField(
-        help_text="The diff between the previous event and the current event."
+        help_text="The diff between the previous event of the same label."
     )
-    pgh_context_id = models.UUIDField(null=True, help_text="The ID associated with the context.")
+    pgh_context_id = models.UUIDField(null=True, help_text="The context UUID.")
     pgh_context = models.JSONField(
-        "pghistory.Context",
         null=True,
         help_text="The context associated with the event.",
     )
-    pgh_obj_table = models.CharField(
-        max_length=64, help_text="The table under which the primary object is stored."
-    )
-    pgh_obj_id = models.TextField(null=True, help_text="The ID of the primary object.")
+    pgh_obj_model = models.CharField(max_length=64, help_text="The object model.")
+    pgh_obj_id = models.TextField(null=True, help_text="The primary key of the object.")
 
     objects = EventsQuerySet.as_manager()
     no_objects = NoObjectsManager()
 
     class Meta:
-        abstract = True
+        managed = False
+        verbose_name_plural = "events"
         # See the docs for NoObjectsManager about why this is the default
         # manager
         default_manager_name = "no_objects"
 
+    @classmethod
+    def check(cls, **kwargs):
+        """
+        Allow proxy models to inherit this model and define their own fields
+        that are dynamically pulled from context
+        """
+        errors = super().check(**kwargs)
+        return [error for error in errors if error.id != "models.E017"]
 
-class Events(BaseEvents):
+
+class MiddlewareEvents(Events):
     """
-    A proxy model for aggregating events together across tables and
-    rendering diffs
+    A proxy model for aggregating events. Includes additional fields that
+    are captured by the pghistory middleware
     """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.DO_NOTHING,
+        help_text="The user associated with the event.",
+    )
+    url = models.TextField(help_text="The url associated with the event.")
 
     class Meta:
-        managed = False
+        proxy = True
+        verbose_name_plural = "middleware events"
 
 
 # These models are deprecated

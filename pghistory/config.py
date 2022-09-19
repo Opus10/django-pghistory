@@ -1,4 +1,5 @@
 """Core way to access configuration"""
+from django.apps import apps
 from django.conf import settings
 from django.db import models
 from django.utils.module_loading import import_string
@@ -88,12 +89,49 @@ def obj_field():
     return obj_field
 
 
+def admin_ordering():
+    """The default ordering for the events admin"""
+    ordering = getattr(settings, "PGHISTORY_ADMIN_ORDERING", "-pgh_created_at") or []
+
+    if not isinstance(ordering, (list, tuple)):
+        ordering = [ordering]
+
+    return ordering
+
+
+def admin_model():
+    """The default list display for the events admin"""
+    return apps.get_model(getattr(settings, "PGHISTORY_ADMIN_MODEL", "pghistory.Events"))
+
+
+def admin_queryset():
+    """The default queryset for the events admin"""
+    return getattr(
+        settings, "PGHISTORY_ADMIN_QUERYSET", admin_model().objects.order_by(*admin_ordering())
+    )
+
+
+def admin_all_events():
+    """True if all events should be shown in the admin when there are no filters"""
+    return getattr(settings, "PGHISTORY_ADMIN_ALL_EVENTS", True)
+
+
 def _get_kwargs(vals):
     return {
         key: val
         for key, val in vals.items()
         if key not in ("self", "kwargs", "__class__") and val is not constants.unset
     }
+
+
+def admin_list_display():
+    """The default list display for the events admin"""
+    defaults = ["pgh_created_at", "pgh_obj_model", "pgh_obj_id", "pgh_diff"]
+
+    if admin_queryset().model._meta.label == "pghistory.MiddlewareEvents":
+        defaults.extend(["user", "url"])
+
+    return getattr(settings, "PGHISTORY_ADMIN_LIST_DISPLAY", defaults)
 
 
 class Field:

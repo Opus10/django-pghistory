@@ -14,9 +14,7 @@ from django.utils.module_loading import import_string
 import pgtrigger
 from psycopg2.extensions import AsIs
 
-from pghistory import config
-from pghistory import constants
-from pghistory import trigger
+from pghistory import config, constants, trigger, utils
 
 
 _registered_events = {}
@@ -299,8 +297,8 @@ def _get_obj_field(*, obj_field, tracked_model, obj_fk, related_name, base_model
 
         if related_name is not None:
             warnings.warn(
-                "The django-pghistory 'related_name' argument is deprecated. Use the 'related_name' option"
-                " of 'obj_field' instead.",
+                "The django-pghistory 'related_name' argument is deprecated. Use the"
+                " 'related_name' option of 'obj_field' instead.",
                 DeprecationWarning,
             )
 
@@ -317,7 +315,8 @@ def _get_obj_field(*, obj_field, tracked_model, obj_fk, related_name, base_model
 def _get_context_field(*, context_field, context_fk):
     if context_fk is not constants.unset:
         warnings.warn(
-            "The django-pghistory 'context_fk' argument is deprecated. Use 'context_field' instead.",
+            "The django-pghistory 'context_fk' argument is deprecated. Use "
+            "'context_field' instead.",
             DeprecationWarning,
         )
         return context_fk
@@ -488,7 +487,8 @@ def create_event_model(
 
 def get_event_model(*args, **kwargs):
     warnings.warn(
-        "The django-pghistory 'get_event_model' function is deprecated. Use 'create_event_model' instead.",
+        "The django-pghistory 'get_event_model' function is deprecated. Use"
+        " 'create_event_model' instead.",
         DeprecationWarning,
     )
     return create_event(*args, **kwargs)
@@ -663,3 +663,53 @@ def create_event(obj, *, label, using="default"):
             setattr(event_obj, field.attname, val)
 
         return event_obj
+
+
+def event_models(
+    models=None, references_model=None, tracks_model=None, include_missing_pgh_obj=False
+):
+    """
+    Retrieve and filter all events models.
+
+    Args:
+        models (List[Model], default=None): The starting list of event models.
+        references_model (Model, default=None): Filter by event models that reference this model.
+        tracks_model (Model, default=None): Filter by models that directly track this model
+            and have pgh_obj fields
+        including_missing_pgh_obj (bool, default=False): Return tracked models even if the pgh_obj
+            field is not available.
+    """
+    from pghistory.models import Event, BaseAggregateEvent  # noqa
+
+    models = models or [
+        model
+        for model in apps.get_models()
+        if issubclass(model, Event)
+        and not issubclass(model, BaseAggregateEvent)
+        and not model._meta.abstract
+        and not model._meta.proxy
+        and model._meta.managed
+    ]
+
+    if references_model:
+        models = [
+            model
+            for model in models
+            if any(utils.related_model(field) == references_model for field in model._meta.fields)
+        ]
+
+    if tracks_model and not include_missing_pgh_obj:
+        models = [
+            model
+            for model in models
+            if "pgh_obj" in (f.name for f in model._meta.fields)
+            and utils.related_model(model._meta.get_field("pgh_obj")) == tracks_model
+        ]
+    elif tracks_model and include_missing_pgh_obj:
+        models = [
+            model
+            for model in models
+            if model.pgh_tracked_model._meta.concrete_model == tracks_model
+        ]
+
+    return models
