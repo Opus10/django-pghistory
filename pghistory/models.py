@@ -123,7 +123,7 @@ class EventQuery(Query):
 
     def get_compiler(self, using=None, connection=None):  # pragma: no cover
         """
-        Overrides the Query method get_compiler in order to return
+        Overrides the Query method get_compiler in order to returnd
         an EventQueryCompiler.
         """
         compiler = super().get_compiler(using=using, connection=connection)
@@ -156,6 +156,38 @@ class Event(models.Model):
 
     class Meta:
         abstract = True
+
+    @property
+    def can_revert(self):
+        """True if the event model can revert the tracked model"""
+        model_fields = {f.name for f in self.pgh_tracked_model._meta.fields}
+        tracked_fields = {f.name for f in self._meta.fields}
+        return model_fields.issubset(tracked_fields)
+
+    def revert(self, using=DEFAULT_DB_ALIAS):
+        """
+        Reverts the tracked model based on the event fields.
+
+        Raises a RuntimeError if the event model doesn't track all fields
+        """
+        if not self.can_revert:
+            raise RuntimeError(
+                f'Event model "{self.__class__.__name__}" cannot revert'
+                f' "{self.pgh_tracked_model.__class__.__name__}" because it'
+                " doesn't track every field."
+            )
+
+        qset = models.QuerySet(model=self.pgh_tracked_model, using=using)
+
+        pk = getattr(self, self.pgh_tracked_model._meta.pk.name)
+        return qset.update_or_create(
+            pk=pk,
+            defaults={
+                field.name: getattr(self, field.name)
+                for field in self.pgh_tracked_model._meta.fields
+                if field != self.pgh_tracked_model._meta.pk
+            },
+        )[0]
 
     @classmethod
     def pghistory_setup(cls):

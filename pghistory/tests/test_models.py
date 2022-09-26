@@ -9,6 +9,39 @@ import pghistory.tests.models as test_models
 
 
 @pytest.mark.django_db
+def test_revert():
+    """Tests the .revert() method on event models"""
+    user = ddf.G("auth.User")
+    m = ddf.G(test_models.DenormContext, int_field=1, fk_field=user)
+
+    m.int_field = 2
+    m.fk_field = None
+    m.save()
+
+    m.int_field = 3
+    m.save()
+
+    assert test_models.DenormContextEvent.objects.count() == 3
+    assert m.event.count() == 3
+
+    r = m.event.filter(pgh_label="snapshot").order_by("pgh_id")[0].revert()
+    assert r.int_field == 1
+    assert r.fk_field_id == user.id
+
+    r = m.event.filter(pgh_label="snapshot").order_by("pgh_id")[1].revert()
+    assert r.int_field == 2
+    assert not r.fk_field_id
+
+    r = m.event.filter(pgh_label="snapshot").order_by("pgh_id")[2].revert()
+    assert r.int_field == 3
+    assert not r.fk_field_id
+
+    m = ddf.G(test_models.SnapshotModel)
+    with pytest.raises(RuntimeError):
+        m.dt_field_snapshot.last().revert()
+
+
+@pytest.mark.django_db
 def test_custom_event_proxy():
     """Verifies that proxy fields work on custom event models"""
     user = ddf.G("auth.User", username="hello")

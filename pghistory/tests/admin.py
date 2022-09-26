@@ -4,46 +4,21 @@ from pghistory.admin import EventModelAdmin
 import pghistory.tests.models as test_models
 
 
-class UntrackedModelAdmin(admin.ModelAdmin):
-    pass
+admin.site.register(test_models.UntrackedModel)
 
+admin.site.register(test_models.DenormContext)
 
-admin.site.register(test_models.UntrackedModel, UntrackedModelAdmin)
+admin.site.register(test_models.CustomModel)
 
+admin.site.register(test_models.CustomModelSnapshot)
 
-class DenormContextAdmin(admin.ModelAdmin):
-    pass
+admin.site.register(test_models.UniqueConstraintModel)
 
+admin.site.register(test_models.SnapshotModel)
 
-admin.site.register(test_models.DenormContext, DenormContextAdmin)
+admin.site.register(test_models.CustomSnapshotModel)
 
-
-class CustomModelAdmin(admin.ModelAdmin):
-    pass
-
-
-admin.site.register(test_models.CustomModel, CustomModelAdmin)
-
-
-class CustomModelSnapshotAdmin(admin.ModelAdmin):
-    pass
-
-
-admin.site.register(test_models.CustomModelSnapshot, CustomModelSnapshotAdmin)
-
-
-class UniqueConstraintModelAdmin(admin.ModelAdmin):
-    pass
-
-
-admin.site.register(test_models.UniqueConstraintModel, UniqueConstraintModelAdmin)
-
-
-class SnapshotModelAdmin(admin.ModelAdmin):
-    pass
-
-
-admin.site.register(test_models.SnapshotModel, SnapshotModelAdmin)
+admin.site.register(test_models.EventModel)
 
 
 class SnapshotModelSnapshotAdmin(EventModelAdmin):
@@ -53,28 +28,21 @@ class SnapshotModelSnapshotAdmin(EventModelAdmin):
 admin.site.register(test_models.SnapshotModelSnapshot, SnapshotModelSnapshotAdmin)
 
 
-class CustomSnapshotModelAdmin(admin.ModelAdmin):
+class EventModelEventAdmin(EventModelAdmin):
     pass
 
 
-admin.site.register(test_models.CustomSnapshotModel, CustomSnapshotModelAdmin)
+admin.site.register(test_models.EventModelEvent, EventModelEventAdmin)
 
 
-class EventModelAdmin(admin.ModelAdmin):
-    pass
-
-
-admin.site.register(test_models.EventModel, EventModelAdmin)
-
-
-class CustomEventModelAdmin(admin.ModelAdmin):
+class CustomEventModelAdmin(EventModelAdmin):
     pass
 
 
 admin.site.register(test_models.CustomEventModel, CustomEventModelAdmin)
 
 
-class CustomEventProxyAdmin(admin.ModelAdmin):
+class CustomEventProxyAdmin(EventModelAdmin):
     list_display = ["id", "url", "auth_user"]
 
 
