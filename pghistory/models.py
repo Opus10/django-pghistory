@@ -1,10 +1,12 @@
 import uuid
+import warnings
 
 import django
 from django.apps import apps
 from django.conf import settings
 from django.db import connections, DEFAULT_DB_ALIAS
 from django.db import models
+from django.db.models.functions import Cast
 from django.db.models.sql import Query
 from django.db.models.sql.compiler import SQLCompiler
 
@@ -71,6 +73,74 @@ class Context(models.Model):
             )
 
 
+class EventQueryCompiler(SQLCompiler):
+    def _get_cte(self):
+        """
+        Returns a CTE that selects from proxied fields
+        """
+        event_model = self.query.model
+
+        annotations = {
+            f"_{field.column}": Cast(field.pgh_proxy, output_field=field)
+            for field in self.proxy_fields
+        }
+        values = [
+            field.name for field in event_model._meta.fields if not hasattr(field, "pgh_proxy")
+        ] + [f"_{field.column}" for field in self.proxy_fields]
+
+        qset = models.QuerySet(event_model).annotate(**annotations).values(*values)
+
+        sql, params = qset.query.as_sql(self, self.connection)
+        with self.connection.cursor() as cursor:
+            sql = cursor.mogrify(sql, params).decode("utf-8")
+
+        for field in self.proxy_fields:
+            sql = sql.replace(f"_{field.column}", field.column)
+
+        sql = sql.replace("->", "->>")
+        return "WITH pgh_event_cte AS (\n" + sql + "\n)\n"
+
+    @property
+    def proxy_fields(self):
+        return [f for f in self.query.model._meta.fields if hasattr(f, "pgh_proxy")]
+
+    def as_sql(self, *args, **kwargs):
+        """
+        If there are proxied fields on the event model, return a select from a CTE.
+        Otherwise don't do anything special
+        """
+        sql, params = super().as_sql(*args, **kwargs)
+
+        if any(self.proxy_fields):
+            cte = self._get_cte()
+            sql = cte + sql.replace(f'"{self.query.model._meta.db_table}"', '"pgh_event_cte"')
+
+        return sql, params
+
+
+class EventQuery(Query):
+    """A query over an event CTE when proxy fields are used"""
+
+    def get_compiler(self, using=None, connection=None):  # pragma: no cover
+        """
+        Overrides the Query method get_compiler in order to return
+        an EventQueryCompiler.
+        """
+        compiler = super().get_compiler(using=using, connection=connection)
+        compiler.__class__ = EventQueryCompiler
+        return compiler
+
+
+class EventQuerySet(models.QuerySet):
+    """QuerySet with support for proxy fields"""
+
+    def __init__(self, model=None, query=None, using=None, hints=None):
+        if query is None:
+            query = EventQuery(model)
+
+        super().__init__(model, query, using, hints)
+
+
 class Event(models.Model):
     """
     An abstract model for base elements of a event
@@ -82,6 +152,8 @@ class Event(models.Model):
     pgh_events = None
     pgh_tracked_model = None
 
+    objects = EventQuerySet.as_manager()
+
     class Meta:
         abstract = True
 
@@ -91,9 +163,27 @@ class Event(models.Model):
         Called when the class is prepared (see apps.py)
         to finalize setup of the model and register triggers
         """
-        if not cls._meta.abstract or not cls._meta.managed:  # pragma: no branch
+        if (
+            not cls._meta.abstract and cls._meta.managed and not cls._meta.proxy
+        ):  # pragma: no branch
             for event in cls.pgh_events or []:
                 event.setup(cls)
+
+    @classmethod
+    def check(cls, **kwargs):
+        """
+        Allow proxy models to inherit this model and define their own fields
+        that are dynamically pulled from context
+        """
+        errors = super().check(**kwargs)
+
+        # If all local fields are proxied, ignored error E017 and allow the fields to be declared
+        if any(error for error in errors if error.id == "models.E017") and all(
+            hasattr(field, "pgh_proxy") for field in cls._meta.local_fields
+        ):
+            return [error for error in errors if error.id != "models.E017"]
+        else:
+            return errors
 
 
 class EventsQueryCompiler(SQLCompiler):
@@ -177,39 +267,53 @@ class EventsQueryCompiler(SQLCompiler):
         3. A pgh_context JSON is used with pgh_context_id
         4. A pgh_context JSON is used without pgh_context_id
         """
-        extra_fields = [
-            field
-            for field in self.query.model._meta.fields
-            if not field.attname.startswith("pgh_")
-        ]
+        proxy_fields = []
+        for field in self.query.model._meta.fields:
+            if hasattr(field, "pgh_proxy"):
+                if not field.pgh_proxy.startswith("pgh_context__"):
+                    raise RuntimeError(
+                        "Proxy fields on Events models can only proxy the pgh_context field."
+                        " E.g. pgh_context__url"
+                    )
+
+                proxy_fields.append((field, field.pgh_proxy.split("__", 1)[1]))
+            elif not field.attname.startswith("pgh_"):
+                warnings.warn(
+                    f"django-pghistory extra field '{field}' in event model"
+                    f" '{self.query.model._meta.label}' declared. Use"
+                    " 'pghistory.field_proxy' to define a proxy fields instead.",
+                    DeprecationWarning,
+                )
+                proxy_fields.append((field, field.name))
+
         context_join_clause = ""
         final_context_columns_clause = "".join(
-            [f"_pgh_obj_event.{field.column},\n" for field in extra_fields]
+            [f"_pgh_obj_event.{field.column},\n" for field, _ in proxy_fields]
         )
 
         if not hasattr(event_model, "pgh_context"):
             context_id_column_clause = "NULL::UUID AS pgh_context_id"
             context_column_clause = "NULL::JSONB AS pgh_context"
 
-            # If the aggregate event model has any non-pgh fields,
+            # If the aggregate event model has any proxy fields,
             # make them null since there is no context on this event
             annotated_context_columns_clause = "".join(
                 [
-                    f"NULL::{field.rel_db_type(self.connection)} AS {field.attname},\n"
-                    for field in extra_fields
+                    f"NULL::{field.rel_db_type(self.connection)} AS {field.column},\n"
+                    for field, _ in proxy_fields
                 ]
             )
         elif isinstance(event_model.pgh_context.field, models.ForeignKey):
             context_id_column_clause = "pgh_context_id"
             context_column_clause = "_pgh_context.metadata AS pgh_context"
 
-            # If the aggregate event model has any non-pgh fields,
+            # If the aggregate event model has any proxy fields,
             # pull these directly from the context metadata
             annotated_context_columns_clause = "".join(
                 [
-                    f"(_pgh_context.metadata->>'{field.name}')::"
+                    f"(_pgh_context.metadata->>'{attr}')::"
                     f"{field.rel_db_type(self.connection)} AS {field.column},\n"
-                    for field in extra_fields
+                    for field, attr in proxy_fields
                 ]
             )
             context_join_clause = f"""
@@ -220,9 +324,9 @@ class EventsQueryCompiler(SQLCompiler):
             context_column_clause = "pgh_context"
             annotated_context_columns_clause = "".join(
                 [
-                    f"(pgh_context->>'{field.name}')::"
+                    f"(pgh_context->>'{attr}')::"
                     f"{field.rel_db_type(self.connection)} AS {field.column},\n"
-                    for field in extra_fields
+                    for field, attr in proxy_fields
                 ]
             )
 
@@ -381,27 +485,9 @@ class EventsQuery(Query):
         self.across = []
 
     def get_compiler(self, using=None, connection=None):  # pragma: no cover
-        """
-        Overrides the Query method get_compiler in order to return
-        an EventsCompiler.
-
-        Copies the body of Django's get_compiler and overrides the return,
-        so we ignore covering this method.
-        """
-        # Copy the body of this method from Django except the final
-        # return statement.
-        if using is None and connection is None:
-            raise ValueError("Need either using or connection")
-
-        if using:
-            connection = connections[using]
-
-        # Check that the compiler will be able to execute the query
-        for _, aggregate in self.annotation_select.items():
-            connection.ops.check_expression_support(aggregate)
-
-        # Instantiate the custom compiler.
-        return EventsQueryCompiler(self, connection, using)
+        compiler = super().get_compiler(using=using, connection=connection)
+        compiler.__class__ = EventsQueryCompiler
+        return compiler
 
     def __chain(self, _name, klass=None, *args, **kwargs):
         clone = getattr(super(), _name)(self.__class__, *args, **kwargs)
@@ -422,6 +508,7 @@ class EventsQuerySet(models.QuerySet):
         # a query chain.
         if query is None:
             query = EventsQuery(model)
+
         super().__init__(model, query, using, hints)
 
     def across(self, *event_models):
@@ -527,12 +614,18 @@ class MiddlewareEvents(Events):
     are captured by the pghistory middleware
     """
 
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.DO_NOTHING,
-        help_text="The user associated with the event.",
+    user = core.ProxyField(
+        "pgh_context__user",
+        models.ForeignKey(
+            settings.AUTH_USER_MODEL,
+            on_delete=models.DO_NOTHING,
+            help_text="The user associated with the event.",
+        ),
     )
-    url = models.TextField(help_text="The url associated with the event.")
+    url = core.ProxyField(
+        "pgh_context__url",
+        models.TextField(help_text="The url associated with the event."),
+    )
 
     class Meta:
         proxy = True

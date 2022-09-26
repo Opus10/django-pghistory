@@ -72,3 +72,10 @@ class CustomEventModelAdmin(admin.ModelAdmin):
 
 
 admin.site.register(test_models.CustomEventModel, CustomEventModelAdmin)
+
+
+class CustomEventProxyAdmin(admin.ModelAdmin):
+    list_display = ["id", "url", "auth_user"]
+
+
+admin.site.register(test_models.CustomEventProxy, CustomEventProxyAdmin)

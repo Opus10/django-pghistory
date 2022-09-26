@@ -163,6 +163,26 @@ class CustomEventModel(
     pass
 
 
+CustomEventWithContext = pghistory.create_event_model(
+    EventModel,
+    pghistory.AfterInsert("model.custom_create_with_context"),
+    abstract=False,
+    name="CustomEventWithContext",
+    obj_field=pghistory.ObjForeignKey(related_name="+"),
+)
+
+
+class CustomEventProxy(CustomEventWithContext):
+    url = pghistory.ProxyField("pgh_context__metadata__url", models.TextField(null=True))
+    auth_user = pghistory.ProxyField(
+        "pgh_context__metadata__user",
+        models.ForeignKey("auth.User", on_delete=models.DO_NOTHING, null=True),
+    )
+
+    class Meta:
+        proxy = True
+
+
 class CustomAggregateEvent(pghistory.models.BaseAggregateEvent):
     user = models.ForeignKey("auth.User", on_delete=models.DO_NOTHING, null=True)
     url = models.TextField(null=True)
@@ -173,7 +193,7 @@ class CustomAggregateEvent(pghistory.models.BaseAggregateEvent):
 
 class CustomEvents(pghistory.models.Events):
     user = models.ForeignKey("auth.User", on_delete=models.DO_NOTHING, null=True)
-    url = models.TextField(null=True)
+    url = pghistory.ProxyField("pgh_context__url", models.TextField(null=True))
 
     class Meta:
         proxy = True

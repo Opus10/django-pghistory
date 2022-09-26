@@ -177,6 +177,7 @@ class AggregateEventQueryCompiler(SQLCompiler):
                 for model in apps.get_models()
                 if issubclass(model, pgh_models.Event)
                 and not issubclass(model, pgh_models.BaseAggregateEvent)
+                and not model._meta.proxy
                 and any(
                     getattr(field, "related_model", None) == cls for field in model._meta.fields
                 )

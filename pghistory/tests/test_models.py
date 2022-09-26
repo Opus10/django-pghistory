@@ -9,6 +9,19 @@ import pghistory.tests.models as test_models
 
 
 @pytest.mark.django_db
+def test_custom_event_proxy():
+    """Verifies that proxy fields work on custom event models"""
+    user = ddf.G("auth.User", username="hello")
+
+    with pghistory.context(url="https://www.google.com", user=user.pk):
+        ddf.G(test_models.EventModel)
+
+    assert list(test_models.CustomEventProxy.objects.values("url", "auth_user__username")) == [
+        {"url": "https://www.google.com", "auth_user__username": "hello"}
+    ]
+
+
+@pytest.mark.django_db
 def test_aggregate_event_default_manager():
     """Verifies the default manager for aggregate events returns no results"""
     assert list(pghistory.models.Events.no_objects.all()) == []

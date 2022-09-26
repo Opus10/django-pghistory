@@ -494,6 +494,23 @@ def get_event_model(*args, **kwargs):
     return create_event(*args, **kwargs)
 
 
+def ProxyField(proxy, field):
+    """
+    Proxies a JSON field from a model and adds it as a field in the queryset.
+
+    Args:
+        proxy (str): The value to proxy, e.g. "user__email"
+        field (Type[django.models.Field]): The field that will be used to cast
+            the resulting value
+
+    """
+    if not isinstance(field, models.Field):
+        raise TypeError(f'"{field} is not a Django model Field instace')
+
+    field.pgh_proxy = proxy
+    return field
+
+
 def track(
     *events,
     fields=None,
