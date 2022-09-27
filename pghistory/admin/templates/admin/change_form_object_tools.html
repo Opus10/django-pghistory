@@ -10,14 +10,14 @@
     {% if opts.label|events_are_tracked %}
     	{% for admin in opts.label|event_admins %}
     		<li>
-    			<a href="{% url admin|admin_urlname:'changelist' %}?obj={{ opts.label }}:{{ original.pk }}&back={% add_preserved_filters back_url %}">
+    			<a href="{% url admin|admin_urlname:'changelist' %}?obj={{ opts.label }}:{{ original.pk }}&back={% add_preserved_filters back_url %}" class="event-admin">
     				{{ admin.verbose_name_plural }}
     			</a>
     		</li>
     	{% endfor %}
 
 	  	<li>
-	    	<a href="{% events_admin_url %}?method=tracks&obj={{ opts.label }}:{{ original.pk }}&back={% add_preserved_filters back_url %}">
+	    	<a href="{% events_admin_url %}?method=tracks&obj={{ opts.label }}:{{ original.pk }}&back={% add_preserved_filters back_url %}" class="events-admin">
 	      		{% translate "Events" %}
 	    	</a>
 	  	</li>

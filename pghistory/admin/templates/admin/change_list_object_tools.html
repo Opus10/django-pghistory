@@ -7,7 +7,7 @@
 	{% if opts.label|events_are_tracked %}
 	  	<li>
 	  		{% url opts|admin_urlname:'changelist' as back_url %}
-	    	<a href="{% events_admin_url %}?model={{ opts.label }}&back={% add_preserved_filters back_url %}">
+	    	<a href="{% events_admin_url %}?model={{ opts.label }}&back={% add_preserved_filters back_url %}" class="events-admin">
 	      	{% translate "Events" %}
 	    	</a>
 	  	</li>

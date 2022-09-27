@@ -8,8 +8,40 @@ from django.db import models
 import pytest
 
 import pghistory
+from pghistory import config
+from pghistory import constants
 import pghistory.core
 import pghistory.tests.models as test_models
+
+
+def test_get_obj_field(settings):
+    obj_field = pghistory.core._get_obj_field(
+        tracked_model=test_models.SnapshotModel,
+        base_model=config.base_model(),
+        obj_field=constants.unset,
+        obj_fk=constants.unset,
+        fields=None,
+        related_name=None,
+    )
+    assert obj_field.remote_field.related_name == "event"
+
+    settings.PGHISTORY_OBJ_FIELD = pghistory.ObjForeignKey(related_name="hello")
+    obj_field = pghistory.core._get_obj_field(
+        tracked_model=test_models.SnapshotModel,
+        base_model=config.base_model(),
+        obj_field=constants.unset,
+        obj_fk=constants.unset,
+        fields=None,
+        related_name=None,
+    )
+    assert obj_field.remote_field.related_name == "hello"
+
+
+def test_get_event_model(mocker):
+    patched_create_event_model = mocker.patch("pghistory.core.create_event_model", autospec=True)
+
+    pghistory.core.get_event_model(test_models.SnapshotModel)
+    patched_create_event_model.assert_called_once_with(test_models.SnapshotModel)
 
 
 @pytest.mark.django_db
@@ -122,7 +154,7 @@ def test_create_event():
     context
     """
     m = ddf.G("tests.EventModel")
-    with pytest.raises(ValueError, match="not a registered event"):
+    with pytest.raises(ValueError, match="not a registered tracker"):
         pghistory.create_event(m, label="invalid_event")
 
     event = pghistory.create_event(m, label="manual_event")

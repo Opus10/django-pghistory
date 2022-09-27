@@ -30,7 +30,7 @@ def test_get_obj_model_doesnt_exist():
 
 
 @pytest.mark.django_db
-def test_events_page(authed_client):
+def test_events_page(authed_client, settings):
     """Verify pghistory events page with different settings and filters"""
     ddf.G(test_models.CustomModel)
     ddf.G(test_models.UniqueConstraintModel)
@@ -68,6 +68,14 @@ def test_events_page(authed_client):
     html = resp.content.decode("utf-8")
     num_events = models.Events.objects.filter(pgh_label="snapshot").count()
     assert f"{num_events} event" in html
+
+    # Don't show events on unfiltered views
+    settings.PGHISTORY_ADMIN_ALL_EVENTS = False
+
+    resp = authed_client.get(url)
+    assert resp.status_code == 200
+    html = resp.content.decode("utf-8")
+    assert f"0 events" in html
 
 
 @pytest.mark.django_db

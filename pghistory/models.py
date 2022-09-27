@@ -19,11 +19,11 @@ else:
 from pghistory import core, utils
 
 
-# Create a consistent load path for JSONField regardless of django
-# version. This is just to prevent migration issues for people
-# on different django versions
 class PGHistoryJSONField(JSONField):
-    pass
+    """
+    Creates a consistent import path for JSONField regardless of Django
+    version.
+    """
 
 
 class Context(models.Model):
@@ -149,7 +149,7 @@ class Event(models.Model):
     pgh_id = models.AutoField(primary_key=True)
     pgh_created_at = models.DateTimeField(auto_now_add=True)
     pgh_label = models.TextField(help_text="The event label.")
-    pgh_events = None
+    pgh_trackers = None
     pgh_tracked_model = None
 
     objects = EventQuerySet.as_manager()
@@ -198,8 +198,8 @@ class Event(models.Model):
         if (
             not cls._meta.abstract and cls._meta.managed and not cls._meta.proxy
         ):  # pragma: no branch
-            for event in cls.pgh_events or []:
-                event.setup(cls)
+            for tracker in cls.pgh_trackers or []:
+                tracker.setup(cls)
 
     @classmethod
     def check(cls, **kwargs):
@@ -302,7 +302,7 @@ class EventsQueryCompiler(SQLCompiler):
         proxy_fields = []
         for field in self.query.model._meta.fields:
             if hasattr(field, "pgh_proxy"):
-                if not field.pgh_proxy.startswith("pgh_context__"):
+                if not field.pgh_proxy.startswith("pgh_context__"):  # pragma: no cover
                     raise RuntimeError(
                         "Proxy fields on Events models can only proxy the pgh_context field."
                         " E.g. pgh_context__url"
@@ -313,7 +313,7 @@ class EventsQueryCompiler(SQLCompiler):
                 warnings.warn(
                     f"django-pghistory extra field '{field}' in event model"
                     f" '{self.query.model._meta.label}' declared. Use"
-                    " 'pghistory.field_proxy' to define a proxy fields instead.",
+                    " 'pghistory.ProxyField' to define a proxy fields instead.",
                     DeprecationWarning,
                 )
                 proxy_fields.append((field, field.name))

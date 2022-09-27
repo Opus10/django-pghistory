@@ -18,10 +18,13 @@ from pghistory.core import (
     create_event,
     create_event_model,
     DatabaseEvent,
+    DatabaseTracker,
     Event,
+    ManualTracker,
     ProxyField,
     Snapshot,
     track,
+    Tracker,
 )
 from pghistory.tracking import context
 from pghistory.version import __version__
@@ -40,14 +43,17 @@ __all__ = [
     "create_event",
     "create_event_model",
     "DatabaseEvent",
+    "DatabaseTracker",
     "Event",
     "Field",
     "ForeignKey",
+    "ManualTracker",
     "ObjForeignKey",
     "ProxyField",
     "RelatedField",
     "Snapshot",
     "track",
+    "Tracker",
     "__version__",
 ]
 

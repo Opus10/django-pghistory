@@ -35,7 +35,7 @@ class MethodFilter(admin.SimpleListFilter):
         obj = _get_obj(obj)
         if obj and self.value() == "tracks":
             queryset = queryset.tracks(obj)
-        elif obj and self.value() == "references":
+        elif obj and self.value() == "references":  # pragma: no branch
             queryset = queryset.references(obj)
 
         return queryset
@@ -77,7 +77,9 @@ class LabelFilter(admin.SimpleListFilter):
             event_models = _filter_event_models(request)
 
         labels = {
-            event.label for event_model in event_models for event in event_model.pgh_events or []
+            tracker.label
+            for event_model in event_models
+            for tracker in event_model.pgh_trackers or []
         }
         return sorted([(label, label) for label in labels])
 
@@ -118,7 +120,7 @@ class DynamicFilter(admin.SimpleListFilter):
     def lookups(self, request, model_admin):
         if self.parameter_name in request.GET:
             return [(request.GET[self.parameter_name], request.GET[self.parameter_name])]
-        else:
+        else:  # pragma: no cover
             return []
 
 
@@ -180,6 +182,7 @@ class BaseEventAdmin(admin.ModelAdmin):
 
 
 class EventModelAdmin(BaseEventAdmin):
+    """The base admin for event models"""
     list_filter = [LabelFilter, ObjFilter, BackFilter]
 
 

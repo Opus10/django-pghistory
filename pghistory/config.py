@@ -111,17 +111,25 @@ def admin_queryset():
     )
 
 
+def admin_class():
+    """The admin class to use for the events admin.
+
+    Must be a subclass of pghistory.admin.EventsAdmin"""
+
+    events_admin = import_string("pghistory.admin.EventsAdmin")
+    admin_class = getattr(settings, "PGHISTORY_ADMIN_CLASS", events_admin)
+
+    if isinstance(admin_class, str):  # pragma: no cover
+        admin_class = import_string(admin_class)
+
+    assert issubclass(admin_class, events_admin)
+
+    return admin_class
+
+
 def admin_all_events():
     """True if all events should be shown in the admin when there are no filters"""
     return getattr(settings, "PGHISTORY_ADMIN_ALL_EVENTS", True)
-
-
-def _get_kwargs(vals):
-    return {
-        key: val
-        for key, val in vals.items()
-        if key not in ("self", "kwargs", "__class__") and val is not constants.unset
-    }
 
 
 def admin_list_display():
@@ -134,7 +142,34 @@ def admin_list_display():
     return getattr(settings, "PGHISTORY_ADMIN_LIST_DISPLAY", defaults)
 
 
+def _get_kwargs(vals):
+    return {
+        key: val
+        for key, val in vals.items()
+        if key not in ("self", "kwargs", "__class__") and val is not constants.unset
+    }
+
+
 class Field:
+    """Configuration for fields.
+
+    Provides these default parameters:
+
+    * **primary_key** (default=False)
+    * **unique** (default=False)
+    * **blank**
+    * **null**
+    * **db_index** (default=False)
+    * **editable**
+    * **unique_for_date** (default=None)
+    * **unique_for_month** (default=None)
+    * **unique_for_year** (default=None)
+
+    The default values for the above parameters ensure that
+    event models don't have unnecessary uniqueness constraints
+    carried over from the tracked model.
+    """
+
     def __init__(
         self,
         *,
@@ -174,6 +209,20 @@ class Field:
 
 
 class RelatedField(Field):
+    """Configuration for related fields.
+
+    The following parameters can be used to configure
+    defaults for all related fields:
+
+    * **related_name** (default="+")
+    * **related_query_name** (default="+")
+
+    By default, related names are stripped to avoid
+    unnecessary clashes.
+
+    Note that all arguments from `Field` can also be supplied.
+    """
+
     def __init__(
         self,
         *,
@@ -193,7 +242,18 @@ class RelatedField(Field):
 
 
 class ForeignKey(RelatedField):
-    def __init__(self, *, on_delete=constants.unset, db_constraint=constants.unset, **kwargs):
+    """Configuration for foreign keys.
+
+    The following parameters can be used:
+
+    * **on_delete** (default=models.DO_NOTHING)
+    * **db_constraint** (default=False)
+
+    Arguments for `RelatedField` and `Field` can also be supplied.
+    Note that db_index is overridden to `True` for all foreign keys
+    """
+
+    def __init__(self, *, on_delete=constants.UNSET, db_constraint=constants.UNSET, **kwargs):
         super().__init__(**kwargs)
         self._kwargs.update(_get_kwargs(locals()))
 
@@ -229,7 +289,7 @@ class ObjForeignKey(ForeignKey):
     def __init__(
         self, *, related_name=constants.inherit, related_query_name=constants.inherit, **kwargs
     ):
-        # Note: We will be changing the deafult object field to nullable with on_delete=SET_NULL
+        # Note: We will be changing the default object field to nullable with on_delete=SET_NULL
         # in version 3. related_name will also default to "+"
         super().__init__(
             related_name=related_name, related_query_name=related_query_name, **kwargs

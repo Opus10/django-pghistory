@@ -71,23 +71,24 @@ class context(contextlib.ContextDecorator):
     ``pghistory.context`` has previously been entered. Otherwise it will
     be ignored.
 
-    Usage:
-
-        with pghistory.context(key='value'):
-            # Do things..
-            # All tracked events will have the same ``pgh_context``
-            # foreign key, and the context object will include
-            # {'key': 'value'} in its metadata.
-            # Nesting the tracker adds additional metadata to the current
-            # context
-
-        # Add metadata if a parent piece of code has already entered
-        # pghistory.context
-        pghistory.context(key='value')
-
     Args:
         metadata (dict): Metadata that should be attached to the tracking
             context
+
+    Example:
+        Here we track a "key" with a value of "value"::
+
+            with pghistory.context(key='value'):
+                # Do things..
+                # All tracked events will have the same ``pgh_context``
+                # foreign key, and the context object will include
+                # {'key': 'value'} in its metadata.
+                # Nesting the tracker adds additional metadata to the current
+                # context
+
+            # Add metadata if a parent piece of code has already entered
+            # pghistory.context
+            pghistory.context(key='value')
 
     Notes:
         Context tracking is compatible for most scenarios, but it currently

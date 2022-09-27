@@ -122,7 +122,7 @@ class CustomSnapshotModel(
 
 
 @pghistory.track(
-    pghistory.Event("manual_event"),
+    pghistory.ManualTracker("manual_event"),
     pghistory.AfterInsert("model.create"),
     pghistory.BeforeUpdate("before_update"),
     pghistory.BeforeDelete("before_delete"),
@@ -172,7 +172,7 @@ CustomEventWithContext = pghistory.create_event_model(
 )
 
 
-class CustomEventProxy(CustomEventWithContext):
+class CustomEventProxy(EventModel.pgh_event_models["model.create"]):
     url = pghistory.ProxyField("pgh_context__metadata__url", models.TextField(null=True))
     auth_user = pghistory.ProxyField(
         "pgh_context__metadata__user",
