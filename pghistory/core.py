@@ -148,12 +148,18 @@ class Snapshot(DatabaseTracker):
             operation=pgtrigger.Insert,
         )
 
-        condition = pgtrigger.Q()
-        for field in event_model._meta.fields:
-            if hasattr(event_model.pgh_tracked_model, field.name):
-                condition |= pgtrigger.Q(
-                    **{f"old__{field.name}__df": pgtrigger.F(f"new__{field.name}")}
-                )
+        event_fields = [
+            field.name for field in event_model._meta.fields if not field.name.startswith("pgh_")
+        ]
+        tracked_fields = [field.name for field in event_model.pgh_tracked_model._meta.fields]
+
+        if set(event_fields) == set(tracked_fields):
+            condition = pgtrigger.Condition("OLD.* IS DISTINCT FROM NEW.*")
+        else:
+            condition = pgtrigger.Q()
+            for field in event_fields:
+                if hasattr(event_model.pgh_tracked_model, field):
+                    condition |= pgtrigger.Q(**{f"old__{field}__df": pgtrigger.F(f"new__{field}")})
 
         update_trigger = trigger.Event(
             event_model=event_model,

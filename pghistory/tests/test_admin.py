@@ -75,7 +75,7 @@ def test_events_page(authed_client, settings):
     resp = authed_client.get(url)
     assert resp.status_code == 200
     html = resp.content.decode("utf-8")
-    assert f"0 events" in html
+    assert "0 events" in html
 
 
 @pytest.mark.django_db
