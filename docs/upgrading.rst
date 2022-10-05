@@ -20,8 +20,8 @@ For example, this is how you can track changes to Django's user model:
 
     # Track the user model, excluding the password field
     @pghistory.track(
-        pghistory.Snapshot('user.snapshot'),
-        exclude=['password'],
+        pghistory.Snapshot("user.snapshot"),
+        exclude=["password"],
     )
     class UserProxy(User):
         class Meta:
@@ -37,8 +37,8 @@ tracks changes to group add/remove events on the user model:
 
   # Track add and remove events to user groups
   @pghistory.track(
-      pghistory.AfterInsert('group.add'),
-      pghistory.BeforeDelete('group.remove'),
+      pghistory.AfterInsert("group.add"),
+      pghistory.BeforeDelete("group.remove"),
       obj_fk=None,
   )
   class UserGroups(User.groups.through):

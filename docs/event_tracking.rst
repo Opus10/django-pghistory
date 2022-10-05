@@ -30,9 +30,7 @@ with `pghistory.track`:
 
     import pghistory
 
-    @pghistory.track(
-        pghistory.Snapshot("snapshot")
-    )
+    @pghistory.track(pghistory.Snapshot())
     class TrackedModel(models.Model):
         ...
 
@@ -64,7 +62,7 @@ This is what the generated event model looks like by default:
             db_constraint=False
         )
 
-        # An identifying label for the event. The first argument to the tracker
+        # An identifying label for the event. The first optional argument to the tracker
         pgh_label = models.TextField()
 
         # Additional context about the event stored in JSON in the pghistory.Context model
@@ -232,24 +230,24 @@ require that events are manually created.
 
 `pghistory.create_event` can be used to manually create events.
 Events can be created for existing trackers, or the bare `pghistory.ManualTracker`
-can be used for registering manually-created events.
+can be used for registering events that can only be manually created.
 
-Here we register a bare `pghistory.ManualTracker` tracker and manually create
-an event:
+Here we register a bare `pghistory.ManualTracker` tracker and create
+an event with the label of "user.create":
 
 .. code-block:: python
 
     @pghistory.track(
-        pghistory.ManualTracker('user.create'),
+        pghistory.ManualTracker("user.create"),
         fields=['username']
     )
     class MyUser(models.Model):
         username = models.CharField(max_length=64)
         password = models.PasswordField()
 
-    # Create a user and manually create an "user.create" event
+    # Create a user and manually create a "user.create" event
     user = MyUser.objects.create(...)
-    pghistory.create_event(user, label='user.create')
+    pghistory.create_event(user, label="user.create")
 
 .. note::
 
@@ -276,8 +274,8 @@ the default Django ``User`` model:
 
   # Track the user model, excluding the password field
   @pghistory.track(
-      pghistory.Snapshot('user.snapshot'),
-      exclude=['password'],
+      pghistory.Snapshot(),
+      exclude=["password"],
   )
   class UserProxy(User):
       class Meta:
@@ -307,8 +305,8 @@ events for Django's user model:
   import pghistory
 
   @pghistory.track(
-      pghistory.AfterInsert('group.add'),
-      pghistory.BeforeDelete('group.remove'),
+      pghistory.AfterInsert("group.add"),
+      pghistory.BeforeDelete("group.remove"),
       object_field=None,
   )
   class UserGroups(User.groups.through):
@@ -328,13 +326,13 @@ After migrating, events will be tracked as shown:
 .. code-block:: python
 
   # Note: this is pseudo-code
-  >>> user = User.objects.create_user('username')
-  >>> group = Group.objects.create(name='group')
+  >>> user = User.objects.create_user("username")
+  >>> group = Group.objects.create(name="group")
   >>> user.groups.add(group)
   >>> user.groups.remove(group)
-  >>> print(my_app_models.UserGroupsEvent.objects.values('pgh_label', 'user', 'group'))
+  >>> print(my_app_models.UserGroupsEvent.objects.values("pgh_label", "user", "group"))
 
   [
-    {'user': user.id, 'group': group.id, 'pgh_label': 'group.add'},
-    {'user': user.id, 'group': group.id, 'pgh_label': 'group.remove'},
+    {"user": user.id, "group": group.id, "pgh_label": "group.add"},
+    {"user": user.id, "group": group.id, "pgh_label": "group.remove"},
   ]

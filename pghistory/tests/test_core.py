@@ -124,12 +124,6 @@ def test_m2m_through_tracking():
     ]
 
 
-def test_basic_assertions():
-    """Tests some of the basic error checking in many of the core classes"""
-    with pytest.raises(ValueError, match='"label" attribute'):
-        pghistory.Event()
-
-
 @pytest.mark.django_db
 def test_custom_pk_and_custom_column():
     """

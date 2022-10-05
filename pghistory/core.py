@@ -34,9 +34,7 @@ class Tracker:
     label = None
 
     def __init__(self, label=None):
-        self.label = label or self.label
-        if not self.label:
-            raise ValueError(f'{self.__class__.__name__} must have "label" attribute')
+        self.label = label or self.label or self.__class__.__name__.lower()
 
     def setup(self, event_model):
         """Set up the event for the particular event model"""

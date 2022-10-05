@@ -52,7 +52,7 @@ Let's revisit the quickstart example model:
 
 .. code-block:: python
 
-    @pghistory.track(pghistory.Snapshot("snapshot"))
+    @pghistory.track(pghistory.Snapshot())
     class TrackedModel(models.Model):
         int_field = models.IntegerField()
         text_field = models.TextField()

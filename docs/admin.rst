@@ -93,10 +93,7 @@ Take the following model and associated tracker:
 
 .. code-block:: python
 
-    @pghistory.track(
-        pghistory.Snapshot("snapshot"),
-        model_name="MyModelSnapshot"
-    )
+    @pghistory.track(pghistory.Snapshot(), model_name="MyModelSnapshot")
     class MyModel(models.Model):
         dt_field = models.DateTimeField()
         int_field = models.IntegerField()

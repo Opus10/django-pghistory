@@ -13,7 +13,7 @@ For example, say that we have a model with a `pghistory.Snapshot` tracker:
 .. code-block:: python
 
     @pghistory.track(
-        pghistory.Snapshot("snapshot"),
+        pghistory.Snapshot(),
         obj_field=pghistory.ObjForeignKey(related_name="events"),
     )
     class MyModel(models.Model):

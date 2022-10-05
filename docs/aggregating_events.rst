@@ -35,7 +35,7 @@ model and query the associated events:
 
 .. code-block:: python
 
-    @pghistory.track(pghistory.Snapshot("user.change"))
+    @pghistory.track(pghistory.Snapshot())
     class User(models.Model):
         username = models.CharField()
         name = models.CharField()
@@ -60,7 +60,7 @@ The events look like::
         "pgh_model": "app.UserEvent",
         "pgh_id": "<event_id>",
         "pgh_created_at": datetime(2020, 6, 17, 12, 20, 10),
-        "pgh_label": "user.change",
+        "pgh_label": "snapshot",
         "pgh_data": {
             "username": "hello",
             "name": "world",
@@ -77,7 +77,7 @@ The events look like::
         "pgh_model": "app.UserEvent",
         "pgh_id": "<event_id>",
         "pgh_created_at": datetime(2020, 6, 17, 12, 20, 20),
-        "pgh_label": "user.change",
+        "pgh_label": "snapshot",
         "pgh_data": {
             "username": "hi",
             "name": "world",

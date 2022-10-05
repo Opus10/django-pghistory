@@ -10,7 +10,7 @@ class UntrackedModel(models.Model):
 
 
 @pghistory.track(
-    pghistory.Snapshot("snapshot"),
+    pghistory.Snapshot(),
     context_field=pghistory.ContextJSONField(),
 )
 @pghistory.track(
@@ -30,7 +30,7 @@ class DenormContext(models.Model):
 
 
 @pghistory.track(
-    pghistory.Snapshot("snapshot"),
+    pghistory.Snapshot(),
     model_name="CustomModelSnapshot",
     related_name="snapshot",
 )

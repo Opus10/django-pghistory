@@ -29,7 +29,7 @@ Decorate your model with `pghistory.track`. For example:
 
     import pghistory
 
-    @pghistory.track(pghistory.Snapshot("snapshot"))
+    @pghistory.track(pghistory.Snapshot())
     class TrackedModel(models.Model):
         int_field = models.IntegerField()
         text_field = models.TextField()
@@ -37,7 +37,7 @@ Decorate your model with `pghistory.track`. For example:
 
 Above we've registered a `pghistory.Snapshot` event tracker to ``TrackedModel``.
 This event tracker stores every change in a dynamically-created
-event model that mirrors fields in ``TrackedModel``.
+model that mirrors fields in ``TrackedModel``.
 
 Run ``python manage.py makemigrations`` followed by ``migrate`` and
 *voila*, every change to ``TrackedModel`` is now stored. This includes bulk
