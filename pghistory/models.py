@@ -141,6 +141,18 @@ class EventQuerySet(models.QuerySet):
         super().__init__(model, query, using, hints)
 
 
+class PghEventModel:
+    def __get__(self, instance, owner):
+        if len(owner.pgh_event_models) == 1:
+            return owner.pgh_event_models[list(owner.pgh_event_models)[0]]
+        else:
+            raise ValueError(
+                f"{owner.__name__} has more than one tracker."
+                " Use the pgh_event_models dictionary to retrieve the event"
+                " model by label."
+            )
+
+
 class Event(models.Model):
     """
     An abstract model for base elements of a event
@@ -198,8 +210,23 @@ class Event(models.Model):
         if (
             not cls._meta.abstract and cls._meta.managed and not cls._meta.proxy
         ):  # pragma: no branch
+
             for tracker in cls.pgh_trackers or []:
-                tracker.setup(cls)
+                tracker.pghistory_setup(cls)
+
+            # Set up the event model utility properties. Don't overwrite any
+            # existing attributes
+            if not hasattr(cls.pgh_tracked_model, "pgh_event_models"):
+                cls.pgh_tracked_model.pgh_event_models = {}
+
+            # Use dir here, otherwise the property is evaluated
+            if "pgh_event_model" not in dir(cls.pgh_tracked_model):
+                cls.pgh_tracked_model.pgh_event_model = PghEventModel()
+
+            if isinstance(cls.pgh_tracked_model.pgh_event_models, dict):  # pragma: no branch
+                cls.pgh_tracked_model.pgh_event_models.update(
+                    {tracker.label: cls for tracker in cls.pgh_trackers or []}
+                )
 
     @classmethod
     def check(cls, **kwargs):

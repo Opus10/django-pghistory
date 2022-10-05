@@ -1,7 +1,7 @@
 from django.apps import apps
 from django.contrib import admin
 from django.contrib.admin.views.main import ChangeList
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 
 from pghistory import config, core
 
@@ -43,7 +43,7 @@ class MethodFilter(admin.SimpleListFilter):
     def choices(self, changelist):
         for lookup, title in self.lookup_choices:
             yield {
-                "selected": self.value() == force_text(lookup),
+                "selected": self.value() == force_str(lookup),
                 "query_string": changelist.get_query_string({self.parameter_name: lookup}, []),
                 "display": title,
             }
@@ -183,6 +183,7 @@ class BaseEventAdmin(admin.ModelAdmin):
 
 class EventModelAdmin(BaseEventAdmin):
     """The base admin for event models"""
+
     list_filter = [LabelFilter, ObjFilter, BackFilter]
 
 

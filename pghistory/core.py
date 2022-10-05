@@ -37,8 +37,23 @@ class Tracker:
         self.label = label or self.label or self.__class__.__name__.lower()
 
     def setup(self, event_model):
-        """Set up the event for the particular event model"""
+        """Set up the tracker for the event model"""
         pass
+
+    def pghistory_setup(self, event_model):
+        """Registers the tracker for the event model and calls user-defined setup"""
+        tracked_model = event_model.pgh_tracked_model
+
+        if (tracked_model, self.label) in _registered_trackers:
+            raise ValueError(
+                f'Tracker with label "{self.label}" already exists'
+                f' for model "{tracked_model._meta.label}". Supply a'
+                " different label as the first argument to the tracker."
+            )
+
+        _registered_trackers[(tracked_model, self.label)] = event_model
+
+        self.setup(event_model)
 
 
 class ManualTracker(Tracker):
@@ -47,6 +62,7 @@ class ManualTracker(Tracker):
 
 class Event(Tracker):
     """The deprecated base class for event trackers. Use `Tracker` instead"""
+
     def __init__(self, label=None):
         warnings.warn(
             "The django-pghistory 'Event' class is deprecated and renamed to 'Tracker'.",
@@ -98,6 +114,7 @@ class DatabaseEvent(DatabaseTracker):
     The deprecated base class for all trigger-based trackers.
     Use `DatabaseTracker` instead.
     """
+
     def __init__(
         self,
         label=None,
@@ -268,7 +285,7 @@ def _generate_history_field(tracked_model, field):
     # since it tries to load models. Patch it and set it back to the original
     # value later
     field = copy.deepcopy(field)
-    swappable = getattr(field, "swappable", constants.unset)
+    swappable = getattr(field, "swappable", constants.UNSET)
     field.swappable = False
     _, _, args, kwargs = field.deconstruct()
 
@@ -287,7 +304,7 @@ def _generate_history_field(tracked_model, field):
 
     field = cls(*args, **kwargs)
 
-    if swappable is not constants.unset:
+    if swappable is not constants.UNSET:
         field.swappable = swappable
 
     return field
@@ -322,7 +339,7 @@ def _validate_event_model_path(*, app_label, model_name, abstract):
 
 
 def _get_obj_field(*, obj_field, tracked_model, obj_fk, related_name, base_model, fields):
-    if obj_fk is not constants.unset:
+    if obj_fk is not constants.UNSET:
         warnings.warn(
             "The django-pghistory 'obj_fk' argument is deprecated. Use 'obj_field' instead.",
             DeprecationWarning,
@@ -330,7 +347,7 @@ def _get_obj_field(*, obj_field, tracked_model, obj_fk, related_name, base_model
         return obj_fk
     elif obj_field is None:  # pragma: no cover
         return None
-    elif obj_field is constants.unset:
+    elif obj_field is constants.UNSET:
         obj_field = config.obj_field()
 
         if related_name is not None:
@@ -340,7 +357,7 @@ def _get_obj_field(*, obj_field, tracked_model, obj_fk, related_name, base_model
                 DeprecationWarning,
             )
 
-        if obj_field._kwargs.get("related_name", constants.inherit) == constants.inherit:
+        if obj_field._kwargs.get("related_name", constants.DEFAULT) == constants.DEFAULT:
             obj_field._kwargs["related_name"] = related_name or _generate_related_name(
                 base_model, fields
             )
@@ -352,7 +369,7 @@ def _get_obj_field(*, obj_field, tracked_model, obj_fk, related_name, base_model
 
 
 def _get_context_field(*, context_field, context_fk):
-    if context_fk is not constants.unset:
+    if context_fk is not constants.UNSET:
         warnings.warn(
             "The django-pghistory 'context_fk' argument is deprecated. Use "
             "'context_field' instead.",
@@ -361,7 +378,7 @@ def _get_context_field(*, context_field, context_fk):
         return context_fk
     elif context_field is None:  # pragma: no cover
         return None
-    elif context_field is constants.unset:
+    elif context_field is constants.UNSET:
         context_field = config.context_field()
 
     if isinstance(context_field, config.ContextForeignKey):
@@ -378,7 +395,7 @@ def _get_context_field(*, context_field, context_fk):
 def _get_context_id_field(*, context_id_field):
     if context_id_field is None:
         return None
-    elif context_id_field is constants.unset:  # pragma: no branch
+    elif context_id_field is constants.UNSET:  # pragma: no branch
         context_id_field = config.context_id_field()
 
     if isinstance(context_id_field, config.ContextUUIDField):
@@ -392,11 +409,11 @@ def create_event_model(
     *trackers,
     fields=None,
     exclude=None,
-    obj_fk=constants.unset,
-    context_fk=constants.unset,
-    obj_field=constants.unset,
-    context_field=constants.unset,
-    context_id_field=constants.unset,
+    obj_fk=constants.UNSET,
+    context_fk=constants.UNSET,
+    obj_field=constants.UNSET,
+    context_field=constants.UNSET,
+    context_id_field=constants.UNSET,
     related_name=None,
     name=None,
     model_name=None,
@@ -556,11 +573,11 @@ def track(
     *trackers,
     fields=None,
     exclude=None,
-    obj_fk=constants.unset,
-    context_fk=constants.unset,
-    obj_field=constants.unset,
-    context_field=constants.unset,
-    context_id_field=constants.unset,
+    obj_fk=constants.UNSET,
+    context_fk=constants.UNSET,
+    obj_field=constants.UNSET,
+    context_field=constants.UNSET,
+    context_id_field=constants.UNSET,
     related_name=None,
     model_name=None,
     app_label=None,
@@ -619,7 +636,7 @@ def track(
     """  # noqa
 
     def _model_wrapper(model_class):
-        event_model = create_event_model(
+        create_event_model(
             model_class,
             *trackers,
             fields=fields,
@@ -637,8 +654,6 @@ def track(
             attrs=attrs,
             meta=meta,
         )
-        for tracker in trackers:
-            _registered_trackers[(model_class, tracker.label)] = event_model
 
         return model_class
 

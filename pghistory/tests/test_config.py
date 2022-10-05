@@ -41,7 +41,7 @@ def test_field(settings):
         "unique_for_year": None,
     }
 
-    settings.PGHISTORY_FIELD = config.Field(db_index=constants.inherit, unique=True)
+    settings.PGHISTORY_FIELD = config.Field(db_index=constants.DEFAULT, unique=True)
     assert config.field().kwargs == {
         "primary_key": False,
         "unique": True,
@@ -73,7 +73,7 @@ def test_related_field(settings):
     }
 
     settings.PGHISTORY_RELATED_FIELD = config.RelatedField(
-        related_query_name=constants.inherit, db_index=True
+        related_query_name=constants.DEFAULT, db_index=True
     )
 
     assert config.related_field().kwargs == {
@@ -86,7 +86,7 @@ def test_related_field(settings):
         "related_name": "+",
     }
 
-    assert config.RelatedField(unique_for_year=True, db_index=constants.inherit).kwargs == {
+    assert config.RelatedField(unique_for_year=True, db_index=constants.DEFAULT).kwargs == {
         "primary_key": False,
         "unique": False,
         "unique_for_date": None,
@@ -97,7 +97,7 @@ def test_related_field(settings):
 
     # db_index wont take effect because it is overridden by PGHISTORY_RELATED_FIELD
     settings.PGHISTORY_FIELD = config.Field(
-        db_index=False, primary_key=True, unique_for_year=constants.inherit
+        db_index=False, primary_key=True, unique_for_year=constants.DEFAULT
     )
 
     assert config.RelatedField().kwargs == {
@@ -125,7 +125,7 @@ def test_foreign_key_field(settings):
     }
 
     settings.PGHISTORY_FIELD = config.Field(db_index=True)
-    settings.PGHISTORY_RELATED_FIELD = config.RelatedField(related_query_name=constants.inherit)
+    settings.PGHISTORY_RELATED_FIELD = config.RelatedField(related_query_name=constants.DEFAULT)
 
     assert config.foreign_key_field().kwargs == {
         "db_index": True,
@@ -139,7 +139,7 @@ def test_foreign_key_field(settings):
         "on_delete": models.DO_NOTHING,
     }
 
-    assert config.ForeignKey(on_delete=constants.inherit, db_constraint=True).kwargs == {
+    assert config.ForeignKey(on_delete=constants.DEFAULT, db_constraint=True).kwargs == {
         "db_index": True,
         "primary_key": False,
         "unique": False,

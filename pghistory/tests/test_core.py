@@ -14,12 +14,26 @@ import pghistory.core
 import pghistory.tests.models as test_models
 
 
+def test_duplicate_registration():
+    with pytest.raises(ValueError, match="already exists"):
+        pghistory.Snapshot().pghistory_setup(test_models.SnapshotModelSnapshot)
+
+
+def test_pgh_event_model():
+    assert (
+        test_models.UniqueConstraintModel.pgh_event_model.__name__ == "UniqueConstraintModelEvent"
+    )
+
+    with pytest.raises(ValueError, match="more than one"):
+        test_models.SnapshotModel.pgh_event_model
+
+
 def test_get_obj_field(settings):
     obj_field = pghistory.core._get_obj_field(
         tracked_model=test_models.SnapshotModel,
         base_model=config.base_model(),
-        obj_field=constants.unset,
-        obj_fk=constants.unset,
+        obj_field=constants.UNSET,
+        obj_fk=constants.UNSET,
         fields=None,
         related_name=None,
     )
@@ -29,8 +43,8 @@ def test_get_obj_field(settings):
     obj_field = pghistory.core._get_obj_field(
         tracked_model=test_models.SnapshotModel,
         base_model=config.base_model(),
-        obj_field=constants.unset,
-        obj_fk=constants.unset,
+        obj_field=constants.UNSET,
+        obj_fk=constants.UNSET,
         fields=None,
         related_name=None,
     )
@@ -559,7 +573,7 @@ def test_pascalcase(val, expected_output):
 @pytest.mark.parametrize(
     "model_name, obj_fk, fields, expected_model_name, expected_related_name",
     [
-        (None, pghistory.constants.unset, None, "EventModelEvent", "event"),
+        (None, pghistory.constants.UNSET, None, "EventModelEvent", "event"),
         (
             None,
             models.ForeignKey(
@@ -571,17 +585,17 @@ def test_pascalcase(val, expected_output):
             "EventModelEvent",
             "r",
         ),
-        ("Name", pghistory.constants.unset, None, "Name", "event"),
+        ("Name", pghistory.constants.UNSET, None, "Name", "event"),
         (
             None,
-            pghistory.constants.unset,
+            pghistory.constants.UNSET,
             ["int_field"],
             "EventModelIntFieldEvent",
             "int_field_event",
         ),
         (
             None,
-            pghistory.constants.unset,
+            pghistory.constants.UNSET,
             ["int_field", "dt_field"],
             "EventModelIntFieldDtFieldEvent",
             "int_field_dt_field_event",

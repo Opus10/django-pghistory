@@ -9,6 +9,7 @@ from pghistory.config import (
     ObjForeignKey,
     RelatedField,
 )
+from pghistory.constants import DEFAULT
 from pghistory.core import (
     AfterInsert,
     AfterInsertOrUpdate,
@@ -44,6 +45,7 @@ __all__ = [
     "create_event_model",
     "DatabaseEvent",
     "DatabaseTracker",
+    "DEFAULT",
     "Event",
     "Field",
     "ForeignKey",
