@@ -18,10 +18,10 @@
 
 	  	<li>
 	    	<a href="{% events_admin_url %}?method=tracks&obj={{ opts.label }}:{{ original.pk }}&back={% add_preserved_filters back_url %}" class="events-admin">
-	      		{% translate "Events" %}
+	            {% trans "Events" %}
 	    	</a>
 	  	</li>
-	  {% endif %}
+	{% endif %}
 
   	{{ block.super }}
 {% endblock %}

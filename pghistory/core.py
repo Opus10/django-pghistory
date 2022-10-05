@@ -301,6 +301,8 @@ def _generate_history_field(tracked_model, field):
     cls = field.__class__
     if isinstance(field, models.OneToOneField):
         cls = models.ForeignKey
+    elif isinstance(field, models.FileField):
+        kwargs.pop("primary_key", None)
 
     field = cls(*args, **kwargs)
 
@@ -384,7 +386,7 @@ def _get_context_field(*, context_field, context_fk):
     if isinstance(context_field, config.ContextForeignKey):
         return models.ForeignKey("pghistory.Context", **context_field.kwargs)
     elif isinstance(context_field, config.ContextJSONField):
-        return models.JSONField(**context_field.kwargs)
+        return utils.JSONField(**context_field.kwargs)
     else:  # pragma: no cover
         raise TypeError(
             "context_field must be of type pghistory.ContextForeignKey"
@@ -527,7 +529,7 @@ def create_event_model(
         **attrs,
     }
 
-    if isinstance(context_field, models.JSONField) and context_id_field:
+    if isinstance(context_field, utils.JSONField) and context_id_field:
         class_attrs["pgh_context_id"] = context_id_field
 
     if context_field:

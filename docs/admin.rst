@@ -47,7 +47,8 @@ Here are all of the settings that allow you to configure the aggregate event adm
   Defaults to ``"pghistory.admin.EventsAdmin"``.
 * **PGHISTORY_ADMIN_ALL_EVENTS**: The default admin page shows all paginated events.
   This can be an expensive query for large amounts of events. Set this to ``False`` and only
-  show events when a filter is selected or when shown from another admin page.
+  show events when a filter is selected or when shown from another admin page. This setting
+  only works for Django 3.1 and above.
 
 Tracked Model Admin Pages
 -------------------------

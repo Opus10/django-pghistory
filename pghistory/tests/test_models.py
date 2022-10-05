@@ -1,6 +1,7 @@
 import datetime as dt
 
 import ddf
+import django
 from django.core.management import call_command
 import pytest
 
@@ -49,9 +50,13 @@ def test_custom_event_proxy():
     with pghistory.context(url="https://www.google.com", user=user.pk):
         ddf.G(test_models.EventModel)
 
-    assert list(test_models.CustomEventProxy.objects.values("url", "auth_user__username")) == [
-        {"url": "https://www.google.com", "auth_user__username": "hello"}
-    ]
+    if django.VERSION < (3, 2):
+        with pytest.raises(RuntimeError):
+            assert test_models.CustomEventProxy.objects.values("url", "auth_user__username")
+    else:
+        assert list(test_models.CustomEventProxy.objects.values("url", "auth_user__username")) == [
+            {"url": "https://www.google.com", "auth_user__username": "hello"}
+        ]
 
 
 @pytest.mark.django_db

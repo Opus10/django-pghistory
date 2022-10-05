@@ -5,6 +5,11 @@ import pgtrigger
 import pghistory
 
 
+@pghistory.track(pghistory.Snapshot())
+class SnapshotImageField(models.Model):
+    img_field = models.ImageField()
+
+
 class UntrackedModel(models.Model):
     untracked = models.CharField(max_length=64)
 

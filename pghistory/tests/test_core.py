@@ -14,6 +14,12 @@ import pghistory.core
 import pghistory.tests.models as test_models
 
 
+@pytest.mark.django_db
+def test_image_field_snapshot():
+    t = ddf.G(test_models.SnapshotImageField)
+    assert t.event.count() == 1
+
+
 def test_duplicate_registration():
     with pytest.raises(ValueError, match="already exists"):
         pghistory.Snapshot().pghistory_setup(test_models.SnapshotModelSnapshot)

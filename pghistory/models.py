@@ -10,27 +10,18 @@ from django.db.models.functions import Cast
 from django.db.models.sql import Query
 from django.db.models.sql.compiler import SQLCompiler
 
-# Django>=3.1 changes the location of JSONField
-if django.VERSION >= (3, 1):
-    from django.db.models import JSONField
-else:
-    from django.contrib.postgres.fields import JSONField
-
 from pghistory import core, utils
 
 
-class PGHistoryJSONField(JSONField):
-    """
-    Creates a consistent import path for JSONField regardless of Django
-    version.
-    """
+# This class is to preserve backwards compatibility with migrations
+PGHistoryJSONField = utils.JSONField
 
 
 class Context(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    metadata = PGHistoryJSONField(default=dict)
+    metadata = utils.JSONField(default=dict)
 
     @classmethod
     def install_pgh_attach_context_func(cls, using=DEFAULT_DB_ALIAS):
@@ -112,6 +103,9 @@ class EventQueryCompiler(SQLCompiler):
         sql, params = super().as_sql(*args, **kwargs)
 
         if any(self.proxy_fields):
+            if django.VERSION < (3, 2):
+                raise RuntimeError("Must use Django 3.2 or above to proxy fields on event models")
+
             cte = self._get_cte()
             sql = cte + sql.replace(f'"{self.query.model._meta.db_table}"', '"pgh_event_cte"')
 
@@ -121,12 +115,12 @@ class EventQueryCompiler(SQLCompiler):
 class EventQuery(Query):
     """A query over an event CTE when proxy fields are used"""
 
-    def get_compiler(self, using=None, connection=None):  # pragma: no cover
+    def get_compiler(self, *args, **kwargs):
         """
-        Overrides the Query method get_compiler in order to returnd
+        Overrides the Query method get_compiler in order to return
         an EventQueryCompiler.
         """
-        compiler = super().get_compiler(using=using, connection=connection)
+        compiler = super().get_compiler(*args, **kwargs)
         compiler.__class__ = EventQueryCompiler
         return compiler
 
@@ -142,6 +136,8 @@ class EventQuerySet(models.QuerySet):
 
 
 class PghEventModel:
+    "A descriptor for accessing the pgh_event_model field on a tracked model"
+
     def __get__(self, instance, owner):
         if len(owner.pgh_event_models) == 1:
             return owner.pgh_event_models[list(owner.pgh_event_models)[0]]
@@ -362,7 +358,7 @@ class EventsQueryCompiler(SQLCompiler):
                     for field, _ in proxy_fields
                 ]
             )
-        elif isinstance(event_model.pgh_context.field, models.ForeignKey):
+        elif isinstance(event_model._meta.get_field("pgh_context"), models.ForeignKey):
             context_id_column_clause = "pgh_context_id"
             context_column_clause = "_pgh_context.metadata AS pgh_context"
 
@@ -379,7 +375,7 @@ class EventsQueryCompiler(SQLCompiler):
                 LEFT OUTER JOIN {Context._meta.db_table} _pgh_context
                     ON _pgh_context.id = _event.pgh_context_id
             """
-        elif isinstance(event_model.pgh_context.field, models.JSONField):
+        elif isinstance(event_model._meta.get_field("pgh_context"), utils.DjangoJSONField):
             context_column_clause = "pgh_context"
             annotated_context_columns_clause = "".join(
                 [
@@ -543,8 +539,8 @@ class EventsQuery(Query):
         self.tracks = []
         self.across = []
 
-    def get_compiler(self, using=None, connection=None):  # pragma: no cover
-        compiler = super().get_compiler(using=using, connection=connection)
+    def get_compiler(self, *args, **kwargs):
+        compiler = super().get_compiler(*args, **kwargs)
         compiler.__class__ = EventsQueryCompiler
         return compiler
 
@@ -635,12 +631,10 @@ class Events(models.Model):
         auto_now_add=True, help_text="When the event was created."
     )
     pgh_label = models.TextField(help_text="The event label.")
-    pgh_data = PGHistoryJSONField(help_text="The raw data of the event.")
-    pgh_diff = PGHistoryJSONField(
-        help_text="The diff between the previous event of the same label."
-    )
+    pgh_data = utils.JSONField(help_text="The raw data of the event.")
+    pgh_diff = utils.JSONField(help_text="The diff between the previous event of the same label.")
     pgh_context_id = models.UUIDField(null=True, help_text="The context UUID.")
-    pgh_context = models.JSONField(
+    pgh_context = utils.JSONField(
         null=True,
         help_text="The context associated with the event.",
     )
@@ -704,8 +698,8 @@ class BaseAggregateEvent(Event):
     pgh_table = models.CharField(
         max_length=64, help_text="The table under which the event is stored"
     )
-    pgh_data = PGHistoryJSONField(help_text="The raw data of the event row")
-    pgh_diff = PGHistoryJSONField(
+    pgh_data = utils.JSONField(help_text="The raw data of the event row")
+    pgh_diff = utils.JSONField(
         help_text="The diff between the previous event and the current event"
     )
     pgh_context = models.ForeignKey(

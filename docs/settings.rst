@@ -108,6 +108,10 @@ Django ``Events`` admin page without filtering.
 
 **Default** ``True``
 
+.. note::
+
+    This setting only works in Django 3.1 and above.
+
 PGHISTORY_ADMIN_LIST_DISPLAY
 ----------------------------
 

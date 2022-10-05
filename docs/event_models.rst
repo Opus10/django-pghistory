@@ -315,6 +315,10 @@ Querying Context as Structured Fields
 Context data is free-form JSON, but ``django-pghistory`` provides a `pghistory.ProxyField` utility that you can
 use to proxy JSON fields on event models.
 
+.. note::
+
+    This feature only works on Django 3.2 and above.
+
 For example, let's create a snapshot tracker of a model and then proxy the ``user`` key from
 the context in an event model:
 

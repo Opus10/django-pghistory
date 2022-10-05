@@ -1,12 +1,7 @@
-import django
 from django.db import models
 import pgtrigger
 
-# Django>=3.1 changes the location of JSONField
-if django.VERSION >= (3, 1):
-    from django.db.models import JSONField
-else:
-    from django.contrib.postgres.fields import JSONField
+from pghistory import utils
 
 
 def _get_pgh_obj_pk_col(history_model):
@@ -65,9 +60,9 @@ class Event(pgtrigger.Trigger):
             fields["pgh_obj_id"] = f'{self.snapshot}."{_get_pgh_obj_pk_col(self.event_model)}"'
 
         if hasattr(self.event_model, "pgh_context"):
-            if isinstance(self.event_model.pgh_context.field, models.ForeignKey):
+            if isinstance(self.event_model._meta.get_field("pgh_context"), models.ForeignKey):
                 fields["pgh_context_id"] = "_pgh_attach_context()"
-            elif isinstance(self.event_model.pgh_context.field, JSONField):
+            elif isinstance(self.event_model._meta.get_field("pgh_context"), utils.JSONField):
                 fields["pgh_context"] = (
                     "COALESCE(NULLIF(CURRENT_SETTING('pghistory.context_metadata', TRUE), ''),"
                     " NULL)::JSONB"
@@ -76,7 +71,7 @@ class Event(pgtrigger.Trigger):
                 raise AssertionError
 
         if hasattr(self.event_model, "pgh_context_id") and isinstance(
-            self.event_model.pgh_context_id.field, models.UUIDField
+            self.event_model._meta.get_field("pgh_context_id"), models.UUIDField
         ):
             fields[
                 "pgh_context_id"

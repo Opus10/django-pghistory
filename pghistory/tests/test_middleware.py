@@ -3,8 +3,8 @@ from django.contrib.auth.models import User
 import pytest
 
 import pghistory.middleware
+import pghistory.runtime
 import pghistory.tests.models as test_models
-import pghistory.tracking
 
 
 @pytest.mark.django_db
@@ -32,7 +32,7 @@ def test_middleware(rf, mocker):
     """
 
     def get_response(request):
-        return getattr(pghistory.tracking._tracker, "value", None)
+        return getattr(pghistory.runtime._tracker, "value", None)
 
     # A GET request will initiate the tracker
     resp = pghistory.middleware.HistoryMiddleware(get_response)(rf.get("/get/url/"))

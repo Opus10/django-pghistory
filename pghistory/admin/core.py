@@ -1,3 +1,6 @@
+import warnings
+
+import django
 from django.apps import apps
 from django.contrib import admin
 from django.contrib.admin.views.main import ChangeList
@@ -192,10 +195,13 @@ class EventsChangeList(ChangeList):
         # Note: Call get_queryset first so that has_active_filters is accurate
         qset = super().get_queryset(request)
 
-        if not self.has_active_filters and not config.admin_all_events():
-            return self.root_queryset.model.no_objects.all()
-        else:
-            return qset
+        if not config.admin_all_events():
+            if django.VERSION < (3, 1):
+                warnings.warn("PGHISTORY_ADMIN_ALL_EVENTS only works for Django 3.1 and above")
+            elif not self.has_active_filters:  # pragma: no branch
+                return self.root_queryset.model.no_objects.all()
+
+        return qset
 
 
 class EventsAdmin(BaseEventAdmin):
