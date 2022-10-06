@@ -1,5 +1,9 @@
 # Changelog
-## 2.4.1 (2022-09-12)
+## 2.4.2 (2022-10-05)
+### Trivial
+  - Update with the latest Python template [Wesley Kendall, ef2fb6e]
+
+## 2.4.1 (2022-09-13)
 ### Trivial
   - Ensure installation of pghistory context function is installed across multiple databases [Wes Kendall, d06c758]
 
