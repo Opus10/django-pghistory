@@ -14,6 +14,15 @@ import pghistory.core
 import pghistory.tests.models as test_models
 
 
+def test_generate_history_field(settings):
+    """Test special cases of core._generate_history_field"""
+    settings.PGHISTORY_EXCLUDE_FIELD_KWARGS = {models.ForeignKey: ["db_index", "db_constraint"]}
+    field = pghistory.core._generate_history_field(test_models.SnapshotModel, "fk_field")
+    assert field.db_constraint
+
+    pghistory.core._generate_history_field(test_models.SnapshotModel, "int_field")
+
+
 @pytest.mark.django_db
 def test_image_field_snapshot():
     t = ddf.G(test_models.SnapshotImageField)

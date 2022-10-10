@@ -89,6 +89,28 @@ def obj_field():
     return obj_field
 
 
+def exclude_field_kwargs():
+    """
+    Provide a mapping of field classes to a list of keyword args to ignore
+    when instantiating the field on the event model.
+
+    For example, a field may not allow ``unique`` as a keyword argument.
+    If so, set ``settings.PGHISTORY_EXCLUDE_FIELD_KWARGS = {"field.FieldClass": ["unique"]}``
+    """
+    exclude_field_kwargs = getattr(settings, "PGHISTORY_EXCLUDE_FIELD_KWARGS", {})
+    assert isinstance(exclude_field_kwargs, dict)
+    for val in exclude_field_kwargs.values():
+        assert isinstance(val, (list, tuple))
+
+    # Import strings
+    exclude_field_kwargs = {
+        import_string(key) if isinstance(key, str) else key: value
+        for key, value in exclude_field_kwargs.items()
+    }
+
+    return exclude_field_kwargs
+
+
 def admin_ordering():
     """The default ordering for the events admin"""
     ordering = getattr(settings, "PGHISTORY_ADMIN_ORDERING", "-pgh_created_at") or []

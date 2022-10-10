@@ -52,6 +52,7 @@ class Event(pgtrigger.Trigger):
             for f in self.event_model._meta.fields
             if not isinstance(f, models.AutoField)
             and hasattr(self.event_model.pgh_tracked_model, f.name)
+            and f.concrete
         }
         fields["pgh_created_at"] = "NOW()"
         fields["pgh_label"] = f"'{self.label}'"

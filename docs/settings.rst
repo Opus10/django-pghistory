@@ -71,6 +71,31 @@ The default configuration for the ``pgh_obj`` field.
 
 **Default** ``pghistory.ObjForeignKey()``
 
+.. _exclude_field_kwargs:
+
+PGHISTORY_EXCLUDE_FIELD_KWARGS
+------------------------------
+
+When creating fields for the event model, new fields are supplied
+with argument overrides. Sometimes this can result in an incorrect
+keyword argument being provided to a field. For example, ``primary_key``
+fails Django's check framework when passed to an ``ImageField``.
+
+Use this setting to ignore certain keyword arguments being passed
+to child field instances.
+
+The setting is a dictionary where
+the key is the field class or a string to a class
+path, and the value is a list of arguments to ignore.
+For example, ``{models.ImageField: ["primary_key"]}``.
+
+**Default** ``{}``
+
+.. note::
+
+    The primary key example for image fields is already handled and does not
+    need to be configured.
+
 PGHISTORY_ADMIN_ORDERING
 ------------------------
 

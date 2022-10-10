@@ -268,25 +268,7 @@ def _generate_event_model_name(base_model, tracked_model, fields):
     return _pascalcase(name)
 
 
-def _generate_history_field(tracked_model, field):
-    """
-    When generating a history model from a tracked model, ensure the fields
-    are set up properly so that related names and other information
-    from the tracked model do not cause errors.
-    """
-    field = tracked_model._meta.get_field(field)
-
-    if isinstance(field, models.AutoField):
-        return models.IntegerField()
-    elif isinstance(field, models.BigAutoField):  # pragma: no cover
-        return models.BigIntegerField()
-
-    # The "swappable" field causes issues during deconstruct()
-    # since it tries to load models. Patch it and set it back to the original
-    # value later
-    field = copy.deepcopy(field)
-    swappable = getattr(field, "swappable", constants.UNSET)
-    field.swappable = False
+def _get_field_construction(field):
     _, _, args, kwargs = field.deconstruct()
 
     if isinstance(field, models.ForeignKey):
@@ -304,6 +286,39 @@ def _generate_history_field(tracked_model, field):
     elif isinstance(field, models.FileField):
         kwargs.pop("primary_key", None)
 
+    for field_class, exclude_kwargs in config.exclude_field_kwargs().items():
+        if isinstance(field, field_class):
+            for exclude_kwarg in exclude_kwargs:
+                kwargs.pop(exclude_kwarg, None)
+
+    return cls, args, kwargs
+
+
+def _generate_history_field(tracked_model, field):
+    """
+    When generating a history model from a tracked model, ensure the fields
+    are set up properly so that related names and other information
+    from the tracked model do not cause errors.
+    """
+    field = tracked_model._meta.get_field(field)
+
+    if isinstance(field, models.AutoField):
+        return models.IntegerField()
+    elif isinstance(field, models.BigAutoField):  # pragma: no cover
+        return models.BigIntegerField()
+    elif not field.concrete:  # pragma: no cover
+        # Django doesn't have any non-concrete fields that appear
+        # in ._meta.fields, but packages like django-prices have
+        # non-concrete fields
+        return field
+
+    # The "swappable" field causes issues during deconstruct()
+    # since it tries to load models. Patch it and set it back to the original
+    # value later
+    field = copy.deepcopy(field)
+    swappable = getattr(field, "swappable", constants.UNSET)
+    field.swappable = False
+    cls, args, kwargs = _get_field_construction(field)
     field = cls(*args, **kwargs)
 
     if swappable is not constants.UNSET:
