@@ -4,9 +4,9 @@ import json
 import threading
 import uuid
 
-from django.conf import settings
 from django.db import connection
-from django.utils.module_loading import import_string
+
+from pghistory import config
 
 
 _tracker = threading.local()
@@ -23,14 +23,6 @@ def _is_concurrent_statement(sql):
     return sql.startswith("create") and "concurrently" in sql
 
 
-def _json_encoder():
-    """Retrieve the JSON encoder used for encoding context"""
-    class_path = getattr(
-        settings, "PGHISTORY_JSON_ENCODER", "django.core.serializers.json.DjangoJSONEncoder"
-    )
-    return import_string(class_path)
-
-
 def _inject_history_context(execute, sql, params, many, context):
     cursor = context["cursor"]
 
@@ -45,10 +37,11 @@ def _inject_history_context(execute, sql, params, many, context):
     # Concurrent index creation is also incompatible with local variable
     # setting. Ignore these cases for now.
     if not cursor.name and not _is_concurrent_statement(sql):
-        encoder = _json_encoder()
         # Metadata is stored as a serialized JSON string with escaped
         # single quotes
-        metadata_str = json.dumps(_tracker.value.metadata, cls=encoder).replace("'", "''")
+        metadata_str = json.dumps(_tracker.value.metadata, cls=config.json_encoder()).replace(
+            "'", "''"
+        )
 
         sql = (
             f"SET LOCAL pghistory.context_id='{_tracker.value.id}';"
@@ -78,23 +71,24 @@ class context(contextlib.ContextDecorator):
     ``pghistory.context`` has previously been entered. Otherwise it will
     be ignored.
 
-    Usage:
-
-        with pghistory.context(key='value'):
-            # Do things..
-            # All tracked events will have the same ``pgh_context``
-            # foreign key, and the context object will include
-            # {'key': 'value'} in its metadata.
-            # Nesting the tracker adds additional metadata to the current
-            # context
-
-        # Add metadata if a parent piece of code has already entered
-        # pghistory.context
-        pghistory.context(key='value')
-
     Args:
         metadata (dict): Metadata that should be attached to the tracking
             context
+
+    Example:
+        Here we track a "key" with a value of "value"::
+
+            with pghistory.context(key='value'):
+                # Do things..
+                # All tracked events will have the same ``pgh_context``
+                # foreign key, and the context object will include
+                # {'key': 'value'} in its metadata.
+                # Nesting the tracker adds additional metadata to the current
+                # context
+
+            # Add metadata if a parent piece of code has already entered
+            # pghistory.context
+            pghistory.context(key='value')
 
     Notes:
         Context tracking is compatible for most scenarios, but it currently

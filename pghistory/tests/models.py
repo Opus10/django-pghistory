@@ -5,12 +5,37 @@ import pgtrigger
 import pghistory
 
 
+@pghistory.track(pghistory.Snapshot())
+class SnapshotImageField(models.Model):
+    img_field = models.ImageField()
+
+
 class UntrackedModel(models.Model):
     untracked = models.CharField(max_length=64)
 
 
 @pghistory.track(
-    pghistory.Snapshot("snapshot"),
+    pghistory.Snapshot(),
+    context_field=pghistory.ContextJSONField(),
+)
+@pghistory.track(
+    pghistory.Snapshot("snapshot_no_id"),
+    obj_field=pghistory.ObjForeignKey(related_name="event_no_id"),
+    context_field=pghistory.ContextJSONField(),
+    context_id_field=None,
+    model_name="DenormContextEventNoId",
+)
+class DenormContext(models.Model):
+    """
+    For testing denormalized context
+    """
+
+    int_field = models.IntegerField()
+    fk_field = models.ForeignKey("auth.User", on_delete=models.SET_NULL, null=True)
+
+
+@pghistory.track(
+    pghistory.Snapshot(),
     model_name="CustomModelSnapshot",
     related_name="snapshot",
 )
@@ -75,7 +100,7 @@ class SnapshotModel(models.Model):
 
 
 class CustomSnapshotModel(
-    pghistory.get_event_model(
+    pghistory.create_event_model(
         SnapshotModel,
         pghistory.Snapshot("custom_snapshot"),
         exclude=["dt_field"],
@@ -102,7 +127,7 @@ class CustomSnapshotModel(
 
 
 @pghistory.track(
-    pghistory.Event("manual_event"),
+    pghistory.ManualTracker("manual_event"),
     pghistory.AfterInsert("model.create"),
     pghistory.BeforeUpdate("before_update"),
     pghistory.BeforeDelete("before_delete"),
@@ -127,7 +152,7 @@ class EventModel(models.Model):
 
 
 class CustomEventModel(
-    pghistory.get_event_model(
+    pghistory.create_event_model(
         EventModel,
         pghistory.AfterInsert("model.custom_create"),
         fields=["dt_field"],
@@ -143,12 +168,40 @@ class CustomEventModel(
     pass
 
 
+CustomEventWithContext = pghistory.create_event_model(
+    EventModel,
+    pghistory.AfterInsert("model.custom_create_with_context"),
+    abstract=False,
+    name="CustomEventWithContext",
+    obj_field=pghistory.ObjForeignKey(related_name="+"),
+)
+
+
+class CustomEventProxy(EventModel.pgh_event_models["model.create"]):
+    url = pghistory.ProxyField("pgh_context__metadata__url", models.TextField(null=True))
+    auth_user = pghistory.ProxyField(
+        "pgh_context__metadata__user",
+        models.ForeignKey("auth.User", on_delete=models.DO_NOTHING, null=True),
+    )
+
+    class Meta:
+        proxy = True
+
+
 class CustomAggregateEvent(pghistory.models.BaseAggregateEvent):
     user = models.ForeignKey("auth.User", on_delete=models.DO_NOTHING, null=True)
     url = models.TextField(null=True)
 
     class Meta:
         managed = False
+
+
+class CustomEvents(pghistory.models.Events):
+    user = models.ForeignKey("auth.User", on_delete=models.DO_NOTHING, null=True)
+    url = pghistory.ProxyField("pgh_context__url", models.TextField(null=True))
+
+    class Meta:
+        proxy = True
 
 
 @pghistory.track(

@@ -56,6 +56,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
+    "sphinxcontrib.images",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -199,3 +200,8 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {"https://docs.python.org/": None}
+
+# Options for images
+images_config = {
+    "override_image_directive": True,
+}

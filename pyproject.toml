@@ -1,5 +1,5 @@
 [build-system]
-requires = ["poetry_core>=1.0.0"]
+requires = ["poetry_core>=1.2.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.black]
@@ -17,6 +17,9 @@ exclude_lines = [
     "raise NotImplementedError",
     "pass",
     "pytest.mark.skip"
+]
+omit = [
+    "pghistory/tests/wsgi.py"
 ]
 show_missing = true
 fail_under = 100
@@ -58,9 +61,10 @@ documentation = "https://django-pghistory.readthedocs.io"
 python = ">=3.7.0,<4"
 django = ">=2"
 importlib_metadata = { version = ">=4", python = "~3.7" }
-django-pgtrigger = ">=3.2.0"
+django-pgtrigger = ">=4.5.0"
 
 [tool.poetry.dev-dependencies]
+beautifulsoup4 = "4.11.1"
 black = "22.6.0"
 dj-database-url = "0.5.0"
 django-dynamic-fixture = "3.1.1"
@@ -74,8 +78,8 @@ flake8-mutable = "1.2.0"
 git-tidy = "1.1.2"
 myst-parser = "0.18.0"
 packaging = ">=19.2"
-pip = "*"
-poetry-core = "1.1.0rc3"
+Pillow = "9.2.0"
+poetry-core = ">=1.2"
 pre-commit = "2.13.0"
 psycopg2-binary = "2.8.6"
 pytest = "7.0.0"
@@ -84,6 +88,7 @@ pytest-django = "4.5.2"
 pytest-mock = "3.6.1"
 requests = "2.25.1"
 Sphinx = "4.4.0"
+sphinxcontrib-images = "0.9.4"
 sphinx-rtd-theme = "1.0.0"
 footing = "*"
 tox = "3.24.5"

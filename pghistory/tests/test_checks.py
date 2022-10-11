@@ -8,7 +8,9 @@ def test_checks(settings):
     call_command("check")
 
     # Note: We can't call .remove(), otherwise it leaks into other tests
-    settings.INSTALLED_APPS = [app for app in settings.INSTALLED_APPS if app != "pgtrigger"]
+    settings.INSTALLED_APPS = [
+        app for app in settings.INSTALLED_APPS if app not in ("pgtrigger", "pghistory.admin")
+    ]
 
     # Try a management command. This checks that our check is properly registered
     # and fails

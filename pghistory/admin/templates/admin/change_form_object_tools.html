@@ -1,0 +1,27 @@
+{% extends "admin/change_form_object_tools.html" %}
+{% load i18n admin_urls %}
+{% load event_admins from pghistory_admin %}
+{% load events_admin_url from pghistory_admin %}
+{% load events_are_tracked from pghistory_admin %}
+
+{% block object-tools-items %}
+	{% url opts|admin_urlname:'change' original.pk|admin_urlquote as back_url %}
+
+    {% if opts.label|events_are_tracked %}
+    	{% for admin in opts.label|event_admins %}
+    		<li>
+    			<a href="{% url admin|admin_urlname:'changelist' %}?obj={{ opts.label }}:{{ original.pk }}&back={% add_preserved_filters back_url %}" class="event-admin">
+    				{{ admin.verbose_name_plural }}
+    			</a>
+    		</li>
+    	{% endfor %}
+
+	  	<li>
+	    	<a href="{% events_admin_url %}?method=tracks&obj={{ opts.label }}:{{ original.pk }}&back={% add_preserved_filters back_url %}" class="events-admin">
+	            {% trans "Events" %}
+	    	</a>
+	  	</li>
+	{% endif %}
+
+  	{{ block.super }}
+{% endblock %}
