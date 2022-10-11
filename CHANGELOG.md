@@ -1,5 +1,82 @@
 # Changelog
-## 2.4.2 (2022-10-05)
+## 2.5.0 (2022-10-10)
+### Bug
+  - Ignore tracking non-concrete fields [Wesley Kendall, e7b0589]
+
+    If a field isn't concrete, pghistory no longer tries to track it.
+  - Require ``django-pgtrigger>=4.5`` [Wesley Kendall, a70e0d3]
+
+    Version 4.5 of ``django-pgtrigger`` fixes several bugs related to trigger migrations,
+    especially as they relate to ``django-pghistory``.
+
+    See the migration guide to ``django-pgtrigger`` version 4 at
+    https://django-pgtrigger.readthedocs.io/en/4.5.3/upgrading.html#version-4. Upgrading
+    from version 3 to 4 only affects mutli-database setups.
+### Feature
+  - Automatically add the "pgh_event_model" attribute to tracked models. [Wesley Kendall, 917c396]
+
+    When a model is tracked, a "pgh_event_model" attribute is added to the tracked model to
+    make it easier to inherit the event model and access it.
+  - The label argument for ``pghistory.track`` is optional [Wesley Kendall, b6a8c99]
+
+    The label argument was previously required. Now it defaults to the name of the tracker.
+  - Simplify conditions for snapshots of all fields [Wesley Kendall, e9dbc06]
+
+    Previously when using ``pghistory.Snapshot``, the condition for the trigger would OR
+    together each field to verify nothing changed. Now ``OLD.* IS DISTINCT FROM NEW.*``
+    is used as the condition.
+  - Restructure documentation and add more tests [Wesley Kendall, 3bc868e]
+
+    The documemntation was overhauled for the new features and
+    admin integration.
+  - Added reversion capability [Wesley Kendall, c2d8b90]
+
+    A ``revert`` method was added to event models for reverting changes.
+    The method only runs if the event model tracks every field, otherwise
+    a ``Runtime`` error is thrown.
+  - Use ProxyField() for defining proxy columns over attributes. [Wesley Kendall, a267478]
+
+    When inheriting the ``Events`` model or individual event models,
+    one can use the ``pghistory.ProxyField`` utility to proxy
+    relationships from JSON columns into structured fields. For
+    example, making a foreign key for users that proxies through the
+    ``user`` attribute of context.
+
+    Previously this behavior only worked on the deprecated
+    ``AggregateEvent`` model by adding additional fields. Any
+    fields that are proxied must now use the ``pghistory.ProxyField``
+    utility.
+  - Integration with Django admin [Wesley Kendall, a9fea95]
+
+    Installing ``pghistory.admin`` to ``settings.INSTALLED_APPS``
+    will provide the following:
+
+    * An "Events" admin page that other admins can use to display events
+    * Dynamic buttons on tracked models that redirect to a pre-filtered
+      events admin
+    * The ability to make admins for specific event models and have them
+      show up as buttons on their associated tracked model admin pages
+
+    The default events admin has configuration parameters that can
+    be set via settings.
+  - New event model configuration and new aggregate ``Events`` model. [Wes Kendall, c1120f2]
+
+    Event models can be configured with global settings
+    and with overrides on a per-event-model basis.
+    Previous arguments to ``pghistory.track``, such as
+    ``obj_fk`` and ``context_fk`` have been deprecated
+    in place of ``obj_field`` and ``context_field``.
+    These new fields, along with their associated settings,
+    use ``pghistory.Field`` configuration instances.
+
+    Along with this, the ``AggregateEvent`` model has been deprecated
+    in favor of the ``Events`` proxy model. The new
+    ``Events`` model has similar fields and operates the same way, and
+    it also has other methods for filtering aggregate events.
+### Trivial
+  - Rename "tracking" module to "runtime" module. [Wesley Kendall, 43645ea]
+
+## 2.4.2 (2022-10-06)
 ### Trivial
   - Update with the latest Python template [Wesley Kendall, ef2fb6e]
 
