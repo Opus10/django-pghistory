@@ -1,7 +1,7 @@
 _extensions:
 - jinja2_time.TimeExtension
 _template: git@github.com:Opus10/public-django-app-template.git
-_version: c9b31f2842deb9b3ddc0bba646dc87d21376f98e
+_version: 27588e3e497958fb3b9892c564be981ece896bef
 module_name: pghistory
 repo_name: django-pghistory
 short_description: History tracking for Django and Postgres
