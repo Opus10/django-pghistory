@@ -1,5 +1,10 @@
 # Changelog
-## 2.5.0 (2022-10-10)
+## 2.5.1 (2022-10-12)
+### Trivial
+  - Updated with latest Django template [Wesley Kendall, de8a535]
+  - A safer way of determining fields when creating the snapshot triggers [Wesley Kendall, 7b368c3]
+
+## 2.5.0 (2022-10-11)
 ### Bug
   - Ignore tracking non-concrete fields [Wesley Kendall, e7b0589]
 

@@ -32,7 +32,7 @@ packages = [
 exclude = [
   "*/tests/"
 ]
-version = "2.5.0"
+version = "2.5.1"
 description = "History tracking for Django and Postgres"
 authors = ["Wes Kendall"]
 classifiers = [
