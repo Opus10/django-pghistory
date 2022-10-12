@@ -47,11 +47,12 @@ class Event(pgtrigger.Trigger):
         super().__init__(name=name, operation=operation, condition=condition, when=when)
 
     def get_func(self, model):
+        tracked_model_fields = {f.name for f in self.event_model.pgh_tracked_model._meta.fields}
         fields = {
             f.column: f'{self.snapshot}."{f.column}"'
             for f in self.event_model._meta.fields
             if not isinstance(f, models.AutoField)
-            and hasattr(self.event_model.pgh_tracked_model, f.name)
+            and f.name in tracked_model_fields
             and f.concrete
         }
         fields["pgh_created_at"] = "NOW()"
