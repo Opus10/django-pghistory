@@ -16,22 +16,22 @@ from pghistory.version import __version__
 
 
 __all__ = [
-    'AfterInsert',
-    'AfterInsertOrUpdate',
-    'AfterUpdate',
-    'BeforeDelete',
-    'BeforeUpdate',
-    'context',
-    'create_event',
-    'DatabaseEvent',
-    'get_event_model',
-    'Snapshot',
-    'Event',
-    'track',
-    '__version__',
+    "AfterInsert",
+    "AfterInsertOrUpdate",
+    "AfterUpdate",
+    "BeforeDelete",
+    "BeforeUpdate",
+    "context",
+    "create_event",
+    "DatabaseEvent",
+    "get_event_model",
+    "Snapshot",
+    "Event",
+    "track",
+    "__version__",
 ]
 
 if django.VERSION < (3, 2):
-    default_app_config = 'pghistory.apps.PGHistoryConfig'
+    default_app_config = "pghistory.apps.PGHistoryConfig"
 
 del django

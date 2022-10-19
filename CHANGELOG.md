@@ -1,4 +1,76 @@
 # Changelog
+## 2.4.2 (2022-10-05)
+### Trivial
+  - Update with the latest Python template [Wesley Kendall, ef2fb6e]
+
+## 2.4.1 (2022-09-13)
+### Trivial
+  - Ensure installation of pghistory context function is installed across multiple databases [Wes Kendall, d06c758]
+
+## 2.4.0 (2022-09-07)
+### Bug
+  - Fix issues related to the ``dumpdata`` command [Wes Kendall, 8cb8036]
+
+    Django's ``dumpdata`` command is now compatible with pghistory's AggregateEvent
+    model.
+
+## 2.3.0 (2022-09-06)
+### Bug
+  - Check that "pgtrigger" is in settings.INSTALLED_APPS [Wes Kendall, fa86205]
+
+    A check is registered with Django's check framework to verify that
+    "pgtrigger" is in settings.INSTALLED_APPS when using ``django-pghistory``.
+
+    Docs were also updated to note the requirement of pgtrigger in INSTALLED_APPS.
+  - Install context tracking function in a migration [Wes Kendall, 516dc14]
+
+    The Postgres pghistory function is now installed in a migration, alleviating
+    issues that would happen when trying to migrate pghistory triggers.
+
+## 2.2.2 (2022-09-02)
+### Trivial
+  - Reference PK of user instead of ID in middleware for DRF-based flows [Wes Kendall, 2193e2b]
+
+## 2.2.1 (2022-09-02)
+### Trivial
+  - Do additional safety checks in middleware [Wes Kendall, 9678d83]
+
+## 2.2.0 (2022-09-02)
+### Feature
+  - Configure middleware tracked methods [Wes Kendall, e931757]
+
+    Use ``settings.PGHISTORY_MIDDLEWARE_METHODS`` to configure which methods
+    are tracked in the middleware. Defaults to ``("GET", "POST", "PUT", "PATCH", "DELETE")``.
+
+## 2.1.1 (2022-08-31)
+### Trivial
+  - Format trigger SQL for better compatibility with ``django-pgtrigger``>=4.5 [Wes Kendall, fa04191]
+
+## 2.1.0 (2022-08-27)
+### Feature
+  - Add setting to configure JSON encoder for context. [Zac Miller, 430225f]
+
+    ``django-pghistory`` now uses Django's default JSON encoder
+    to serialize contexts, which supports datetimes, UUIDs,
+    and other fields.
+
+    You can override the JSON encoder by setting
+    ``PGHISTORY_JSON_ENCODER`` to the path of the class.
+### Trivial
+  - Local development enhancements [Wes Kendall, 95a5b1d]
+
+## 2.0.3 (2022-08-26)
+### Trivial
+  - Test against Django 4.1 and other CI improvements [Wes Kendall, 953fe1d]
+
+## 2.0.2 (2022-08-24)
+### Trivial
+  - Fix ReadTheDocs builds [Wes Kendall, afbc33e]
+
+## 2.0.1 (2022-08-20)
+### Trivial
+  - Fix release note rendering and code formatting changes [Wes Kendall, 7043553]
+
 ## 2.0.0 (2022-08-08)
 ### Api-Break
   - Integration with Django's migration system [Wes Kendall, e0acead]
