@@ -5,19 +5,44 @@ import pgtrigger
 import pghistory
 
 
+@pghistory.track(pghistory.Snapshot())
+class SnapshotImageField(models.Model):
+    img_field = models.ImageField()
+
+
 class UntrackedModel(models.Model):
     untracked = models.CharField(max_length=64)
 
 
 @pghistory.track(
-    pghistory.Snapshot('snapshot'),
-    model_name='CustomModelSnapshot',
-    related_name='snapshot',
+    pghistory.Snapshot(),
+    context_field=pghistory.ContextJSONField(),
+)
+@pghistory.track(
+    pghistory.Snapshot("snapshot_no_id"),
+    obj_field=pghistory.ObjForeignKey(related_name="event_no_id"),
+    context_field=pghistory.ContextJSONField(),
+    context_id_field=None,
+    model_name="DenormContextEventNoId",
+)
+class DenormContext(models.Model):
+    """
+    For testing denormalized context
+    """
+
+    int_field = models.IntegerField()
+    fk_field = models.ForeignKey("auth.User", on_delete=models.SET_NULL, null=True)
+
+
+@pghistory.track(
+    pghistory.Snapshot(),
+    model_name="CustomModelSnapshot",
+    related_name="snapshot",
 )
 @pghistory.track(
     pghistory.AfterUpdate(
-        'int_field_updated',
-        condition=pgtrigger.Q(old__int_field__df=pgtrigger.F('new__int_field')),
+        "int_field_updated",
+        condition=pgtrigger.Q(old__int_field__df=pgtrigger.F("new__int_field")),
     )
 )
 class CustomModel(models.Model):
@@ -27,10 +52,10 @@ class CustomModel(models.Model):
     """
 
     my_pk = models.UUIDField(primary_key=True)
-    int_field = models.IntegerField(db_column='integer_field')
+    int_field = models.IntegerField(db_column="integer_field")
 
 
-@pghistory.track(pghistory.Snapshot('snapshot'), related_name='snapshot')
+@pghistory.track(pghistory.Snapshot("snapshot"), related_name="snapshot")
 class UniqueConstraintModel(models.Model):
     """For testing tracking models with unique constraints"""
 
@@ -40,29 +65,29 @@ class UniqueConstraintModel(models.Model):
     my_int_field2 = models.IntegerField()
 
     class Meta:
-        unique_together = [('my_int_field1', 'my_int_field2')]
+        unique_together = [("my_int_field1", "my_int_field2")]
 
 
 @pghistory.track(
-    pghistory.Snapshot('dt_field_snapshot'),
-    fields=['dt_field'],
-    related_name='dt_field_snapshot',
+    pghistory.Snapshot("dt_field_snapshot"),
+    fields=["dt_field"],
+    related_name="dt_field_snapshot",
 )
 @pghistory.track(
-    pghistory.Snapshot('dt_field_int_field_snapshot'),
-    fields=['dt_field', 'int_field'],
-    related_name='dt_field_int_field_snapshot',
+    pghistory.Snapshot("dt_field_int_field_snapshot"),
+    fields=["dt_field", "int_field"],
+    related_name="dt_field_int_field_snapshot",
 )
 @pghistory.track(
-    pghistory.Snapshot('snapshot'),
-    related_name='snapshot',
-    model_name='SnapshotModelSnapshot',
+    pghistory.Snapshot("snapshot"),
+    related_name="snapshot",
+    model_name="SnapshotModelSnapshot",
 )
 @pghistory.track(
-    pghistory.Snapshot('no_pgh_obj_snapshot'),
+    pghistory.Snapshot("no_pgh_obj_snapshot"),
     obj_fk=None,
-    related_name='no_pgh_obj_snapshot',
-    model_name='NoPghObjSnapshot',
+    related_name="no_pgh_obj_snapshot",
+    model_name="NoPghObjSnapshot",
 )
 class SnapshotModel(models.Model):
     """
@@ -71,51 +96,51 @@ class SnapshotModel(models.Model):
 
     dt_field = models.DateTimeField()
     int_field = models.IntegerField()
-    fk_field = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True)
+    fk_field = models.ForeignKey("auth.User", on_delete=models.SET_NULL, null=True)
 
 
 class CustomSnapshotModel(
-    pghistory.get_event_model(
+    pghistory.create_event_model(
         SnapshotModel,
-        pghistory.Snapshot('custom_snapshot'),
-        exclude=['dt_field'],
+        pghistory.Snapshot("custom_snapshot"),
+        exclude=["dt_field"],
         obj_fk=models.ForeignKey(
             SnapshotModel,
-            related_name='custom_related_name',
+            related_name="custom_related_name",
             null=True,
             on_delete=models.SET_NULL,
         ),
         context_fk=None,
     )
 ):
-    fk_field = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True)
+    fk_field = models.ForeignKey("auth.User", on_delete=models.CASCADE, null=True)
     # Add an extra field that's not on the original model to try to throw
     # tests off
     fk_field2 = models.ForeignKey(
-        'auth.User',
+        "auth.User",
         db_constraint=False,
         null=True,
         on_delete=models.DO_NOTHING,
-        related_name='+',
-        related_query_name='+',
+        related_name="+",
+        related_query_name="+",
     )
 
 
 @pghistory.track(
-    pghistory.Event('manual_event'),
-    pghistory.AfterInsert('model.create'),
-    pghistory.BeforeUpdate('before_update'),
-    pghistory.BeforeDelete('before_delete'),
+    pghistory.ManualTracker("manual_event"),
+    pghistory.AfterInsert("model.create"),
+    pghistory.BeforeUpdate("before_update"),
+    pghistory.BeforeDelete("before_delete"),
     pghistory.AfterUpdate(
-        'after_update',
-        condition=pgtrigger.Q(old__dt_field__df=pgtrigger.F('new__dt_field')),
+        "after_update",
+        condition=pgtrigger.Q(old__dt_field__df=pgtrigger.F("new__dt_field")),
     ),
 )
 @pghistory.track(
-    pghistory.Event('no_pgh_obj_manual_event'),
+    pghistory.Event("no_pgh_obj_manual_event"),
     obj_fk=None,
-    model_name='NoPghObjEvent',
-    related_name='no_pgh_obj_event',
+    model_name="NoPghObjEvent",
+    related_name="no_pgh_obj_event",
 )
 class EventModel(models.Model):
     """
@@ -127,14 +152,14 @@ class EventModel(models.Model):
 
 
 class CustomEventModel(
-    pghistory.get_event_model(
+    pghistory.create_event_model(
         EventModel,
-        pghistory.AfterInsert('model.custom_create'),
-        fields=['dt_field'],
+        pghistory.AfterInsert("model.custom_create"),
+        fields=["dt_field"],
         context_fk=None,
         obj_fk=models.ForeignKey(
             EventModel,
-            related_name='custom_related_name',
+            related_name="custom_related_name",
             null=True,
             on_delete=models.SET_NULL,
         ),
@@ -143,17 +168,45 @@ class CustomEventModel(
     pass
 
 
+CustomEventWithContext = pghistory.create_event_model(
+    EventModel,
+    pghistory.AfterInsert("model.custom_create_with_context"),
+    abstract=False,
+    name="CustomEventWithContext",
+    obj_field=pghistory.ObjForeignKey(related_name="+"),
+)
+
+
+class CustomEventProxy(EventModel.pgh_event_models["model.create"]):
+    url = pghistory.ProxyField("pgh_context__metadata__url", models.TextField(null=True))
+    auth_user = pghistory.ProxyField(
+        "pgh_context__metadata__user",
+        models.ForeignKey("auth.User", on_delete=models.DO_NOTHING, null=True),
+    )
+
+    class Meta:
+        proxy = True
+
+
 class CustomAggregateEvent(pghistory.models.BaseAggregateEvent):
-    user = models.ForeignKey('auth.User', on_delete=models.DO_NOTHING, null=True)
+    user = models.ForeignKey("auth.User", on_delete=models.DO_NOTHING, null=True)
     url = models.TextField(null=True)
 
     class Meta:
         managed = False
 
 
+class CustomEvents(pghistory.models.Events):
+    user = models.ForeignKey("auth.User", on_delete=models.DO_NOTHING, null=True)
+    url = pghistory.ProxyField("pgh_context__url", models.TextField(null=True))
+
+    class Meta:
+        proxy = True
+
+
 @pghistory.track(
-    pghistory.AfterInsert('group.add'),
-    pghistory.BeforeDelete('group.remove'),
+    pghistory.AfterInsert("group.add"),
+    pghistory.BeforeDelete("group.remove"),
     obj_fk=None,
 )
 class UserGroups(User.groups.through):

@@ -1,4 +1,158 @@
 # Changelog
+## 2.5.1 (2022-10-12)
+### Trivial
+  - Updated with latest Django template [Wesley Kendall, de8a535]
+  - A safer way of determining fields when creating the snapshot triggers [Wesley Kendall, 7b368c3]
+
+## 2.5.0 (2022-10-11)
+### Bug
+  - Ignore tracking non-concrete fields [Wesley Kendall, e7b0589]
+
+    If a field isn't concrete, pghistory no longer tries to track it.
+  - Require ``django-pgtrigger>=4.5`` [Wesley Kendall, a70e0d3]
+
+    Version 4.5 of ``django-pgtrigger`` fixes several bugs related to trigger migrations,
+    especially as they relate to ``django-pghistory``.
+
+    See the migration guide to ``django-pgtrigger`` version 4 at
+    https://django-pgtrigger.readthedocs.io/en/4.5.3/upgrading.html#version-4. Upgrading
+    from version 3 to 4 only affects mutli-database setups.
+### Feature
+  - Automatically add the "pgh_event_model" attribute to tracked models. [Wesley Kendall, 917c396]
+
+    When a model is tracked, a "pgh_event_model" attribute is added to the tracked model to
+    make it easier to inherit the event model and access it.
+  - The label argument for ``pghistory.track`` is optional [Wesley Kendall, b6a8c99]
+
+    The label argument was previously required. Now it defaults to the name of the tracker.
+  - Simplify conditions for snapshots of all fields [Wesley Kendall, e9dbc06]
+
+    Previously when using ``pghistory.Snapshot``, the condition for the trigger would OR
+    together each field to verify nothing changed. Now ``OLD.* IS DISTINCT FROM NEW.*``
+    is used as the condition.
+  - Restructure documentation and add more tests [Wesley Kendall, 3bc868e]
+
+    The documemntation was overhauled for the new features and
+    admin integration.
+  - Added reversion capability [Wesley Kendall, c2d8b90]
+
+    A ``revert`` method was added to event models for reverting changes.
+    The method only runs if the event model tracks every field, otherwise
+    a ``Runtime`` error is thrown.
+  - Use ProxyField() for defining proxy columns over attributes. [Wesley Kendall, a267478]
+
+    When inheriting the ``Events`` model or individual event models,
+    one can use the ``pghistory.ProxyField`` utility to proxy
+    relationships from JSON columns into structured fields. For
+    example, making a foreign key for users that proxies through the
+    ``user`` attribute of context.
+
+    Previously this behavior only worked on the deprecated
+    ``AggregateEvent`` model by adding additional fields. Any
+    fields that are proxied must now use the ``pghistory.ProxyField``
+    utility.
+  - Integration with Django admin [Wesley Kendall, a9fea95]
+
+    Installing ``pghistory.admin`` to ``settings.INSTALLED_APPS``
+    will provide the following:
+
+    * An "Events" admin page that other admins can use to display events
+    * Dynamic buttons on tracked models that redirect to a pre-filtered
+      events admin
+    * The ability to make admins for specific event models and have them
+      show up as buttons on their associated tracked model admin pages
+
+    The default events admin has configuration parameters that can
+    be set via settings.
+  - New event model configuration and new aggregate ``Events`` model. [Wes Kendall, c1120f2]
+
+    Event models can be configured with global settings
+    and with overrides on a per-event-model basis.
+    Previous arguments to ``pghistory.track``, such as
+    ``obj_fk`` and ``context_fk`` have been deprecated
+    in place of ``obj_field`` and ``context_field``.
+    These new fields, along with their associated settings,
+    use ``pghistory.Field`` configuration instances.
+
+    Along with this, the ``AggregateEvent`` model has been deprecated
+    in favor of the ``Events`` proxy model. The new
+    ``Events`` model has similar fields and operates the same way, and
+    it also has other methods for filtering aggregate events.
+### Trivial
+  - Rename "tracking" module to "runtime" module. [Wesley Kendall, 43645ea]
+
+## 2.4.2 (2022-10-06)
+### Trivial
+  - Update with the latest Python template [Wesley Kendall, ef2fb6e]
+
+## 2.4.1 (2022-09-13)
+### Trivial
+  - Ensure installation of pghistory context function is installed across multiple databases [Wes Kendall, d06c758]
+
+## 2.4.0 (2022-09-07)
+### Bug
+  - Fix issues related to the ``dumpdata`` command [Wes Kendall, 8cb8036]
+
+    Django's ``dumpdata`` command is now compatible with pghistory's AggregateEvent
+    model.
+
+## 2.3.0 (2022-09-06)
+### Bug
+  - Check that "pgtrigger" is in settings.INSTALLED_APPS [Wes Kendall, fa86205]
+
+    A check is registered with Django's check framework to verify that
+    "pgtrigger" is in settings.INSTALLED_APPS when using ``django-pghistory``.
+
+    Docs were also updated to note the requirement of pgtrigger in INSTALLED_APPS.
+  - Install context tracking function in a migration [Wes Kendall, 516dc14]
+
+    The Postgres pghistory function is now installed in a migration, alleviating
+    issues that would happen when trying to migrate pghistory triggers.
+
+## 2.2.2 (2022-09-02)
+### Trivial
+  - Reference PK of user instead of ID in middleware for DRF-based flows [Wes Kendall, 2193e2b]
+
+## 2.2.1 (2022-09-02)
+### Trivial
+  - Do additional safety checks in middleware [Wes Kendall, 9678d83]
+
+## 2.2.0 (2022-09-02)
+### Feature
+  - Configure middleware tracked methods [Wes Kendall, e931757]
+
+    Use ``settings.PGHISTORY_MIDDLEWARE_METHODS`` to configure which methods
+    are tracked in the middleware. Defaults to ``("GET", "POST", "PUT", "PATCH", "DELETE")``.
+
+## 2.1.1 (2022-08-31)
+### Trivial
+  - Format trigger SQL for better compatibility with ``django-pgtrigger``>=4.5 [Wes Kendall, fa04191]
+
+## 2.1.0 (2022-08-27)
+### Feature
+  - Add setting to configure JSON encoder for context. [Zac Miller, 430225f]
+
+    ``django-pghistory`` now uses Django's default JSON encoder
+    to serialize contexts, which supports datetimes, UUIDs,
+    and other fields.
+
+    You can override the JSON encoder by setting
+    ``PGHISTORY_JSON_ENCODER`` to the path of the class.
+### Trivial
+  - Local development enhancements [Wes Kendall, 95a5b1d]
+
+## 2.0.3 (2022-08-26)
+### Trivial
+  - Test against Django 4.1 and other CI improvements [Wes Kendall, 953fe1d]
+
+## 2.0.2 (2022-08-24)
+### Trivial
+  - Fix ReadTheDocs builds [Wes Kendall, afbc33e]
+
+## 2.0.1 (2022-08-20)
+### Trivial
+  - Fix release note rendering and code formatting changes [Wes Kendall, 7043553]
+
 ## 2.0.0 (2022-08-08)
 ### Api-Break
   - Integration with Django's migration system [Wes Kendall, e0acead]

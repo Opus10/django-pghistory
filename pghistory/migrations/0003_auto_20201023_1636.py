@@ -8,13 +8,13 @@ import pghistory.models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('pghistory', '0002_aggregateevent'),
+        ("pghistory", "0002_aggregateevent"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='context',
-            name='metadata',
+            model_name="context",
+            name="metadata",
             field=pghistory.models.PGHistoryJSONField(default=dict),
         ),
     ]

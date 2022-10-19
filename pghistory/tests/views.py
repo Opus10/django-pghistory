@@ -8,7 +8,7 @@ import pghistory.tests.models as test_models
 
 class MyPostView(views.View):
     def post(self, request, *args, **kwargs):
-        user = User.objects.create(username='username')
+        user = User.objects.create(username="username")
         request.user = user
         test_models.SnapshotModel.objects.create(
             dt_field=timezone.now(), int_field=1, fk_field=user

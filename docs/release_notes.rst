@@ -1,6 +1,9 @@
+.. _release_notes:
+
 Release Notes
 =============
 
-.. literalinclude:: ../CHANGELOG.md
-   :language: md
+.. include:: ../CHANGELOG.md
+   :parser: myst_parser.sphinx_
    :start-after: # Changelog
+
