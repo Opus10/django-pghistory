@@ -113,6 +113,16 @@ def _generate_history_field(tracked_model, field):
     return field
 
 
+def get_model_parents(model):
+    """
+    Returns model parents, handling the specific case of proxy models for those parents must not be considered as a direct parent
+    """
+    if model._meta.proxy:
+        return get_model_parents(model._meta.proxy_for_model)
+    else:
+        return model._meta.parents
+
+
 def _generate_related_name(base_model, tracked_model, fields):
     """
     Generates a related name to the tracking model based on the base
@@ -233,7 +243,7 @@ def create_event_model(
     )
     exclude = exclude or []
 
-    for parent in tracked_model._meta.parents:
+    for parent in get_model_parents(tracked_model):
         for field in parent._meta.fields:
             exclude.append(field.name)
 
