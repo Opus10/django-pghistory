@@ -156,7 +156,7 @@ def admin_all_events():
 
 def admin_list_display():
     """The default list display for the events admin"""
-    defaults = ["pgh_created_at", "pgh_obj_model", "pgh_obj_id", "pgh_diff"]
+    defaults = ["pgh_created_at", "pgh_operation", "pgh_obj_model", "pgh_obj_id", "pgh_diff"]
 
     if admin_queryset().model._meta.label == "pghistory.MiddlewareEvents":
         defaults.extend(["user", "url"])

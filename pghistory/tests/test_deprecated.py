@@ -5,6 +5,7 @@ import pytest
 
 import pghistory.models
 import pghistory.tests.models as test_models
+import pghistory.utils
 
 
 @pytest.mark.django_db
@@ -78,6 +79,7 @@ def test_aggregate_events_joining_filtering(django_assert_num_queries, mocker):
     ) == [
         {
             "pgh_context_id": mocker.ANY,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "dt_field": "2020-06-19T00:00:00+00:00",
@@ -142,6 +144,7 @@ def test_aggregate_events_joining_filtering_multiple_targets(django_assert_num_q
 
     default = {
         "pgh_context_id": None,
+        "pgh_operation": pghistory.utils.Operation.INSERT.value,
         "pgh_created_at": mocker.ANY,
         "pgh_id": mocker.ANY,
         "pgh_label": "snapshot",
@@ -170,6 +173,7 @@ def test_aggregate_events_joining_filtering_multiple_targets(django_assert_num_q
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
                 "fk_field_id": user1.id,
@@ -182,6 +186,7 @@ def test_aggregate_events_joining_filtering_multiple_targets(django_assert_num_q
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "dt_field": "2020-06-22T00:00:00+00:00",
                 "fk_field_id": user1.id,
@@ -232,6 +237,7 @@ def test_aggregate_events_custom_pk(mocker):
     ) == [
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {"integer_field": 2, "my_pk": str(cm.pk)},
             "pgh_diff": None,
@@ -241,6 +247,7 @@ def test_aggregate_events_custom_pk(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {"integer_field": 1, "my_pk": str(cm.pk)},
             "pgh_diff": None,
@@ -250,6 +257,7 @@ def test_aggregate_events_custom_pk(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {"integer_field": 2, "my_pk": str(cm.pk)},
             "pgh_diff": {"integer_field": [1, 2]},
@@ -317,6 +325,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
     ) == [
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "fk_field2_id": None,
@@ -331,6 +340,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "fk_field2_id": None,
@@ -345,6 +355,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "fk_field2_id": None,
@@ -359,6 +370,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {"dt_field": "2020-06-17T00:00:00+00:00"},
             "pgh_diff": None,
@@ -368,6 +380,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {"dt_field": "2020-06-19T00:00:00+00:00"},
             "pgh_diff": {
@@ -382,6 +395,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
@@ -394,6 +408,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
@@ -406,6 +421,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "dt_field": "2020-06-19T00:00:00+00:00",
@@ -424,6 +440,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
@@ -438,6 +455,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
@@ -452,6 +470,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "dt_field": "2020-06-19T00:00:00+00:00",
@@ -481,6 +500,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
     ) == [
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "fk_field2_id": None,
@@ -495,6 +515,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "fk_field2_id": None,
@@ -509,6 +530,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "fk_field2_id": None,
@@ -523,6 +545,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "fk_field2_id": None,
@@ -537,6 +560,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
@@ -551,6 +575,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
@@ -565,6 +590,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "dt_field": "2020-06-19T00:00:00+00:00",
@@ -579,6 +605,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "dt_field": "2020-06-22T00:00:00+00:00",
@@ -593,6 +620,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
@@ -607,6 +635,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
@@ -621,6 +650,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "dt_field": "2020-06-19T00:00:00+00:00",
@@ -641,6 +671,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "dt_field": "2020-06-22T00:00:00+00:00",
@@ -664,6 +695,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
     ) == [
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "fk_field2_id": None,
@@ -678,6 +710,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "fk_field2_id": None,
@@ -692,6 +725,7 @@ def test_aggregate_events_no_obj_tracking_filters(mocker):
         },
         {
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "fk_field2_id": None,

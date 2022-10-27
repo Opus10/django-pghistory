@@ -4,6 +4,7 @@ import pytest
 
 import pghistory.models
 import pghistory.tests.models as test_models
+import pghistory.utils
 
 
 @pytest.mark.django_db(transaction=True)
@@ -76,6 +77,7 @@ def test_track_context_id(mocker):
 
         assert list(m.event.values()) == [
             {
+                "pgh_operation": pghistory.utils.Operation.INSERT.value,
                 "pgh_created_at": mocker.ANY,
                 "pgh_context_id": ctx.id,
                 "dt_field": orig_dt,
@@ -161,6 +163,7 @@ def test_nested_tracking(mocker):
 
             assert list(m.event.values()) == [
                 {
+                    "pgh_operation": pghistory.utils.Operation.INSERT.value,
                     "pgh_created_at": mocker.ANY,
                     "pgh_context_id": ctx.id,
                     "dt_field": m.dt_field,
@@ -176,6 +179,7 @@ def test_nested_tracking(mocker):
 
         assert list(m.event.values().order_by("pgh_id")) == [
             {
+                "pgh_operation": pghistory.utils.Operation.INSERT.value,
                 "pgh_created_at": mocker.ANY,
                 "pgh_context_id": ctx.id,
                 "dt_field": m.dt_field,
@@ -186,6 +190,7 @@ def test_nested_tracking(mocker):
                 "id": m.id,
             },
             {
+                "pgh_operation": pghistory.utils.Operation.UPDATE.value,
                 "pgh_created_at": mocker.ANY,
                 "pgh_context_id": ctx.id,
                 "dt_field": m.dt_field,

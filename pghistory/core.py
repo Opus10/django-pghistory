@@ -40,7 +40,7 @@ class Tracker:
         """Set up the tracker for the event model"""
         pass
 
-    def pghistory_setup(self, event_model):
+    def register(self, event_model):
         """Registers the tracker for the event model and calls user-defined setup"""
         tracked_model = event_model.pgh_tracked_model
 
@@ -53,6 +53,8 @@ class Tracker:
 
         _registered_trackers[(tracked_model, self.label)] = event_model
 
+    def pghistory_setup(self, event_model):
+        self.register(event_model)
         self.setup(event_model)
 
 
@@ -138,22 +140,19 @@ class DatabaseEvent(DatabaseTracker):
         )
 
 
-class Snapshot(DatabaseTracker):
+class SnapshotInsert(DatabaseTracker):
     """
     Tracks changes to fields.
-    A snapshot tracker tracks inserts and updates. It ensures that no
+    A snapshot tracker tracks inserts. It ensures that no
     duplicate rows are created with a pre-configured condition.
-
-    NOTE: Two triggers are created since Insert triggers do
-    not allow comparison against the OLD values. We could also
-    place this in one trigger and do the condition in the plpgsql code.
     """
+
+    label = "snapshot"
 
     def __init__(self, label=None):
         return super().__init__(label=label)
 
     def setup(self, event_model):
-
         insert_trigger = trigger.Event(
             event_model=event_model,
             label=self.label,
@@ -163,6 +162,22 @@ class Snapshot(DatabaseTracker):
             operation=pgtrigger.Insert,
         )
 
+        pgtrigger.register(insert_trigger)(event_model.pgh_tracked_model)
+
+
+class SnapshotUpdate(DatabaseTracker):
+    """
+    Tracks changes to fields.
+    A snapshot tracker tracks updates. It ensures that no
+    duplicate rows are created with a pre-configured condition.
+    """
+
+    label = "snapshot"
+
+    def __init__(self, label=None):
+        return super().__init__(label=label)
+
+    def setup(self, event_model):
         event_fields = [
             field.name for field in event_model._meta.fields if not field.name.startswith("pgh_")
         ]
@@ -186,7 +201,50 @@ class Snapshot(DatabaseTracker):
             condition=condition,
         )
 
-        pgtrigger.register(insert_trigger, update_trigger)(event_model.pgh_tracked_model)
+        pgtrigger.register(update_trigger)(event_model.pgh_tracked_model)
+
+
+class SnapshotDelete(DatabaseTracker):
+    """
+    Tracks changes to fields.
+    A snapshot tracker tracks deletes. It ensures that no
+    duplicate rows are created with a pre-configured condition.
+    """
+
+    label = "snapshot"
+
+    def __init__(self, label=None):
+        return super().__init__(label=label)
+
+    def setup(self, event_model):
+        delete_trigger = trigger.Event(
+            event_model=event_model,
+            label=self.label,
+            name=_get_name_from_label(f"{self.label}_delete"),
+            snapshot="OLD",
+            when=pgtrigger.After,
+            operation=pgtrigger.Delete,
+        )
+
+        pgtrigger.register(delete_trigger)(event_model.pgh_tracked_model)
+
+
+class Snapshot(DatabaseTracker):
+    """
+    NOTE: Two triggers are created since Insert triggers do
+    not allow comparison against the OLD values. We could also
+    place this in one trigger and do the condition in the plpgsql code.
+    """
+
+    def __init__(self, label=None):
+        return super().__init__(label=label)
+
+    def pghistory_setup(self, event_model):
+        self.register(event_model)
+
+        SnapshotInsert(label=self.label).setup(event_model)
+        SnapshotUpdate(label=self.label).setup(event_model)
+        SnapshotDelete(label=self.label).setup(event_model)
 
 
 class PreconfiguredDatabaseTracker(DatabaseTracker):

@@ -55,6 +55,7 @@ class Event(pgtrigger.Trigger):
             and f.name in tracked_model_fields
             and f.concrete
         }
+        fields["pgh_operation"] = str(getattr(utils.Operation, str(self.operation)).value)
         fields["pgh_created_at"] = "NOW()"
         fields["pgh_label"] = f"'{self.label}'"
 

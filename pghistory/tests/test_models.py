@@ -5,6 +5,7 @@ import django
 from django.core.management import call_command
 import pytest
 
+import pghistory
 import pghistory.models
 import pghistory.tests.models as test_models
 
@@ -214,6 +215,7 @@ def test_events_references_joining_filtering(django_assert_num_queries, mocker):
             "pgh_slug": mocker.ANY,
             "pgh_context_id": mocker.ANY,
             "pgh_context": {"key": "value3", "user": actor.id},
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "dt_field": "2020-06-19T00:00:00+00:00",
@@ -290,6 +292,7 @@ def test_events_multiple_references(django_assert_num_queries, mocker):
     wanted_result = [
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
                 "fk_field_id": user1.id,
@@ -300,6 +303,7 @@ def test_events_multiple_references(django_assert_num_queries, mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_data": {
                 "dt_field": "2020-06-22T00:00:00+00:00",
                 "fk_field_id": user2.id,
@@ -311,6 +315,7 @@ def test_events_multiple_references(django_assert_num_queries, mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
                 "fk_field_id": user1.id,
@@ -323,6 +328,7 @@ def test_events_multiple_references(django_assert_num_queries, mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "dt_field": "2020-06-22T00:00:00+00:00",
                 "fk_field_id": user1.id,
@@ -411,6 +417,7 @@ def test_events_references_denorm_context(django_assert_num_queries, mocker):
             "pgh_slug": mocker.ANY,
             "pgh_context_id": mocker.ANY,
             "pgh_context": {"key": "value3", "user": actor.id},
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "pgh_data": {
                 "fk_field_id": user1.id,
@@ -455,6 +462,7 @@ def test_events_references_custom_pk(mocker):
 
     default = {
         "pgh_slug": mocker.ANY,
+        "pgh_operation": mocker.ANY,
         "pgh_context_id": None,
         "pgh_context": None,
         "pgh_created_at": mocker.ANY,
@@ -556,6 +564,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
     ) == [
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_data": {
                 "fk_field2_id": None,
                 "fk_field_id": user1.id,
@@ -568,6 +577,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "fk_field2_id": None,
                 "fk_field_id": user1.id,
@@ -580,6 +590,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "fk_field2_id": None,
                 "fk_field_id": user1.id,
@@ -592,6 +603,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_data": {"dt_field": "2020-06-17T00:00:00+00:00"},
             "pgh_diff": None,
             "pgh_label": "dt_field_snapshot",
@@ -599,6 +611,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {"dt_field": "2020-06-19T00:00:00+00:00"},
             "pgh_diff": {
                 "dt_field": [
@@ -611,6 +624,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
                 "int_field": 1,
@@ -621,6 +635,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
                 "int_field": 2,
@@ -631,6 +646,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "dt_field": "2020-06-19T00:00:00+00:00",
                 "int_field": 3,
@@ -647,6 +663,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
                 "fk_field_id": user1.id,
@@ -659,6 +676,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
                 "fk_field_id": user1.id,
@@ -671,6 +689,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "dt_field": "2020-06-19T00:00:00+00:00",
                 "fk_field_id": user1.id,
@@ -696,6 +715,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
     ) == [
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_data": {
                 "fk_field2_id": None,
                 "fk_field_id": user1.id,
@@ -708,6 +728,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "fk_field2_id": None,
                 "fk_field_id": user1.id,
@@ -720,6 +741,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "fk_field2_id": None,
                 "fk_field_id": user1.id,
@@ -732,6 +754,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "fk_field2_id": None,
                 "fk_field_id": user1.id,
@@ -745,6 +768,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
                 "fk_field_id": user1.id,
@@ -758,6 +782,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
                 "fk_field_id": user1.id,
@@ -771,6 +796,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "dt_field": "2020-06-19T00:00:00+00:00",
                 "fk_field_id": user1.id,
@@ -784,6 +810,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "dt_field": "2020-06-22T00:00:00+00:00",
                 "fk_field_id": user1.id,
@@ -797,6 +824,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
                 "fk_field_id": user1.id,
@@ -809,6 +837,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "dt_field": "2020-06-17T00:00:00+00:00",
                 "fk_field_id": user1.id,
@@ -821,6 +850,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "dt_field": "2020-06-19T00:00:00+00:00",
                 "fk_field_id": user1.id,
@@ -839,6 +869,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "dt_field": "2020-06-22T00:00:00+00:00",
                 "fk_field_id": user1.id,
@@ -861,6 +892,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
     ) == [
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_data": {
                 "fk_field2_id": None,
                 "fk_field_id": user1.id,
@@ -873,6 +905,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "fk_field2_id": None,
                 "fk_field_id": user1.id,
@@ -885,6 +918,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
         },
         {
             **default,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_data": {
                 "fk_field2_id": None,
                 "fk_field_id": user1.id,

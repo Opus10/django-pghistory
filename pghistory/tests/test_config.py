@@ -23,6 +23,7 @@ def test_admin_list_display(settings):
 
     assert config.admin_list_display() == [
         "pgh_created_at",
+        "pgh_operation",
         "pgh_obj_model",
         "pgh_obj_id",
         "pgh_diff",

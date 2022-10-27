@@ -115,6 +115,7 @@ class AggregateEventQueryCompiler(SQLCompiler):
         return f"""
             SELECT
               _pgh_obj_event.pgh_id,
+              _pgh_obj_event.pgh_operation,
               _pgh_obj_event.pgh_created_at,
               _pgh_obj_event.pgh_label,
               {final_context_columns_clause}
@@ -149,6 +150,7 @@ class AggregateEventQueryCompiler(SQLCompiler):
             FROM (
               SELECT
                 pgh_id,
+                pgh_operation,
                 pgh_created_at,
                 pgh_label,
                 row_to_json(_event) AS _curr_data,
