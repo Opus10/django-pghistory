@@ -307,7 +307,7 @@ events for Django's user model:
   @pghistory.track(
       pghistory.AfterInsert("group.add"),
       pghistory.BeforeDelete("group.remove"),
-      object_field=None,
+      obj_field=None,
   )
   class UserGroups(User.groups.through):
       class Meta:
