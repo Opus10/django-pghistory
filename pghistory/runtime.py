@@ -71,7 +71,7 @@ class context(contextlib.ContextDecorator):
     be ignored.
 
     Args:
-        metadata (dict): Metadata that should be attached to the tracking
+        **metadata: Metadata that should be attached to the tracking
             context
 
     Example:
