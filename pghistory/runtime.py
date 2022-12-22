@@ -98,8 +98,8 @@ class context(contextlib.ContextDecorator):
         history context is ignored.
     """
 
-    def __init__(self, **metadata):
-        self.metadata = metadata
+    def __init__(self, **kwargs):
+        self.metadata = kwargs
         self._pre_execute_hook = None
 
         if hasattr(_tracker, "value"):
