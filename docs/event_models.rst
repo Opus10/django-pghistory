@@ -125,7 +125,7 @@ referential integrity, do:
 -----------------
 
 The default ``pgh_obj`` field of event models can be set with
-``settings.PGH_OBJ_FIELD`` or by supplying the ``obj_field`` argument
+``settings.PGHISTORY_OBJ_FIELD`` or by supplying the ``obj_field`` argument
 to `pghistory.track` or `pghistory.create_event_model`.
 It must be set to a `pghistory.ObjForeignKey`
 instance, which overrides the following attributes::
