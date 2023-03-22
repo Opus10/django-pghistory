@@ -43,9 +43,11 @@ def _inject_history_context(execute, sql, params, many, context):
             "'", "''"
         )
 
+        params = (str(runtime._tracker.value.id), metadata_str) + (params if params else tuple())
+
         sql = (
-            f"SET LOCAL pghistory.context_id='{_tracker.value.id}';"
-            f"SET LOCAL pghistory.context_metadata='{metadata_str}';"
+            f"SET LOCAL pghistory.context_id=%s;"
+            f"SET LOCAL pghistory.context_metadata=%s;"
         ) + sql
 
     return execute(sql, params, many, context)
