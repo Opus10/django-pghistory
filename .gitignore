@@ -345,3 +345,11 @@ tags
 
 # Ignore local poetry settings
 poetry.toml
+
+## IntelliJ IDEA project files generated automatically ##
+/.idea/vcs.xml
+/.idea/modules.xml
+/.idea/.gitignore
+/.idea/codeStyles/codeStyleConfig.xml
+/.idea/django-pghistory.iml
+/.idea/inspectionProfiles/profiles_settings.xml
