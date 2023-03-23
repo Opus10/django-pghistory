@@ -24,8 +24,15 @@ If you prefer a native development environment,
 ``make conda-setup`` will set up a development environment managed
 by `Conda <https://conda.io>`__. The database must be ran manually.
 
-Testing and Validation
+Development, testing and Validation
 ~~~~~~~~~~~~~~~~~~~~~~
+Generate Django migrations::
+
+    make makemigrations
+
+Apply Django migrations manually::
+
+    make migrate
 
 Run the tests on one Python version with::
 

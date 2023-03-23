@@ -196,3 +196,13 @@ tidy-squash:
 .PHONY: format
 format:
 	$(EXEC_WRAPPER) black .
+
+# Generate django migrations
+.PHONY: makemigrations
+makemigrations:
+	$(EXEC_WRAPPER) python manage.py makemigrations
+
+# Apply django migrations manually
+.PHONY: migrate
+migrate:
+	$(EXEC_WRAPPER) python manage.py migrate
