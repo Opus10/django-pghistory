@@ -41,7 +41,10 @@ def _inject_history_context(execute, sql, params, many, context):
         # single quotes
         metadata_str = json.dumps(_tracker.value.metadata, cls=config.json_encoder())
 
-        sql = f"SET LOCAL pghistory.context_id=%s; SET LOCAL pghistory.context_metadata=%s;{sql}"
+        sql = (
+            "SELECT set_config('pghistory.context_id', %s, true); "
+            "SELECT set_config('pghistory.context_metadata', %s, true); "
+        ) + sql
         params = [str(_tracker.value.id), metadata_str, *(params or ())]
 
     return execute(sql, params, many, context)
