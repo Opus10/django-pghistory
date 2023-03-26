@@ -79,7 +79,7 @@ lock:
 # Install dependencies
 .PHONY: dependencies
 dependencies:
-	$(EXEC_WRAPPER) poetry install
+	$(EXEC_WRAPPER) poetry install --no-ansi
 
 
 # Set up git configuration

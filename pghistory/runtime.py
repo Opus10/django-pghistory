@@ -39,14 +39,10 @@ def _inject_history_context(execute, sql, params, many, context):
     if not cursor.name and not _is_concurrent_statement(sql):
         # Metadata is stored as a serialized JSON string with escaped
         # single quotes
-        metadata_str = json.dumps(_tracker.value.metadata, cls=config.json_encoder()).replace(
-            "'", "''"
-        )
+        metadata_str = json.dumps(_tracker.value.metadata, cls=config.json_encoder())
 
-        sql = (
-            f"SET LOCAL pghistory.context_id='{_tracker.value.id}';"
-            f"SET LOCAL pghistory.context_metadata='{metadata_str}';"
-        ) + sql
+        sql = f"SET LOCAL pghistory.context_id=%s; SET LOCAL pghistory.context_metadata=%s;{sql}"
+        params = [str(_tracker.value.id), metadata_str, *(params or ())]
 
     return execute(sql, params, many, context)
 
