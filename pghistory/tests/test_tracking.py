@@ -102,12 +102,28 @@ def test_track_context_metadata_single_quote(mocker):
         # attach the current context
         ddf.G("tests.EventModel")
 
-        ctx1 = pghistory.models.Context.objects.get()
-        assert ctx1.id == ctx.id
-        assert ctx1.metadata == {
-            "key1": "can't",
-            "key2": "''quoted''",
-        }
+    ctx1 = pghistory.models.Context.objects.get()
+    assert ctx1.id == ctx.id
+    assert ctx1.metadata == {
+        "key1": "can't",
+        "key2": "''quoted''",
+    }
+
+
+@pytest.mark.django_db
+def test_track_context_metadata_percent(mocker):
+    """
+    Verifies that context metadata with single quotes is properly
+    escaped
+    """
+    with pghistory.context(key="%s") as ctx:
+        # Creating the EventModel will trigger an event, which will
+        # attach the current context
+        ddf.G("tests.EventModel")
+
+    ctx1 = pghistory.models.Context.objects.get()
+    assert ctx1.id == ctx.id
+    assert ctx1.metadata == {"key": "%s"}
 
 
 @pytest.mark.django_db
