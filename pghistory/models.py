@@ -155,6 +155,7 @@ class Event(models.Model):
     """
 
     pgh_id = models.AutoField(primary_key=True)
+    pgh_operation = models.IntegerField(choices=utils.Operation.choices, null=True)
     pgh_created_at = models.DateTimeField(auto_now_add=True)
     pgh_label = models.TextField(help_text="The event label.")
     pgh_trackers = None
@@ -454,6 +455,7 @@ class EventsQueryCompiler(SQLCompiler):
               CONCAT('{event_model._meta.label}', ':', _pgh_obj_event.pgh_id) AS pgh_slug,
               _pgh_obj_event.pgh_id,
               _pgh_obj_event.pgh_created_at,
+              _pgh_obj_event.pgh_operation,
               _pgh_obj_event.pgh_label,
               {final_context_columns_clause}
               _pgh_obj_event.pgh_obj_id,
@@ -490,6 +492,7 @@ class EventsQueryCompiler(SQLCompiler):
             FROM (
               SELECT
                 pgh_id,
+                pgh_operation,
                 pgh_created_at,
                 pgh_label,
                 row_to_json(_event) AS _curr_data,
@@ -627,6 +630,7 @@ class Events(models.Model):
     )
     pgh_model = models.CharField(max_length=64, help_text="The event model.")
     pgh_id = models.BigIntegerField(help_text="The primary key of the event.")
+    pgh_operation = models.IntegerField(choices=utils.Operation.choices, null=True)
     pgh_created_at = models.DateTimeField(
         auto_now_add=True, help_text="When the event was created."
     )
@@ -708,6 +712,7 @@ class BaseAggregateEvent(Event):
         help_text="The context, if any, associated with the event",
         on_delete=models.DO_NOTHING,
     )
+    pgh_operation = models.IntegerField(choices=utils.Operation.choices, null=True)
 
     objects = deprecated.AggregateEventQuerySet.as_manager()
     no_objects = deprecated.NoObjectsManager()

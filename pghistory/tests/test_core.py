@@ -213,6 +213,7 @@ def test_events_on_event_model(mocker):
 
     assert list(m.event.values()) == [
         {
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_created_at": mocker.ANY,
             "dt_field": orig_dt,
             "pgh_id": mocker.ANY,
@@ -229,6 +230,7 @@ def test_events_on_event_model(mocker):
     m.save()
     assert list(m.event.values().order_by("pgh_id")) == [
         {
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_created_at": mocker.ANY,
             "dt_field": orig_dt,
             "pgh_id": mocker.ANY,
@@ -239,6 +241,7 @@ def test_events_on_event_model(mocker):
             "id": m.id,
         },
         {
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "dt_field": orig_dt,
             "pgh_id": mocker.ANY,
@@ -256,6 +259,7 @@ def test_events_on_event_model(mocker):
     m.save()
     assert list(m.event.values().order_by("pgh_id")) == [
         {
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_created_at": mocker.ANY,
             "dt_field": orig_dt,
             "pgh_id": mocker.ANY,
@@ -266,6 +270,7 @@ def test_events_on_event_model(mocker):
             "id": m.id,
         },
         {
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "dt_field": orig_dt,
             "pgh_id": mocker.ANY,
@@ -276,6 +281,7 @@ def test_events_on_event_model(mocker):
             "id": m.id,
         },
         {
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "dt_field": m.dt_field,
             "pgh_id": mocker.ANY,
@@ -286,6 +292,7 @@ def test_events_on_event_model(mocker):
             "id": m.id,
         },
         {
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
             "pgh_created_at": mocker.ANY,
             "dt_field": orig_dt,
             "pgh_id": mocker.ANY,
@@ -300,6 +307,7 @@ def test_events_on_event_model(mocker):
     # Verify the custom event model was also created for every insert
     assert list(m.custom_related_name.values().order_by("pgh_id")) == [
         {
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
             "pgh_created_at": mocker.ANY,
             "dt_field": orig_dt,
             "pgh_id": mocker.ANY,
@@ -316,6 +324,7 @@ def test_events_on_event_model(mocker):
         test_models.EventModelEvent.objects.filter(pgh_label="before_delete").values()
     ) == [
         {
+            "pgh_operation": pghistory.utils.Operation.DELETE.value,
             "pgh_created_at": mocker.ANY,
             "dt_field": dt_field,
             "pgh_id": mocker.ANY,
@@ -353,6 +362,7 @@ def test_dt_field_snapshot_tracking(mocker):
             "pgh_obj_id": tracking.id,
             "pgh_created_at": mocker.ANY,
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
         },
         {
             "pgh_id": mocker.ANY,
@@ -361,6 +371,7 @@ def test_dt_field_snapshot_tracking(mocker):
             "pgh_obj_id": tracking.id,
             "pgh_created_at": mocker.ANY,
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
         },
     ]
 
@@ -396,6 +407,7 @@ def test_dt_field_int_field_snapshot_tracking(mocker):
             "pgh_obj_id": tracking.id,
             "pgh_created_at": mocker.ANY,
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
         },
         {
             "pgh_id": mocker.ANY,
@@ -405,6 +417,7 @@ def test_dt_field_int_field_snapshot_tracking(mocker):
             "pgh_obj_id": tracking.id,
             "pgh_created_at": mocker.ANY,
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
         },
         {
             "pgh_id": mocker.ANY,
@@ -414,6 +427,7 @@ def test_dt_field_int_field_snapshot_tracking(mocker):
             "pgh_obj_id": tracking.id,
             "pgh_created_at": mocker.ANY,
             "pgh_context_id": None,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
         },
     ]
 
@@ -499,6 +513,7 @@ def test_model_snapshot_tracking(mocker):
             "pgh_obj_id": tracking.id,
             "pgh_created_at": mocker.ANY,
             "pgh_context_id": ctx.id,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
         },
         {
             "pgh_id": mocker.ANY,
@@ -510,6 +525,7 @@ def test_model_snapshot_tracking(mocker):
             "pgh_obj_id": tracking.id,
             "pgh_created_at": mocker.ANY,
             "pgh_context_id": ctx.id,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
         },
         {
             "pgh_id": mocker.ANY,
@@ -521,12 +537,13 @@ def test_model_snapshot_tracking(mocker):
             "pgh_obj_id": tracking.id,
             "pgh_created_at": mocker.ANY,
             "pgh_context_id": ctx.id,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
         },
     ]
 
     # Deleting the model will not delete history by default
     tracking.delete()
-    assert apps.get_model("tests", "SnapshotModelSnapshot").objects.count() == 3
+    assert apps.get_model("tests", "SnapshotModelSnapshot").objects.count() == 4
 
 
 @pytest.mark.django_db
@@ -555,6 +572,7 @@ def test_custom_snapshot_model_tracking(mocker):
             "fk_field2_id": None,
             "pgh_obj_id": tracking.id,
             "pgh_created_at": mocker.ANY,
+            "pgh_operation": pghistory.utils.Operation.INSERT.value,
         },
         {
             "pgh_id": mocker.ANY,
@@ -565,6 +583,7 @@ def test_custom_snapshot_model_tracking(mocker):
             "fk_field2_id": None,
             "pgh_obj_id": tracking.id,
             "pgh_created_at": mocker.ANY,
+            "pgh_operation": pghistory.utils.Operation.UPDATE.value,
         },
     ]
     assert list(tracking.custom_related_name.order_by("pgh_id").values()) == list(
@@ -572,9 +591,10 @@ def test_custom_snapshot_model_tracking(mocker):
     )
 
     # Deleting the model will not delete the tracking model since it
-    # has a custom foreign key
-    tracking.delete()
+    # has a custom foreign key, but will generate a new snapshot
     assert test_models.CustomSnapshotModel.objects.count() == 2
+    tracking.delete()
+    assert test_models.CustomSnapshotModel.objects.count() == 3
 
 
 @pytest.mark.parametrize(

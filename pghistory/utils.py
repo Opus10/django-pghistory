@@ -6,12 +6,20 @@ if django.VERSION >= (3, 1):
 else:
     from django.contrib.postgres.fields import JSONField as DjangoJSONField
 
+from django.db.models import IntegerChoices  # noqa
+
 
 class JSONField(DjangoJSONField):
     """
     Creates a consistent import path for JSONField regardless of Django
     version.
     """
+
+
+class Operation(IntegerChoices):
+    INSERT = 1
+    UPDATE = 2
+    DELETE = 3
 
 
 def related_model(field):

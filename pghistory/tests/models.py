@@ -108,7 +108,8 @@ class CustomSnapshotModel(
             SnapshotModel,
             related_name="custom_related_name",
             null=True,
-            on_delete=models.SET_NULL,
+            on_delete=models.DO_NOTHING,
+            db_constraint=False,
         ),
         context_fk=None,
     )
