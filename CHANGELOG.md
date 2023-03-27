@@ -1,4 +1,18 @@
 # Changelog
+## 2.6.0 (2023-03-26)
+### Bug
+  - Fix documentation example for tracking events. [Zac Miller, acaaadf]
+  - Fix bug when tracking context data with percent sign. [Adam Johnson, a5380fa]
+
+    All context data is properly escaped, fixing an error that happened when
+    using "%" in any context data. psycopg now escapes all context data,
+    ensuring there is no SQL injection vector in the future.
+### Trivial
+  - Replace usage of ``SET LOCAL`` with ``SELECT set_config`` for better pg stat reporting. [Pierre Ducroquet, ebe2d19]
+  - Fix ``make lint`` command with new .gitignore changes [Kevin Ramirez, ceafe0a]
+  - Fix ``PGHISTORY_OBJ_FIELD`` settings name in the docs. [Johan Van de Wauw, 2bfb23d]
+  - Updated with latest django template, fixing git-tidy deployment issues [Wesley Kendall, 1a6df96]
+
 ## 2.5.1 (2022-10-12)
 ### Trivial
   - Updated with latest Django template [Wesley Kendall, de8a535]
