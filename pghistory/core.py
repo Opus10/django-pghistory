@@ -20,7 +20,7 @@ from pghistory import config, constants, trigger, utils
 _registered_trackers = {}
 
 
-def _get_name_from_label(label):
+def _fmt_trigger_name(label):
     """Given a history event label, generate a trigger name"""
     if label:
         return re.sub("[^0-9a-zA-Z]+", "_", label)
@@ -95,18 +95,30 @@ class DatabaseTracker(Tracker):
         self.operation = operation or self.operation
         self.snapshot = snapshot or self.snapshot
 
-    def setup(self, event_model):
+    def add_event_trigger(
+        self, *, event_model, label, snapshot, when, operation, condition=None, name=None
+    ):
         pgtrigger.register(
             trigger.Event(
                 event_model=event_model,
-                label=self.label,
-                name=_get_name_from_label(self.label),
-                snapshot=self.snapshot,
-                when=self.when,
-                operation=self.operation,
-                condition=self.condition,
+                label=label,
+                name=_fmt_trigger_name(name or label),
+                snapshot=snapshot,
+                when=when,
+                operation=operation,
+                condition=condition,
             )
         )(event_model.pgh_tracked_model)
+
+    def setup(self, event_model):
+        self.add_event_trigger(
+            event_model=event_model,
+            label=self.label,
+            snapshot=self.snapshot,
+            when=self.when,
+            operation=self.operation,
+            condition=self.condition,
+        )
 
 
 class DatabaseEvent(DatabaseTracker):
@@ -138,6 +150,55 @@ class DatabaseEvent(DatabaseTracker):
         )
 
 
+class Changed(pgtrigger.Condition):
+    """A utilty to create conditions based on changes in the tracked model.
+
+    Given the event model, we create a condition as follows:
+
+    - If the event model trackes every field from the main model, we can
+      use a standard ``OLD.* IS DISTINCT FROM NEW.*`` condition to snapshot
+      every change on the main model.
+    - If the event model tracks a subset of the fields of the main model,
+      only changes to event fields will trigger a snapshot. In other words,
+      if the main model has an int and char field, but the event model only
+      tracks the char field, the condition will be
+      ``OLD.char_field IS DISTINCT FROM NEW.char_field``.
+    - If one has fields on the event model and wishes to ignore them from
+      triggering snapshots, pass them to the ``exclude`` argument to this
+      utility.
+    """
+
+    def __init__(self, event_model, exclude=None):
+        self.event_model = event_model
+        self.exclude = exclude or []
+
+    def resolve(self, model):
+        event_fields = [
+            field.name
+            for field in self.event_model._meta.fields
+            if not field.name.startswith("pgh_")
+        ]
+        model_fields = [f.name for f in model._meta.fields]
+
+        # By default, any field in both the main model and event model that
+        # change will trigger the condition. You can exclude fields from
+        # the event model that will trigger snapshots.
+        conditional_fields = [f for f in event_fields if f not in self.exclude]
+
+        if set(event_fields) == set(model_fields) == set(conditional_fields):
+            # We're tracking every field on any change
+            condition = pgtrigger.Condition("OLD.* IS DISTINCT FROM NEW.*")
+        else:
+            # We're either tracking a subset of fields or we have
+            condition = pgtrigger.Q()
+
+            for field in conditional_fields:
+                if hasattr(model, field):
+                    condition |= pgtrigger.Q(**{f"old__{field}__df": pgtrigger.F(f"new__{field}")})
+
+        return condition.resolve(model)
+
+
 class Snapshot(DatabaseTracker):
     """
     Tracks changes to fields.
@@ -149,44 +210,30 @@ class Snapshot(DatabaseTracker):
     place this in one trigger and do the condition in the plpgsql code.
     """
 
-    def __init__(self, label=None):
+    def __init__(self, label=None, delayed=False):
+        self.delayed = delayed
         return super().__init__(label=label)
 
     def setup(self, event_model):
 
-        insert_trigger = trigger.Event(
+        self.add_event_trigger(
             event_model=event_model,
             label=self.label,
-            name=_get_name_from_label(f"{self.label}_insert"),
+            name=f"{self.label}_insert",
             snapshot="NEW",
             when=pgtrigger.After,
             operation=pgtrigger.Insert,
         )
 
-        event_fields = [
-            field.name for field in event_model._meta.fields if not field.name.startswith("pgh_")
-        ]
-        tracked_fields = [field.name for field in event_model.pgh_tracked_model._meta.fields]
-
-        if set(event_fields) == set(tracked_fields):
-            condition = pgtrigger.Condition("OLD.* IS DISTINCT FROM NEW.*")
-        else:
-            condition = pgtrigger.Q()
-            for field in event_fields:
-                if hasattr(event_model.pgh_tracked_model, field):
-                    condition |= pgtrigger.Q(**{f"old__{field}__df": pgtrigger.F(f"new__{field}")})
-
-        update_trigger = trigger.Event(
+        self.add_event_trigger(
             event_model=event_model,
             label=self.label,
-            name=_get_name_from_label(f"{self.label}_update"),
+            name=f"{self.label}_update",
             snapshot="NEW",
             when=pgtrigger.After,
             operation=pgtrigger.Update,
-            condition=condition,
+            condition=Changed(event_model),
         )
-
-        pgtrigger.register(insert_trigger, update_trigger)(event_model.pgh_tracked_model)
 
 
 class PreconfiguredDatabaseTracker(DatabaseTracker):
@@ -241,6 +288,15 @@ class BeforeDelete(PreconfiguredDatabaseTracker):
     """
 
     operation = pgtrigger.Delete
+    snapshot = "OLD"
+
+
+class BeforeUpdateOrDelete(PreconfiguredDatabaseTracker):
+    """
+    A database tracker that snapshots the old row during an update or delete
+    """
+
+    operation = pgtrigger.Update | pgtrigger.Delete
     snapshot = "OLD"
 
 
