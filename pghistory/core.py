@@ -244,6 +244,15 @@ class BeforeDelete(PreconfiguredDatabaseTracker):
     snapshot = "OLD"
 
 
+class BeforeUpdateOrDelete(PreconfiguredDatabaseTracker):
+    """
+    A database tracker that snapshots the old row during an update or delete
+    """
+
+    operation = pgtrigger.Update | pgtrigger.Delete
+    snapshot = "OLD"
+
+
 def _pascalcase(string):
     """Convert string into pascal case."""
 

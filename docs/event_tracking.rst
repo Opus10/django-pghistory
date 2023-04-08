@@ -204,7 +204,7 @@ log of all of the previous emails for a user.
 
 There are several core trackers that work like this, all of which run during
 different database operations: `pghistory.AfterInsert`, `pghistory.AfterInsertOrUpdate`,
-`pghistory.BeforeUpdate`, `pghistory.AfterUpdate`, and `pghistory.BeforeDelete`.
+`pghistory.BeforeUpdate`, `pghistory.AfterUpdate`, `pghistory.BeforeDelete`, and `pghistory.BeforeUpdateOrDelete`.
 
 .. note::
 
@@ -219,14 +219,14 @@ If you need to configure more attributes of the underlying trigger outside of ju
 inherit the `pghistory.DatabaseTracker` tracker and use the ``when``, ``operation``, and ``condition``
 attributes. These directly correspond to the trigger attributes allowed
 by `django-pgtrigger <https://github.com/Opus10/django-pgtrigger>`__. Set the ``snapshot`` attribute
-to either ``OLD`` or ``NEW`` to store the old or new row.    
+to either ``OLD`` or ``NEW`` to store the old or new row.
 
 Manual Tracking
 ---------------
 
 Sometimes it is not possible to express an event based on a series
 of changes to a model. Some use cases, such as backfilling data, also
-require that events are manually created. 
+require that events are manually created.
 
 `pghistory.create_event` can be used to manually create events.
 Events can be created for existing trackers, or the bare `pghistory.ManualTracker`
@@ -288,7 +288,7 @@ the default Django ``User`` model:
     with ``pghistory.track(...)(model_name)``, doing so would
     create migrations in a third-party app. Using proxy models
     ensures that the migration files are created inside your
-    project.  
+    project.
 
 
 Many-To-Many Fields
