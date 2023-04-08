@@ -212,3 +212,47 @@ class CustomEvents(pghistory.models.Events):
 class UserGroups(User.groups.through):
     class Meta:
         proxy = True
+
+
+# Test a custom tracker that snapshots before/after and ignores auto-fields in the condition
+class IgnoreAutoFieldsSnapshot(pghistory.Snapshot):
+    """
+    A custom tracker that snapshots OLD rows on update/delete. Snapshots are only created
+    when manual fields are changed (i.e. auto_now fields are ignored in the condition)
+    """
+
+    def setup(self, event_model):
+        exclude = [
+            f.name
+            for f in event_model.pgh_tracked_model._meta.fields
+            if getattr(f, "auto_now", False) or getattr(f, "auto_now_add", False)
+        ]
+
+        self.add_event_trigger(
+            event_model=event_model,
+            label=self.label,
+            name=f"{self.label}_update",
+            snapshot="OLD",
+            when=pgtrigger.After,
+            operation=pgtrigger.Update,
+            condition=pghistory.Changed(event_model, exclude=exclude),
+        )
+
+        self.add_event_trigger(
+            event_model=event_model,
+            label=self.label,
+            name=f"{self.label}_delete",
+            snapshot="OLD",
+            when=pgtrigger.After,
+            operation=pgtrigger.Delete,
+        )
+
+
+@pghistory.track(IgnoreAutoFieldsSnapshot(), related_name="no_auto_fields_event")
+class IgnoreAutoFieldsSnapshotModel(models.Model):
+    """For testing the IgnoreAutoFieldsSnapshot tracker"""
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    my_char_field = models.CharField(max_length=32)
+    my_int_field = models.IntegerField()

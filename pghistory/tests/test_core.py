@@ -5,6 +5,7 @@ import uuid
 import ddf
 from django.apps import apps
 from django.db import models
+from django.utils import timezone
 import pytest
 
 import pghistory
@@ -657,3 +658,38 @@ def test_validate_event_model_path(app_label, model_name, abstract, expected_exc
         pghistory.core._validate_event_model_path(
             app_label=app_label, model_name=model_name, abstract=abstract
         )
+
+
+@pytest.mark.django_db
+def test_custom_ignore_auto_fields_tracker():
+    """
+    Verifies that the custom IgnoreAutoFieldsSnapshot tracker, which makes use of
+    pghistory.Changed, works.
+    """
+    m = ddf.G(test_models.IgnoreAutoFieldsSnapshotModel, my_int_field=0, my_char_field="0")
+    snapshot_model = m.no_auto_fields_event.model
+
+    # This tracker does not create events on insert
+    assert not m.no_auto_fields_event.all()
+
+    # Empty updates will not produce an event
+    m.save()
+    assert not m.no_auto_fields_event.all()
+
+    # Updating a non-auto field will produce an event based on the OLD row
+    m.my_int_field = 1
+    m.save()
+    assert [m.my_int_field for m in m.no_auto_fields_event.all()] == [0]
+
+    # Update auto-fields manually. Make sure they don't product an event
+    now = timezone.now()
+    test_models.IgnoreAutoFieldsSnapshotModel.objects.update(created_at=now, updated_at=now)
+    m.refresh_from_db()
+    assert m.created_at == now
+    assert m.updated_at == now
+    assert snapshot_model.objects.count() == 1
+
+    # Deleting the model will create another snapshot
+    m.delete()
+
+    assert snapshot_model.objects.count() == 2
