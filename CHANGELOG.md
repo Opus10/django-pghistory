@@ -1,5 +1,17 @@
 # Changelog
-## 2.6.0 (2023-03-26)
+## 2.7.0 (2023-04-08)
+### Feature
+  - Refactory ``Snapshot`` class and add ``Changed`` condition for better extensibility. [Kevin Ramirez, 0be9242]
+
+    Users can more easily inherit ``pghistory.Snapshot`` and use the ``pghistory.Changed``
+    condition for conditional snapshots.
+  - Add ``BeforeUpdateOrDelete`` tracker [Kevin Ramirez, af01e87]
+
+    Adds a barebones ``BeforeUpdateOrDelete`` tracker for snapshotting OLD rows during an update or delete.
+### Trivial
+  - Fix auto-doc formatting [madtools, de3ddf4]
+
+## 2.6.0 (2023-03-27)
 ### Bug
   - Fix documentation example for tracking events. [Zac Miller, acaaadf]
   - Fix bug when tracking context data with percent sign. [Adam Johnson, a5380fa]
