@@ -1,4 +1,5 @@
 from django.core.handlers.wsgi import WSGIRequest as DjangoWSGIRequest
+from ipware import get_client_ip
 
 import pghistory
 from pghistory import config
@@ -24,7 +25,7 @@ class WSGIRequest(DjangoWSGIRequest):
 
 def HistoryMiddleware(get_response):
     """
-    Annotates the user/url in the pghistory context.
+    Annotates the user/url/ip_address in the pghistory context.
     """
 
     def middleware(request):
@@ -34,7 +35,8 @@ def HistoryMiddleware(get_response):
                 if hasattr(request, "user") and hasattr(request.user, "pk")
                 else None
             )
-            with pghistory.context(user=user, url=request.path):
+            ip_address, _ = get_client_ip(request)
+            with pghistory.context(user=user, url=request.path, ip=ip_address):
                 if isinstance(request, DjangoWSGIRequest):  # pragma: no branch
                     request.__class__ = WSGIRequest
 

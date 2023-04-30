@@ -36,11 +36,11 @@ def test_middleware(rf, mocker):
 
     # A GET request will initiate the tracker
     resp = pghistory.middleware.HistoryMiddleware(get_response)(rf.get("/get/url/"))
-    assert resp.metadata == {"url": "/get/url/", "user": None}
+    assert resp.metadata == {"url": "/get/url/", "user": None, "ip": "127.0.0.1"}
 
     # A POST request will initiate the tracker
     resp = pghistory.middleware.HistoryMiddleware(get_response)(rf.post("/post/url/"))
-    assert resp.metadata == {"url": "/post/url/", "user": None}
+    assert resp.metadata == {"url": "/post/url/", "user": None, "ip": "127.0.0.1"}
 
     # Authenticated users will be tracked
     mock_user_id = 3
@@ -48,35 +48,36 @@ def test_middleware(rf, mocker):
     request = rf.post("/post/url2/")
     request.user = mock_user
     resp = pghistory.middleware.HistoryMiddleware(get_response)(request)
-    assert resp.metadata == {"url": "/post/url2/", "user": mock_user_id}
+    assert resp.metadata == {"url": "/post/url2/", "user": mock_user_id, "ip": "127.0.0.1"}
 
     # PATCH requests initiate the tracker
     patch_url = "/patch/url/"
     request = rf.patch(patch_url)
     request.user = mock_user
     resp = pghistory.middleware.HistoryMiddleware(get_response)(request)
-    assert resp.metadata == {"url": patch_url, "user": mock_user_id}
+    assert resp.metadata == {"url": patch_url, "user": mock_user_id, "ip": "127.0.0.1"}
 
     # PUT requests initiate the tracker
     put_url = "/put/url/"
     request = rf.put(put_url)
     request.user = mock_user
     resp = pghistory.middleware.HistoryMiddleware(get_response)(request)
-    assert resp.metadata == {"url": put_url, "user": mock_user_id}
+    assert resp.metadata == {"url": put_url, "user": mock_user_id, "ip": "127.0.0.1"}
 
     # DELETE requests initiate the tracker
     delete_url = "/delete/url/"
     request = rf.delete(delete_url)
     request.user = mock_user
     resp = pghistory.middleware.HistoryMiddleware(get_response)(request)
-    assert resp.metadata == {"url": delete_url, "user": mock_user_id}
+    assert resp.metadata == {"url": delete_url, "user": mock_user_id, "ip": "127.0.0.1"}
 
     # GET requests initiate the tracker
     get_url = "/get/url/"
     request = rf.get(get_url)
     request.user = mock_user
+    request.META["HTTP_X_FORWARDED_FOR"] = "10.0.0.1"
     resp = pghistory.middleware.HistoryMiddleware(get_response)(request)
-    assert resp.metadata == {"url": get_url, "user": mock_user_id}
+    assert resp.metadata == {"url": get_url, "user": mock_user_id, "ip": "10.0.0.1"}
 
     # OPTION requests do not initiate the tracker
     get_url = "/options/url/"

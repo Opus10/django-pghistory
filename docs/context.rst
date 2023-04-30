@@ -62,8 +62,9 @@ Middleware
 
 ``django-pghistory`` comes with the `pghistory.middleware.HistoryMiddleware`
 middleware to add context to requests.
-It adds the URL of the request to the ``url`` attribute
-and the authenticated user ID to the ``user`` attribute.
+It adds the URL of the request to the ``url`` attribute, the authenticated
+user ID to the ``user`` attribute, and the most likely ``ip`` associated
+with the request.
 
 Since the middleware starts context collection at the beginning of the request,
 all tracked changes in the request will reference the same context.
