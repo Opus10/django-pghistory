@@ -1,4 +1,11 @@
 # Changelog
+## 2.8.0 (2023-06-08)
+### Feature
+  - Added Python 3.11, Django 4.2, and Psycopg 3 support [Wesley Kendall, 647cdad]
+
+    Adds Python 3.11, Django 4.2, and Psycopg 3 support along with tests for multiple Postgres versions.
+    Drops support for Django 2.2.
+
 ## 2.7.0 (2023-04-08)
 ### Feature
   - Refactory ``Snapshot`` class and add ``Changed`` condition for better extensibility. [Kevin Ramirez, 0be9242]
