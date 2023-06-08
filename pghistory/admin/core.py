@@ -196,7 +196,7 @@ class EventsChangeList(ChangeList):
         qset = super().get_queryset(request)
 
         if not config.admin_all_events():
-            if django.VERSION < (3, 1):
+            if django.VERSION < (3, 1):  # pragma: no cover
                 warnings.warn("PGHISTORY_ADMIN_ALL_EVENTS only works for Django 3.1 and above")
             elif not self.has_active_filters:  # pragma: no branch
                 return self.root_queryset.model.no_objects.all()

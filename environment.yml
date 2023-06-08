@@ -2,9 +2,9 @@ name: django-pghistory
 channels:
   - conda-forge
 dependencies:
-  - python==3.10
-  - poetry==1.4.1
-  - pip
+  - python==3.11.3
+  - poetry==1.5.1
+  - pip==23.1.2
 variables:
   DATABASE_URL: "postgres://postgres@localhost:5432/pghistory_local"
   EXEC_WRAPPER: ""

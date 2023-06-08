@@ -5,16 +5,35 @@ import sys
 import warnings
 
 from django.apps import apps
-from django.db import connection
+from django.db import connections
 from django.db import models
 from django.db.models import sql
 from django.db.models.fields.related import RelatedField
 from django.db.models.sql import compiler
 from django.utils.module_loading import import_string
 import pgtrigger
-from psycopg2.extensions import AsIs
 
 from pghistory import config, constants, trigger, utils
+
+
+if utils.psycopg_maj_version == 2:
+    from psycopg2.extensions import AsIs as Literal
+elif utils.psycopg_maj_version == 3:
+    import psycopg.adapt
+
+    class Literal:
+        def __init__(self, val):
+            self.val = val
+
+    class LiteralDumper(psycopg.adapt.Dumper):
+        def dump(self, obj):
+            return obj.val.encode("utf-8")
+
+        def quote(self, obj):
+            return self.dump(obj)
+
+else:
+    raise AssertionError
 
 
 _registered_trackers = {}
@@ -738,9 +757,10 @@ class _InsertEventCompiler(compiler.SQLInsertCompiler):
         ret = super().as_sql(*args, **kwargs)
         assert len(ret) == 1
         params = [
-            param if field.name != "pgh_context" else AsIs("_pgh_attach_context()")
+            param if field.name != "pgh_context" else Literal("_pgh_attach_context()")
             for field, param in zip(self.query.fields, ret[0][1])
         ]
+
         return [(ret[0][0], params)]
 
 
@@ -753,6 +773,7 @@ def create_event(obj, *, label, using="default"):
     Args:
         obj (models.Model): An instance of a model.
         label (str): The event label.
+        using (str): The database
 
     Raises:
         ValueError: If the event label has not been registered for the model.
@@ -791,7 +812,10 @@ def create_event(obj, *, label, using="default"):
         [event_obj],
     )
 
-    vals = _InsertEventCompiler(query, connection, using="default").execute_sql(
+    if utils.psycopg_maj_version == 3:
+        connections[using].connection.adapters.register_dumper(Literal, LiteralDumper)
+
+    vals = _InsertEventCompiler(query, connections[using], using=using).execute_sql(
         event_model._meta.fields
     )
 
