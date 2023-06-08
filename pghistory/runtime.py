@@ -6,7 +6,14 @@ import uuid
 
 from django.db import connection
 
-from pghistory import config
+from pghistory import config, utils
+
+if utils.psycopg_maj_version == 2:
+    import psycopg2.extensions
+elif utils.psycopg_maj_version == 3:
+    import psycopg.pq
+else:
+    raise AssertionError
 
 
 _tracker = threading.local()
@@ -23,31 +30,62 @@ def _is_concurrent_statement(sql):
     return sql.startswith("create") and "concurrently" in sql
 
 
-def _inject_history_context(execute, sql, params, many, context):
-    cursor = context["cursor"]
+def _is_transaction_errored(cursor):
+    """
+    True if the current transaction is in an errored state
+    """
+    if utils.psycopg_maj_version == 2:
+        return (
+            cursor.connection.get_transaction_status()
+            == psycopg2.extensions.TRANSACTION_STATUS_INERROR
+        )
+    elif utils.psycopg_maj_version == 3:
+        return cursor.connection.info.transaction_status == psycopg.pq.TransactionStatus.INERROR
+    else:
+        raise AssertionError
 
-    # A named cursor automatically prepends
-    # "NO SCROLL CURSOR WITHOUT HOLD FOR" to the query, which
-    # causes invalid SQL to be generated. There is no way
-    # to override this behavior in psycopg2, so context tracking
-    # cannot happen for named cursors. Django only names cursors
-    # for iterators and other statements that read the database,
-    # so it seems to be safe to ignore named cursors.
-    #
-    # Concurrent index creation is also incompatible with local variable
-    # setting. Ignore these cases for now.
-    if not cursor.name and not _is_concurrent_statement(sql):
+
+def _can_inject_variable(cursor, sql):
+    """True if we can inject a SQL variable into a statement.
+
+    A named cursor automatically prepends
+    "NO SCROLL CURSOR WITHOUT HOLD FOR" to the query, which
+    causes invalid SQL to be generated. There is no way
+    to override this behavior in psycopg, so ignoring triggers
+    cannot happen for named cursors. Django only names cursors
+    for iterators and other statements that read the database,
+    so it seems to be safe to ignore named cursors.
+
+    Concurrent index creation is also incompatible with local variable
+    setting. Ignore these cases for now.
+    """
+    return (
+        not getattr(cursor, "name", None)
+        and not _is_concurrent_statement(sql)
+        and not _is_transaction_errored(cursor)
+    )
+
+
+def _execute_wrapper(execute_result):
+    if utils.psycopg_maj_version == 3:
+        while execute_result.nextset():
+            pass
+    return execute_result
+
+
+def _inject_history_context(execute, sql, params, many, context):
+    if _can_inject_variable(context["cursor"], sql):
         # Metadata is stored as a serialized JSON string with escaped
         # single quotes
-        metadata_str = json.dumps(_tracker.value.metadata, cls=config.json_encoder())
+        serialized_metadata = json.dumps(_tracker.value.metadata, cls=config.json_encoder())
 
         sql = (
-            "SELECT set_config('pghistory.context_id', %s, true); "
-            "SELECT set_config('pghistory.context_metadata', %s, true); "
+            "SELECT set_config('pghistory.context_id', %s, true), "
+            "set_config('pghistory.context_metadata', %s, true); "
         ) + sql
-        params = [str(_tracker.value.id), metadata_str, *(params or ())]
+        params = [str(_tracker.value.id), serialized_metadata, *(params or ())]
 
-    return execute(sql, params, many, context)
+    return _execute_wrapper(execute(sql, params, many, context))
 
 
 class context(contextlib.ContextDecorator):

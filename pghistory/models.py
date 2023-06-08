@@ -83,7 +83,9 @@ class EventQueryCompiler(SQLCompiler):
 
         sql, params = qset.query.as_sql(self, self.connection)
         with self.connection.cursor() as cursor:
-            sql = cursor.mogrify(sql, params).decode("utf-8")
+            sql = cursor.mogrify(sql, params)
+            if isinstance(sql, bytes):  # psycopg 2/3 return different types
+                sql = sql.decode("utf-8")
 
         for field in self.proxy_fields:
             sql = sql.replace(f"_{field.column}", field.column)
@@ -103,7 +105,7 @@ class EventQueryCompiler(SQLCompiler):
         sql, params = super().as_sql(*args, **kwargs)
 
         if any(self.proxy_fields):
-            if django.VERSION < (3, 2):
+            if django.VERSION < (3, 2):  # pragma: no cover
                 raise RuntimeError("Must use Django 3.2 or above to proxy fields on event models")
 
             cte = self._get_cte()
