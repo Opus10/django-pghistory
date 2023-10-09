@@ -1,13 +1,28 @@
 # Changelog
-## 2.8.0 (2023-06-08)
+
+## 2.9.0 (2023-10-09)
+
 ### Feature
+
+  - Add Python 3.12 support and use Mkdocs for documentation [Wesley Kendall, 4464ef3]
+
+    Python 3.12 and Postgres 16 are supported now, along with having revamped docs using Mkdocs and the Material theme.
+
+    Python 3.7 support was dropped.
+
+## 2.8.0 (2023-06-08)
+
+### Feature
+
   - Added Python 3.11, Django 4.2, and Psycopg 3 support [Wesley Kendall, 647cdad]
 
     Adds Python 3.11, Django 4.2, and Psycopg 3 support along with tests for multiple Postgres versions.
     Drops support for Django 2.2.
 
 ## 2.7.0 (2023-04-08)
+
 ### Feature
+
   - Refactory ``Snapshot`` class and add ``Changed`` condition for better extensibility. [Kevin Ramirez, 0be9242]
 
     Users can more easily inherit ``pghistory.Snapshot`` and use the ``pghistory.Changed``
@@ -15,30 +30,40 @@
   - Add ``BeforeUpdateOrDelete`` tracker [Kevin Ramirez, af01e87]
 
     Adds a barebones ``BeforeUpdateOrDelete`` tracker for snapshotting OLD rows during an update or delete.
+
 ### Trivial
+
   - Fix auto-doc formatting [madtools, de3ddf4]
 
 ## 2.6.0 (2023-03-27)
+
 ### Bug
+
   - Fix documentation example for tracking events. [Zac Miller, acaaadf]
   - Fix bug when tracking context data with percent sign. [Adam Johnson, a5380fa]
 
     All context data is properly escaped, fixing an error that happened when
     using "%" in any context data. psycopg now escapes all context data,
     ensuring there is no SQL injection vector in the future.
+
 ### Trivial
+
   - Replace usage of ``SET LOCAL`` with ``SELECT set_config`` for better pg stat reporting. [Pierre Ducroquet, ebe2d19]
   - Fix ``make lint`` command with new .gitignore changes [Kevin Ramirez, ceafe0a]
   - Fix ``PGHISTORY_OBJ_FIELD`` settings name in the docs. [Johan Van de Wauw, 2bfb23d]
   - Updated with latest django template, fixing git-tidy deployment issues [Wesley Kendall, 1a6df96]
 
 ## 2.5.1 (2022-10-12)
+
 ### Trivial
+
   - Updated with latest Django template [Wesley Kendall, de8a535]
   - A safer way of determining fields when creating the snapshot triggers [Wesley Kendall, 7b368c3]
 
 ## 2.5.0 (2022-10-11)
+
 ### Bug
+
   - Ignore tracking non-concrete fields [Wesley Kendall, e7b0589]
 
     If a field isn't concrete, pghistory no longer tries to track it.
@@ -50,7 +75,9 @@
     See the migration guide to ``django-pgtrigger`` version 4 at
     https://django-pgtrigger.readthedocs.io/en/4.5.3/upgrading.html#version-4. Upgrading
     from version 3 to 4 only affects mutli-database setups.
+
 ### Feature
+
   - Automatically add the "pgh_event_model" attribute to tracked models. [Wesley Kendall, 917c396]
 
     When a model is tracked, a "pgh_event_model" attribute is added to the tracked model to
@@ -111,26 +138,36 @@
     in favor of the ``Events`` proxy model. The new
     ``Events`` model has similar fields and operates the same way, and
     it also has other methods for filtering aggregate events.
+
 ### Trivial
+
   - Rename "tracking" module to "runtime" module. [Wesley Kendall, 43645ea]
 
 ## 2.4.2 (2022-10-06)
+
 ### Trivial
+
   - Update with the latest Python template [Wesley Kendall, ef2fb6e]
 
 ## 2.4.1 (2022-09-13)
+
 ### Trivial
+
   - Ensure installation of pghistory context function is installed across multiple databases [Wes Kendall, d06c758]
 
 ## 2.4.0 (2022-09-07)
+
 ### Bug
+
   - Fix issues related to the ``dumpdata`` command [Wes Kendall, 8cb8036]
 
     Django's ``dumpdata`` command is now compatible with pghistory's AggregateEvent
     model.
 
 ## 2.3.0 (2022-09-06)
+
 ### Bug
+
   - Check that "pgtrigger" is in settings.INSTALLED_APPS [Wes Kendall, fa86205]
 
     A check is registered with Django's check framework to verify that
@@ -143,26 +180,36 @@
     issues that would happen when trying to migrate pghistory triggers.
 
 ## 2.2.2 (2022-09-02)
+
 ### Trivial
+
   - Reference PK of user instead of ID in middleware for DRF-based flows [Wes Kendall, 2193e2b]
 
 ## 2.2.1 (2022-09-02)
+
 ### Trivial
+
   - Do additional safety checks in middleware [Wes Kendall, 9678d83]
 
 ## 2.2.0 (2022-09-02)
+
 ### Feature
+
   - Configure middleware tracked methods [Wes Kendall, e931757]
 
     Use ``settings.PGHISTORY_MIDDLEWARE_METHODS`` to configure which methods
     are tracked in the middleware. Defaults to ``("GET", "POST", "PUT", "PATCH", "DELETE")``.
 
 ## 2.1.1 (2022-08-31)
+
 ### Trivial
+
   - Format trigger SQL for better compatibility with ``django-pgtrigger``>=4.5 [Wes Kendall, fa04191]
 
 ## 2.1.0 (2022-08-27)
+
 ### Feature
+
   - Add setting to configure JSON encoder for context. [Zac Miller, 430225f]
 
     ``django-pghistory`` now uses Django's default JSON encoder
@@ -171,23 +218,33 @@
 
     You can override the JSON encoder by setting
     ``PGHISTORY_JSON_ENCODER`` to the path of the class.
+
 ### Trivial
+
   - Local development enhancements [Wes Kendall, 95a5b1d]
 
 ## 2.0.3 (2022-08-26)
+
 ### Trivial
+
   - Test against Django 4.1 and other CI improvements [Wes Kendall, 953fe1d]
 
 ## 2.0.2 (2022-08-24)
+
 ### Trivial
+
   - Fix ReadTheDocs builds [Wes Kendall, afbc33e]
 
 ## 2.0.1 (2022-08-20)
+
 ### Trivial
+
   - Fix release note rendering and code formatting changes [Wes Kendall, 7043553]
 
 ## 2.0.0 (2022-08-08)
+
 ### Api-Break
+
   - Integration with Django's migration system [Wes Kendall, e0acead]
 
     ``django-pghistory`` upgrades ``django-pgtrigger``, which now integrates
@@ -198,29 +255,39 @@
 
     If you are tracking changes to third-party models, register the tracker on
     a proxy model so that migrations are created in the proper app.
+
 ### Feature
+
   - Remove dependency on ``django-pgconnection`` [Wes Kendall, aea6056]
 
     ``django-pghistory`` no longer requires that users wrap ``settings.DATABASES``
     with ``django-pgconnection``.
 
 ## 1.5.2 (2022-07-31)
+
 ### Trivial
+
   - Updated with latest Django template, fixing doc builds [Wes Kendall, 42cbc3c]
 
 ## 1.5.1 (2022-07-31)
+
 ### Trivial
+
   - Use `pk` instead of `id` to get the user's primary key [Eerik Sven Puudist, f105828]
   - Fix default_app_config warning on Django 3.2+ [Adam Johnson, 8753bc4]
 
 ## 1.5.0 (2022-05-17)
+
 ### Feature
+
   - Add support for GET requests in pghistory middleware [Shivananda Sahu, ae2524e]
 
     Currently the middleware adds a context for POST, PUT, PATCH and DELETE requests. Updating middleware to add a context for GET requests along with POST, PUT, PATCH and DELETE.
 
 ## 1.4.0 (2022-03-13)
+
 ### Feature
+
   - Allow target() to receive a queryset or list. [M Somerville, 0f34e91]
 
     This expands the target() function to accept a queryset or a list of
@@ -228,11 +295,15 @@
   - Add support for delete requests in pghistory middleware [Shivananda Sahu, 322d17e]
 
     Currently the middleware adds a context for POST, PUT, and PATCH requests. This leaves out DELETE requests as the only ones that can affect a model without a context. Updating middleware to add a context for DELETE requests along with POST, PUT and PATCH.
+
 ### Trivial
+
   - Minor code formatting fixes [Wes Kendall, d0b7664]
 
 ## 1.3.0 (2022-03-13)
+
 ### Bug
+
   - Fixed bug in BeforeDelete event [Wes Kendall, aab4182]
 
     The BeforeDelete event was referencing the wrong trigger value (NEW).
@@ -240,22 +311,30 @@
     and a failing test case was added.
 
 ## 1.2.2 (2022-03-13)
+
 ### Trivial
+
   - Updated with latest template, dropping 3.6 support and adding Django 4 support [Wes Kendall, c160973]
 
 ## 1.2.1 (2021-05-30)
+
 ### Trivial
+
   - Updated with latest python template [Wes Kendall, 09f6cfb]
 
 ## 1.2.0 (2020-10-23)
+
 ### Feature
+
   - Upgrade pgtrigger and test against Django 3.1 [Wes Kendall, 176fb13]
 
     Uses the latest version of django-pgtrigger. Also tests against Django 3.1
     and fixes a few bugs related to internal changes in the Django codebase.
 
 ## 1.1.0 (2020-08-04)
+
 ### Bug
+
   - Escape single quotes in tracked context [Wes Kendall, 40f758e]
 
     Invalid SQL was generated from context values with single quotes when
@@ -263,11 +342,15 @@
     a failing test case was created to cover this scenario.
 
 ## 1.0.1 (2020-06-29)
+
 ### Trivial
+
   - Updated with the latest public django app template. [Wes Kendall, fc1f3e4]
 
 ## 1.0.0 (2020-06-27)
+
 ### Api-Break
+
   - Initial release of django-pghistory. [Wes Kendall, ecfcf96]
 
     ``django-pghistory`` provides automated and customizable history
@@ -300,4 +383,3 @@
        happens in Postgres triggers, application code can still attach metadata
        to historical events, such as the URL of the request, leading to a more
        clear and useful audit trail.
-
