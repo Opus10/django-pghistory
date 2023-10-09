@@ -1,5 +1,4 @@
-from django import http
-from django import views
+from django import http, views
 from django.contrib.auth.models import User
 from django.utils import timezone
 

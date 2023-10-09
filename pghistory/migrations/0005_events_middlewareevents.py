@@ -7,7 +7,6 @@ import pghistory.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("pghistory", "0004_auto_20220906_1625"),
     ]

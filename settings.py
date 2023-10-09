@@ -16,12 +16,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "pgtrigger",
     "django_extensions",
+    "pghistory.tests",
 ]
-
-# Conditionally add the test app when we aren't building docs,
-# otherwise sphinx builds won't work
-if not os.environ.get("SPHINX"):
-    INSTALLED_APPS += ["pghistory.tests"]
 
 # Database url comes from the DATABASE_URL env var
 DATABASES = {"default": dj_database_url.config()}

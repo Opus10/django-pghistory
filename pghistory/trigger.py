@@ -1,5 +1,5 @@
-from django.db import models
 import pgtrigger
+from django.db import models
 
 from pghistory import utils
 

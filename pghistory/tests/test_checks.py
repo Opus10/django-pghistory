@@ -1,6 +1,6 @@
+import pytest
 from django.core.management import call_command
 from django.core.management.base import SystemCheckError
-import pytest
 
 
 @pytest.mark.django_db

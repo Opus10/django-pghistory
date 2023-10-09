@@ -6,7 +6,6 @@ import pghistory.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("pghistory", "0002_aggregateevent"),
     ]

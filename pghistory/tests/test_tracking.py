@@ -1,6 +1,6 @@
 import ddf
-from django.db import connection
 import pytest
+from django.db import connection
 
 import pghistory.models
 import pghistory.tests.models as test_models

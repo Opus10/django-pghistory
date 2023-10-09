@@ -1,18 +1,17 @@
-from contextlib import ExitStack as no_exception
 import datetime as dt
 import uuid
+from contextlib import ExitStack as no_exception
 
 import ddf
+import pytest
 from django.apps import apps
 from django.db import models
 from django.utils import timezone
-import pytest
 
 import pghistory
-from pghistory import config
-from pghistory import constants
 import pghistory.core
 import pghistory.tests.models as test_models
+from pghistory import config, constants
 
 
 def test_generate_history_field(settings):
@@ -41,7 +40,7 @@ def test_pgh_event_model():
     )
 
     with pytest.raises(ValueError, match="more than one"):
-        test_models.SnapshotModel.pgh_event_model
+        test_models.SnapshotModel.pgh_event_model  # noqa
 
 
 def test_get_obj_field(settings):

@@ -18,20 +18,19 @@ from pghistory.core import (
     BeforeUpdate,
     BeforeUpdateOrDelete,
     Changed,
-    create_event,
-    create_event_model,
     DatabaseEvent,
     DatabaseTracker,
     Event,
     ManualTracker,
     ProxyField,
     Snapshot,
-    track,
     Tracker,
+    create_event,
+    create_event_model,
+    track,
 )
 from pghistory.runtime import context
 from pghistory.version import __version__
-
 
 __all__ = [
     "AfterInsert",

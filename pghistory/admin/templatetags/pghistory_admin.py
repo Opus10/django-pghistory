@@ -4,10 +4,8 @@ from django import template, urls
 from django.apps import apps
 from django.contrib import admin
 
-from pghistory import config
-from pghistory import models
+from pghistory import config, models
 from pghistory.admin import EventModelAdmin
-
 
 register = template.Library()
 

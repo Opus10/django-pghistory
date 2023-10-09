@@ -1,6 +1,6 @@
+import pgtrigger
 from django.contrib.auth.models import User
 from django.db import models
-import pgtrigger
 
 import pghistory
 
