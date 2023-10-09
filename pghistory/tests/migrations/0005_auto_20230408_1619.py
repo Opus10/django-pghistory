@@ -8,7 +8,6 @@ import pgtrigger.migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("pghistory", "0005_events_middlewareevents"),
         ("tests", "0004_auto_20221010_2039"),

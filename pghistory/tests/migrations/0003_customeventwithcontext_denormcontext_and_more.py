@@ -11,7 +11,6 @@ import pgtrigger.migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ("pghistory", "0005_events_middlewareevents"),

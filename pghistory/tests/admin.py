@@ -1,8 +1,7 @@
 from django.contrib import admin
 
-from pghistory.admin import EventModelAdmin
 import pghistory.tests.models as test_models
-
+from pghistory.admin import EventModelAdmin
 
 admin.site.register(test_models.UntrackedModel)
 

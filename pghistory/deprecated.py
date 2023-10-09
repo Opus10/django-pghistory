@@ -1,7 +1,6 @@
 import django
 from django.apps import apps
-from django.db import connections
-from django.db import models
+from django.db import connections, models
 from django.db.models.sql import Query
 from django.db.models.sql.compiler import SQLCompiler
 

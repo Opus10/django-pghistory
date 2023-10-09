@@ -1,12 +1,12 @@
 import bs4
 import ddf
 import django
-from django import urls
 import pytest
+from django import urls
 
+import pghistory.tests.models as test_models
 from pghistory import models
 from pghistory.admin import core as admin
-import pghistory.tests.models as test_models
 
 
 @pytest.fixture

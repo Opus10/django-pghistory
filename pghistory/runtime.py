@@ -3,6 +3,7 @@ import contextlib
 import json
 import threading
 import uuid
+from typing import Any
 
 from django.db import connection
 
@@ -98,26 +99,26 @@ class context(contextlib.ContextDecorator):
     SET LOCAL), meaning they will only persist for the statement/transaction
     and not across the session.
 
-    Once any code has entered ``pghistory.context``, all subsequent
-    entrances of ``pghistory.context`` will be grouped under the same
+    Once any code has entered [pghistory.context][], all subsequent
+    entrances of [pghistory.context][] will be grouped under the same
     context until the top-most parent exits.
 
-    To add context only if a parent has already entered ``pghistory.context``,
-    one can call ``pghistory.context`` as a function without entering it.
+    To add context only if a parent has already entered [pghistory.context][],
+    one can call [pghistory.context][] as a function without entering it.
     The metadata set in the function call will be part of the context if
-    ``pghistory.context`` has previously been entered. Otherwise it will
+    [pghistory.context][] has previously been entered. Otherwise it will
     be ignored.
 
-    Args:
+    Attributes:
         **metadata: Metadata that should be attached to the tracking
             context
 
     Example:
-        Here we track a "key" with a value of "value"::
+        Here we track a "key" with a value of "value":
 
             with pghistory.context(key='value'):
                 # Do things..
-                # All tracked events will have the same ``pgh_context``
+                # All tracked events will have the same `pgh_context`
                 # foreign key, and the context object will include
                 # {'key': 'value'} in its metadata.
                 # Nesting the tracker adds additional metadata to the current
@@ -127,7 +128,7 @@ class context(contextlib.ContextDecorator):
             # pghistory.context
             pghistory.context(key='value')
 
-    Notes:
+    Note:
         Context tracking is compatible for most scenarios, but it currently
         does not work for named cursors. Django uses named cursors for
         the .iterator() operator, which has no effect on history tracking.
@@ -135,7 +136,7 @@ class context(contextlib.ContextDecorator):
         history context is ignored.
     """
 
-    def __init__(self, **metadata):
+    def __init__(self, **metadata: Any):
         self.metadata = metadata
         self._pre_execute_hook = None
 

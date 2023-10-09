@@ -10,7 +10,6 @@ def install_pgh_attach_context_func(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("pghistory", "0003_auto_20201023_1636"),
     ]

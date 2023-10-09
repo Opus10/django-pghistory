@@ -1,4 +1,6 @@
 """Core way to access configuration"""
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
+
 from django.apps import apps
 from django.conf import settings
 from django.db import models
@@ -6,18 +8,31 @@ from django.utils.module_loading import import_string
 
 from pghistory import constants
 
+if TYPE_CHECKING:
+    from django.core.serializers.json import DjangoJSONEncoder
+    from django.db.models import BaseModel, QuerySet
 
-def middleware_methods():
+    from pghistory.admin import EventsAdmin
+
+
+def middleware_methods() -> Tuple[str]:
     """
-    Methods tracked by the pghistory middleware
+    Methods tracked by the pghistory middleware.
+
+    Returns:
+        The HTTP methods
     """
     return getattr(
         settings, "PGHISTORY_MIDDLEWARE_METHODS", ("GET", "POST", "PUT", "PATCH", "DELETE")
     )
 
 
-def json_encoder():
-    """The JSON encoder when tracking context"""
+def json_encoder() -> "DjangoJSONEncoder":
+    """The JSON encoder when tracking context
+
+    Returns:
+        The JSON encoder class
+    """
     encoder = getattr(
         settings, "PGHISTORY_JSON_ENCODER", "django.core.serializers.json.DjangoJSONEncoder"
     )
@@ -28,8 +43,12 @@ def json_encoder():
     return encoder
 
 
-def base_model():
-    """The base model for event models"""
+def base_model() -> "BaseModel":
+    """The base model for event models.
+
+    Returns:
+        The model class
+    """
     event_model = import_string("pghistory.models.Event")
     base_model = getattr(settings, "PGHISTORY_BASE_MODEL", event_model)
 
@@ -40,29 +59,45 @@ def base_model():
     return base_model
 
 
-def field():
-    """The default configuration for all fields in event models"""
+def field() -> "Field":
+    """The default configuration for all fields in event models.
+
+    Returns:
+        The pghistory `Field` class
+    """
     field = getattr(settings, "PGHISTORY_FIELD", Field())
     assert isinstance(field, Field)
     return field
 
 
-def related_field():
-    """The default configuration for related fields in event models"""
+def related_field() -> "RelatedField":
+    """The default configuration for related fields in event models.
+
+    Returns:
+        The pghistory `RelatedField` class
+    """
     related_field = getattr(settings, "PGHISTORY_RELATED_FIELD", RelatedField())
     assert isinstance(related_field, RelatedField)
     return related_field
 
 
-def foreign_key_field():
-    """The default configuration for foreign keys in event models"""
+def foreign_key_field() -> "ForeignKey":
+    """The default configuration for foreign keys in event models.
+
+    Returns:
+        The pghistory `ForeignKey` class
+    """
     foreign_key_field = getattr(settings, "PGHISTORY_FOREIGN_KEY_FIELD", ForeignKey())
     assert isinstance(foreign_key_field, ForeignKey)
     return foreign_key_field
 
 
-def context_field():
-    """The default field config to use for context in event models"""
+def context_field() -> Union["ContextForeignKey", "ContextJSONField"]:
+    """The default field config to use for context in event models.
+
+    Returns:
+        The pghistory field class
+    """
 
     # Note: We will be changing the default context field to have on_delete=PROTECT
     # in version 3.
@@ -71,9 +106,12 @@ def context_field():
     return context_field
 
 
-def context_id_field():
+def context_id_field() -> "ContextUUIDField":
     """
-    The default field config to use for context ID in event models when context is denormalized
+    The default field config to use for context ID in event models when context is denormalized.
+
+    Returns:
+        The pghistory context UUID field
     """
 
     context_id_field = getattr(settings, "PGHISTORY_CONTEXT_ID_FIELD", ContextUUIDField())
@@ -81,21 +119,28 @@ def context_id_field():
     return context_id_field
 
 
-def obj_field():
-    """The default field config to use for object references in event models"""
+def obj_field() -> "ObjForeignKey":
+    """The default field config to use for object references in event models.
+
+    Returns:
+        The pghistory object field
+    """
 
     obj_field = getattr(settings, "PGHISTORY_OBJ_FIELD", ObjForeignKey())
     assert isinstance(obj_field, ObjForeignKey)
     return obj_field
 
 
-def exclude_field_kwargs():
+def exclude_field_kwargs() -> Dict["Field", List[str]]:
     """
     Provide a mapping of field classes to a list of keyword args to ignore
     when instantiating the field on the event model.
 
-    For example, a field may not allow ``unique`` as a keyword argument.
-    If so, set ``settings.PGHISTORY_EXCLUDE_FIELD_KWARGS = {"field.FieldClass": ["unique"]}``
+    For example, a field may not allow `unique` as a keyword argument.
+    If so, set `settings.PGHISTORY_EXCLUDE_FIELD_KWARGS = {"field.FieldClass": ["unique"]}`
+
+    Returns:
+        The mapping of field classes to kwargs
     """
     exclude_field_kwargs = getattr(settings, "PGHISTORY_EXCLUDE_FIELD_KWARGS", {})
     assert isinstance(exclude_field_kwargs, dict)
@@ -111,8 +156,12 @@ def exclude_field_kwargs():
     return exclude_field_kwargs
 
 
-def admin_ordering():
-    """The default ordering for the events admin"""
+def admin_ordering() -> List[str]:
+    """The default ordering for the events admin.
+
+    Returns:
+        The fields over which to order by
+    """
     ordering = getattr(settings, "PGHISTORY_ADMIN_ORDERING", "-pgh_created_at") or []
 
     if not isinstance(ordering, (list, tuple)):
@@ -121,22 +170,32 @@ def admin_ordering():
     return ordering
 
 
-def admin_model():
-    """The default list display for the events admin"""
+def admin_model() -> "BaseModel":
+    """The default list display for the events admin.
+
+    Returns:
+        The model class
+    """
     return apps.get_model(getattr(settings, "PGHISTORY_ADMIN_MODEL", "pghistory.Events"))
 
 
-def admin_queryset():
-    """The default queryset for the events admin"""
+def admin_queryset() -> "QuerySet":
+    """The default queryset for the events admin.
+
+    Returns:
+        The queryset
+    """
     return getattr(
         settings, "PGHISTORY_ADMIN_QUERYSET", admin_model().objects.order_by(*admin_ordering())
     )
 
 
-def admin_class():
+def admin_class() -> "EventsAdmin":
     """The admin class to use for the events admin.
 
-    Must be a subclass of pghistory.admin.EventsAdmin"""
+    Returns:
+        The pghistory.admin.EventsAdmin class
+    """
 
     events_admin = import_string("pghistory.admin.EventsAdmin")
     admin_class = getattr(settings, "PGHISTORY_ADMIN_CLASS", events_admin)
@@ -149,13 +208,21 @@ def admin_class():
     return admin_class
 
 
-def admin_all_events():
-    """True if all events should be shown in the admin when there are no filters"""
+def admin_all_events() -> bool:
+    """True if all events should be shown in the admin when there are no filters.
+
+    Returns:
+        The bool setting
+    """
     return getattr(settings, "PGHISTORY_ADMIN_ALL_EVENTS", True)
 
 
-def admin_list_display():
-    """The default list display for the events admin"""
+def admin_list_display() -> List[str]:
+    """The default list display for the events admin.
+
+    Returns:
+        The field display order list
+    """
     defaults = ["pgh_created_at", "pgh_obj_model", "pgh_obj_id", "pgh_diff"]
 
     if admin_queryset().model._meta.label == "pghistory.MiddlewareEvents":
@@ -175,35 +242,34 @@ def _get_kwargs(vals):
 class Field:
     """Configuration for fields.
 
-    Provides these default parameters:
-
-    * **primary_key** (default=False)
-    * **unique** (default=False)
-    * **blank**
-    * **null**
-    * **db_index** (default=False)
-    * **editable**
-    * **unique_for_date** (default=None)
-    * **unique_for_month** (default=None)
-    * **unique_for_year** (default=None)
-
-    The default values for the above parameters ensure that
+    The default values for the attributes ensure that
     event models don't have unnecessary uniqueness constraints
     carried over from the tracked model.
+
+    Attributes:
+        primary_key (bool, default=False): True if a primary key
+        unique (bool, default=False): True if unique
+        blank (bool): True if blank
+        null (bool): True if null
+        db_index (bool): True if indexed
+        editable (bool): True if editable
+        unique_for_date (bool): True if unique for date
+        unique_for_month (bool): True if unique for the month
+        unique_for_year (bool): True if unique for the year
     """
 
     def __init__(
         self,
         *,
-        primary_key=constants.UNSET,
-        unique=constants.UNSET,
-        blank=constants.UNSET,
-        null=constants.UNSET,
-        db_index=constants.UNSET,
-        editable=constants.UNSET,
-        unique_for_date=constants.UNSET,
-        unique_for_month=constants.UNSET,
-        unique_for_year=constants.UNSET,
+        primary_key: bool = constants.UNSET,
+        unique: bool = constants.UNSET,
+        blank: bool = constants.UNSET,
+        null: bool = constants.UNSET,
+        db_index: bool = constants.UNSET,
+        editable: bool = constants.UNSET,
+        unique_for_date: bool = constants.UNSET,
+        unique_for_month: bool = constants.UNSET,
+        unique_for_year: bool = constants.UNSET,
     ):
         self._kwargs = _get_kwargs(locals())
         self._finalized = False
@@ -233,24 +299,23 @@ class Field:
 class RelatedField(Field):
     """Configuration for related fields.
 
-    The following parameters can be used to configure
-    defaults for all related fields:
-
-    * **related_name** (default="+")
-    * **related_query_name** (default="+")
-
     By default, related names are stripped to avoid
     unnecessary clashes.
 
     Note that all arguments from `Field` can also be supplied.
+
+    Attributes:
+        related_name (str, default="+"): The related_name to use
+        related_query_name (str, default="+"): The related_query_name
+            to use
     """
 
     def __init__(
         self,
         *,
-        related_name=constants.UNSET,
-        related_query_name=constants.UNSET,
-        **kwargs,
+        related_name: str = constants.UNSET,
+        related_query_name: str = constants.UNSET,
+        **kwargs: Any,
     ):
         super().__init__(**kwargs)
         self._kwargs.update(_get_kwargs(locals()))
@@ -266,16 +331,22 @@ class RelatedField(Field):
 class ForeignKey(RelatedField):
     """Configuration for foreign keys.
 
-    The following parameters can be used:
-
-    * **on_delete** (default=models.DO_NOTHING)
-    * **db_constraint** (default=False)
-
     Arguments for `RelatedField` and `Field` can also be supplied.
     Note that db_index is overridden to `True` for all foreign keys
+
+    Attributes:
+        on_delete (default=models.DO_NOTHING): Django's on_delete property
+        db_constraint (bool, default=False): True to use a datbase constraint
+            for the foreign key
     """
 
-    def __init__(self, *, on_delete=constants.UNSET, db_constraint=constants.UNSET, **kwargs):
+    def __init__(
+        self,
+        *,
+        on_delete: Any = constants.UNSET,
+        db_constraint: bool = constants.UNSET,
+        **kwargs: Any,
+    ):
         super().__init__(**kwargs)
         self._kwargs.update(_get_kwargs(locals()))
 
@@ -288,12 +359,18 @@ class ForeignKey(RelatedField):
 
 
 class ContextForeignKey(ForeignKey):
-    """Configuration for the ``pgh_context`` field when a foreign key is used.
+    """Configuration for the `pgh_context` field when a foreign key is used.
 
-    Overrides null to ``True``.
+    Overrides null to `True`.
+
+    Attributes:
+        null (bool, default=True): True if nullable context is allowed
+        related_query_name (str): The related_query_name to use
     """
 
-    def __init__(self, *, null=True, related_query_name=constants.DEFAULT, **kwargs):
+    def __init__(
+        self, *, null: bool = True, related_query_name: str = constants.DEFAULT, **kwargs: Any
+    ):
         # Note: We will be changing the default context field to have on_delete=PROTECT
         # in version 3.
         super().__init__(null=null, related_query_name=related_query_name, **kwargs)
@@ -301,26 +378,43 @@ class ContextForeignKey(ForeignKey):
 
 
 class ContextJSONField(Field):
-    """Configuration for the ``pgh_context`` field when denormalized context is used."""
+    """Configuration for the `pgh_context` field when denormalized context is used.
 
-    def __init__(self, *, null=True, **kwargs):
+    Attributes:
+        null (bool, default=True): True if nullable context is allowed
+    """
+
+    def __init__(self, *, null: bool = True, **kwargs: Any):
         super().__init__(null=null, **kwargs)
         self._kwargs.update(_get_kwargs(locals()))
 
 
 class ContextUUIDField(Field):
-    """Configuration for the ``pgh_context_id`` field when denormalized context is used."""
+    """Configuration for the `pgh_context_id` field when denormalized context is used.
 
-    def __init__(self, *, null=True, **kwargs):
+    Attributes:
+        null (bool, default=True): True if nullable context is allowed
+    """
+
+    def __init__(self, *, null: bool = True, **kwargs: Any):
         super().__init__(null=null, **kwargs)
         self._kwargs.update(_get_kwargs(locals()))
 
 
 class ObjForeignKey(ForeignKey):
-    """Configuration for the ``pgh_obj`` field"""
+    """Configuration for the `pgh_obj` field
+
+    Attributes:
+        related_name (str): The related_name to use
+        related_query_name (str): The related_query_name to use
+    """
 
     def __init__(
-        self, *, related_name=constants.DEFAULT, related_query_name=constants.DEFAULT, **kwargs
+        self,
+        *,
+        related_name: str = constants.DEFAULT,
+        related_query_name: str = constants.DEFAULT,
+        **kwargs,
     ):
         # Note: We will be changing the default object field to nullable with on_delete=SET_NULL
         # in version 3. related_name will also default to "+"

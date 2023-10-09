@@ -1,6 +1,6 @@
+import pytest
 from django import urls
 from django.contrib.auth.models import User
-import pytest
 
 import pghistory.middleware
 import pghistory.runtime

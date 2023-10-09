@@ -2,8 +2,8 @@ import datetime as dt
 
 import ddf
 import django
-from django.core.management import call_command
 import pytest
+from django.core.management import call_command
 
 import pghistory.models
 import pghistory.tests.models as test_models
