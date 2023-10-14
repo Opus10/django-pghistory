@@ -1,3 +1,5 @@
+import re
+
 import pgtrigger
 from django.db import models
 
@@ -11,13 +13,21 @@ def _get_pgh_obj_pk_col(history_model):
     return history_model._meta.get_field("pgh_obj").related_model._meta.pk.column
 
 
+def _fmt_trigger_name(label):
+    """Given a history event label, generate a trigger name"""
+    if label:
+        return re.sub("[^0-9a-zA-Z]+", "_", label).lower()
+    else:  # pragma: no cover
+        return None
+
+
 class Event(pgtrigger.Trigger):
     """
     Events a model with a label when a condition happens
     """
 
     label = None
-    snapshot = "NEW"
+    row = "NEW"
     event_model = None
     when = pgtrigger.After
 
@@ -27,29 +37,40 @@ class Event(pgtrigger.Trigger):
         name=None,
         operation=None,
         condition=None,
-        when=None,
         label=None,
-        snapshot=None,
         event_model=None,
+        when=None,
+        row=None,
+        snapshot=None,
     ):
+        # Note - "snapshot" is the old field, renamed to "row". We avoid removing it entirely
+        # since old migrations still may reference this trigger
+        row = row or snapshot
+
         self.label = label or self.label
         if not self.label:  # pragma: no cover
             raise ValueError('Must provide "label"')
+
+        self.name = name or self.name or self.label
+        if not self.name:  # pragma: no cover
+            raise ValueError('Must provide "name"')
+
+        self.name = _fmt_trigger_name(self.name)
 
         self.event_model = event_model or self.event_model
         if not self.event_model:  # pragma: no cover
             raise ValueError('Must provide "event_model"')
 
-        self.snapshot = snapshot or self.snapshot
-        if not self.snapshot:  # pragma: no cover
-            raise ValueError('Must provide "snapshot"')
+        self.row = row or self.row
+        if not self.row:  # pragma: no cover
+            raise ValueError('Must provide "row"')
 
-        super().__init__(name=name, operation=operation, condition=condition, when=when)
+        super().__init__(operation=operation, condition=condition, when=when)
 
     def get_func(self, model):
         tracked_model_fields = {f.name for f in self.event_model.pgh_tracked_model._meta.fields}
         fields = {
-            f.column: f'{self.snapshot}."{f.column}"'
+            f.column: f'{self.row}."{f.column}"'
             for f in self.event_model._meta.fields
             if not isinstance(f, models.AutoField)
             and f.name in tracked_model_fields
@@ -59,7 +80,7 @@ class Event(pgtrigger.Trigger):
         fields["pgh_label"] = f"'{self.label}'"
 
         if hasattr(self.event_model, "pgh_obj"):
-            fields["pgh_obj_id"] = f'{self.snapshot}."{_get_pgh_obj_pk_col(self.event_model)}"'
+            fields["pgh_obj_id"] = f'{self.row}."{_get_pgh_obj_pk_col(self.event_model)}"'
 
         if hasattr(self.event_model, "pgh_context"):
             if isinstance(self.event_model._meta.get_field("pgh_context"), models.ForeignKey):

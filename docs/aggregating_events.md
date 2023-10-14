@@ -21,7 +21,7 @@ The [pghistory.models.Events][] proxy model treats all event tables as a unified
 Let's create a snapshot tracker for a `User` model and query the associated events:
 
 ```python
-@pghistory.track(pghistory.Snapshot())
+@pghistory.track()
 class User(models.Model):
     username = models.CharField()
     name = models.CharField()

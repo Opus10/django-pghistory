@@ -26,12 +26,13 @@ def test_generate_history_field(settings):
 @pytest.mark.django_db
 def test_image_field_snapshot():
     t = ddf.G(test_models.SnapshotImageField)
-    assert t.event.count() == 1
+    assert t.events.count() == 1
 
 
 def test_duplicate_registration():
     with pytest.raises(ValueError, match="already exists"):
-        pghistory.Snapshot().pghistory_setup(test_models.SnapshotModelSnapshot)
+        pghistory.InsertEvent("snapshot_insert").pghistory_setup(test_models.CustomModelEvent)
+        pghistory.InsertEvent("snapshot_insert").pghistory_setup(test_models.CustomModelSnapshot)
 
 
 def test_pgh_event_model():
@@ -48,38 +49,27 @@ def test_get_obj_field(settings):
         tracked_model=test_models.SnapshotModel,
         base_model=config.base_model(),
         obj_field=constants.UNSET,
-        obj_fk=constants.UNSET,
         fields=None,
-        related_name=None,
     )
-    assert obj_field.remote_field.related_name == "event"
+    assert obj_field.remote_field.related_name == "events"
 
     settings.PGHISTORY_OBJ_FIELD = pghistory.ObjForeignKey(related_name="hello")
     obj_field = pghistory.core._get_obj_field(
         tracked_model=test_models.SnapshotModel,
         base_model=config.base_model(),
         obj_field=constants.UNSET,
-        obj_fk=constants.UNSET,
         fields=None,
-        related_name=None,
     )
     assert obj_field.remote_field.related_name == "hello"
-
-
-def test_get_event_model(mocker):
-    patched_create_event_model = mocker.patch("pghistory.core.create_event_model", autospec=True)
-
-    pghistory.core.get_event_model(test_models.SnapshotModel)
-    patched_create_event_model.assert_called_once_with(test_models.SnapshotModel)
 
 
 @pytest.mark.django_db
 def test_denorm_context_tracking():
     """Test denormalized context tracking"""
     denorm_model = ddf.G(test_models.DenormContext)
-    assert denorm_model.event.count() == 1
+    assert denorm_model.events.count() == 1
 
-    event = denorm_model.event.first()
+    event = denorm_model.events.first()
     assert event.pgh_context is None
     assert event.pgh_context_id is None
 
@@ -91,8 +81,8 @@ def test_denorm_context_tracking():
         denorm_model.int_field += 1
         denorm_model.save()
 
-    assert denorm_model.event.count() == 2
-    event = denorm_model.event.order_by("pgh_id").last()
+    assert denorm_model.events.count() == 2
+    event = denorm_model.events.order_by("pgh_id").last()
     assert event.pgh_context == {"hello": "world"}
     assert isinstance(event.pgh_context_id, uuid.UUID)
 
@@ -166,8 +156,8 @@ def test_custom_pk_and_custom_column():
     assert m.snapshot.count() == 2
     assert list(m.snapshot.values_list("pgh_obj_id", flat=True).distinct()) == [m.pk]
 
-    assert m.event.count() == 1
-    assert m.event.get().int_field == 2
+    assert m.events.count() == 1
+    assert m.events.get().int_field == 2
 
 
 @pytest.mark.django_db
@@ -211,7 +201,7 @@ def test_events_on_event_model(mocker):
     orig_dt = m.dt_field
     orig_int = m.int_field
 
-    assert list(m.event.values()) == [
+    assert list(m.events.values()) == [
         {
             "pgh_created_at": mocker.ANY,
             "dt_field": orig_dt,
@@ -224,10 +214,9 @@ def test_events_on_event_model(mocker):
         }
     ]
 
-    # A "before_update" will always fire, event if values
-    # don't change
+    m.int_field = 1000
     m.save()
-    assert list(m.event.values().order_by("pgh_id")) == [
+    assert list(m.events.values().order_by("pgh_id")) == [
         {
             "pgh_created_at": mocker.ANY,
             "dt_field": orig_dt,
@@ -254,7 +243,7 @@ def test_events_on_event_model(mocker):
     # changes
     m.dt_field = dt.datetime(2019, 1, 1, tzinfo=dt.timezone.utc)
     m.save()
-    assert list(m.event.values().order_by("pgh_id")) == [
+    assert list(m.events.values().order_by("pgh_id")) == [
         {
             "pgh_created_at": mocker.ANY,
             "dt_field": orig_dt,
@@ -280,7 +269,7 @@ def test_events_on_event_model(mocker):
             "dt_field": m.dt_field,
             "pgh_id": mocker.ANY,
             "pgh_label": "after_update",
-            "int_field": orig_int,
+            "int_field": 1000,
             "pgh_obj_id": m.id,
             "pgh_context_id": None,
             "id": m.id,
@@ -290,7 +279,7 @@ def test_events_on_event_model(mocker):
             "dt_field": orig_dt,
             "pgh_id": mocker.ANY,
             "pgh_label": "before_update",
-            "int_field": orig_int,
+            "int_field": 1000,
             "pgh_obj_id": m.id,
             "pgh_context_id": None,
             "id": m.id,
@@ -320,7 +309,7 @@ def test_events_on_event_model(mocker):
             "dt_field": dt_field,
             "pgh_id": mocker.ANY,
             "pgh_label": "before_delete",
-            "int_field": orig_int,
+            "int_field": 1000,
             "pgh_obj_id": m_id,
             "pgh_context_id": None,
             "id": m_id,
@@ -348,7 +337,7 @@ def test_dt_field_snapshot_tracking(mocker):
     assert list(tracking.dt_field_snapshot.order_by("pgh_id").values()) == [
         {
             "pgh_id": mocker.ANY,
-            "pgh_label": "dt_field_snapshot",
+            "pgh_label": "dt_field_snapshot_insert",
             "dt_field": dt.datetime(2020, 1, 1, tzinfo=dt.timezone.utc),
             "pgh_obj_id": tracking.id,
             "pgh_created_at": mocker.ANY,
@@ -356,7 +345,7 @@ def test_dt_field_snapshot_tracking(mocker):
         },
         {
             "pgh_id": mocker.ANY,
-            "pgh_label": "dt_field_snapshot",
+            "pgh_label": "dt_field_snapshot_update",
             "dt_field": dt.datetime(2019, 1, 1, tzinfo=dt.timezone.utc),
             "pgh_obj_id": tracking.id,
             "pgh_created_at": mocker.ANY,
@@ -391,7 +380,7 @@ def test_dt_field_int_field_snapshot_tracking(mocker):
         {
             "pgh_id": mocker.ANY,
             "dt_field": dt.datetime(2020, 1, 1, tzinfo=dt.timezone.utc),
-            "pgh_label": "dt_field_int_field_snapshot",
+            "pgh_label": "dt_field_int_field_snapshot_insert",
             "int_field": 0,
             "pgh_obj_id": tracking.id,
             "pgh_created_at": mocker.ANY,
@@ -400,7 +389,7 @@ def test_dt_field_int_field_snapshot_tracking(mocker):
         {
             "pgh_id": mocker.ANY,
             "dt_field": dt.datetime(2019, 1, 1, tzinfo=dt.timezone.utc),
-            "pgh_label": "dt_field_int_field_snapshot",
+            "pgh_label": "dt_field_int_field_snapshot_update",
             "int_field": 0,
             "pgh_obj_id": tracking.id,
             "pgh_created_at": mocker.ANY,
@@ -409,7 +398,7 @@ def test_dt_field_int_field_snapshot_tracking(mocker):
         {
             "pgh_id": mocker.ANY,
             "dt_field": dt.datetime(2019, 1, 1, tzinfo=dt.timezone.utc),
-            "pgh_label": "dt_field_int_field_snapshot",
+            "pgh_label": "dt_field_int_field_snapshot_update",
             "int_field": 1,
             "pgh_obj_id": tracking.id,
             "pgh_created_at": mocker.ANY,
@@ -494,7 +483,7 @@ def test_model_snapshot_tracking(mocker):
             "id": tracking.id,
             "fk_field_id": tracking.fk_field_id,
             "dt_field": dt.datetime(2020, 1, 1, tzinfo=dt.timezone.utc),
-            "pgh_label": "snapshot",
+            "pgh_label": "snapshot_insert",
             "int_field": 0,
             "pgh_obj_id": tracking.id,
             "pgh_created_at": mocker.ANY,
@@ -505,7 +494,7 @@ def test_model_snapshot_tracking(mocker):
             "id": tracking.id,
             "dt_field": dt.datetime(2019, 1, 1, tzinfo=dt.timezone.utc),
             "fk_field_id": tracking.fk_field_id,
-            "pgh_label": "snapshot",
+            "pgh_label": "snapshot_update",
             "int_field": 0,
             "pgh_obj_id": tracking.id,
             "pgh_created_at": mocker.ANY,
@@ -516,7 +505,7 @@ def test_model_snapshot_tracking(mocker):
             "id": tracking.id,
             "dt_field": dt.datetime(2019, 1, 1, tzinfo=dt.timezone.utc),
             "fk_field_id": tracking.fk_field_id,
-            "pgh_label": "snapshot",
+            "pgh_label": "snapshot_update",
             "int_field": 1,
             "pgh_obj_id": tracking.id,
             "pgh_created_at": mocker.ANY,
@@ -549,7 +538,7 @@ def test_custom_snapshot_model_tracking(mocker):
         {
             "pgh_id": mocker.ANY,
             "id": tracking.id,
-            "pgh_label": "custom_snapshot",
+            "pgh_label": "custom_snapshot_insert",
             "int_field": 0,
             "fk_field_id": tracking.fk_field_id,
             "fk_field2_id": None,
@@ -559,7 +548,7 @@ def test_custom_snapshot_model_tracking(mocker):
         {
             "pgh_id": mocker.ANY,
             "id": tracking.id,
-            "pgh_label": "custom_snapshot",
+            "pgh_label": "custom_snapshot_update",
             "int_field": 1,
             "fk_field_id": tracking.fk_field_id,
             "fk_field2_id": None,
@@ -586,13 +575,12 @@ def test_pascalcase(val, expected_output):
 
 
 @pytest.mark.parametrize(
-    "model_name, obj_fk, fields, expected_model_name, expected_related_name",
+    "model_name, obj_field, fields, expected_model_name, expected_related_name",
     [
-        (None, pghistory.constants.UNSET, None, "EventModelEvent", "event"),
+        (None, pghistory.constants.UNSET, None, "EventModelEvent", "events"),
         (
             None,
-            models.ForeignKey(
-                "tests.EventModelEvent",
+            pghistory.ObjForeignKey(
                 on_delete=models.CASCADE,
                 related_name="r",
             ),
@@ -600,26 +588,26 @@ def test_pascalcase(val, expected_output):
             "EventModelEvent",
             "r",
         ),
-        ("Name", pghistory.constants.UNSET, None, "Name", "event"),
+        ("Name", pghistory.constants.UNSET, None, "Name", "events"),
         (
             None,
             pghistory.constants.UNSET,
             ["int_field"],
             "EventModelIntFieldEvent",
-            "int_field_event",
+            "int_field_events",
         ),
         (
             None,
             pghistory.constants.UNSET,
             ["int_field", "dt_field"],
             "EventModelIntFieldDtFieldEvent",
-            "int_field_dt_field_event",
+            "int_field_dt_field_events",
         ),
     ],
 )
-def test_factory(model_name, obj_fk, fields, expected_model_name, expected_related_name):
+def test_factory(model_name, obj_field, fields, expected_model_name, expected_related_name):
     cls = pghistory.core.create_event_model(
-        test_models.EventModel, model_name=model_name, obj_fk=obj_fk, fields=fields
+        test_models.EventModel, model_name=model_name, obj_field=obj_field, fields=fields
     )
 
     assert cls.__name__ == expected_model_name

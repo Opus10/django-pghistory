@@ -139,11 +139,12 @@ class PghEventModel:
     "A descriptor for accessing the pgh_event_model field on a tracked model"
 
     def __get__(self, instance, owner):
-        if len(owner.pgh_event_models) == 1:
-            return owner.pgh_event_models[list(owner.pgh_event_models)[0]]
+        event_models = set(owner.pgh_event_models.values())
+        if len(event_models) == 1:
+            return list(event_models)[0]
         else:
             raise ValueError(
-                f"{owner.__name__} has more than one tracker."
+                f"{owner.__name__} has more than one event model."
                 " Use the pgh_event_models dictionary to retrieve the event"
                 " model by label."
             )
@@ -439,7 +440,7 @@ class EventsQueryCompiler(SQLCompiler):
         prev_data_clause = """
             LAG(row_to_json(_event))
               OVER (
-                PARTITION BY _event.pgh_obj_id, _event.pgh_label
+                PARTITION BY _event.pgh_obj_id
                 ORDER BY _event.pgh_id
               ) AS _prev_data
         """
@@ -683,47 +684,3 @@ class MiddlewareEvents(Events):
     class Meta:
         proxy = True
         verbose_name_plural = "middleware events"
-
-
-# These models are deprecated
-from pghistory import deprecated  # noqa
-
-
-class BaseAggregateEvent(Event):
-    """
-    A proxy model for aggregating events together across tables and
-    rendering diffs
-    """
-
-    pgh_table = models.CharField(
-        max_length=64, help_text="The table under which the event is stored"
-    )
-    pgh_data = utils.JSONField(help_text="The raw data of the event row")
-    pgh_diff = utils.JSONField(
-        help_text="The diff between the previous event and the current event"
-    )
-    pgh_context = models.ForeignKey(
-        "pghistory.Context",
-        null=True,
-        help_text="The context, if any, associated with the event",
-        on_delete=models.DO_NOTHING,
-    )
-
-    objects = deprecated.AggregateEventQuerySet.as_manager()
-    no_objects = deprecated.NoObjectsManager()
-
-    class Meta:
-        abstract = True
-        # See the docs for NoObjectsManager about why this is the default
-        # manager
-        default_manager_name = "no_objects"
-
-
-class AggregateEvent(BaseAggregateEvent):
-    """
-    A proxy model for aggregating events together across tables and
-    rendering diffs
-    """
-
-    class Meta:
-        managed = False

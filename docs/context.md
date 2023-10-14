@@ -4,7 +4,7 @@ By default, all `django-pghistory` event models come with a nullable `pgh_contex
 
 ## Using `pghistory.context`
 
-[pghistory.context][] can be used as a decorator or context manager. When it is entered the first time, it creates a session with a UUID, collects metadata, and stores this metadata in the `metadata` field of the [pghistory.models.Context][] model. Any nested calls will add or override the metadata for that session.
+[pghistory.context][] can be used as a decorator or context manager. When it is entered the first time, it creates a session with a UUID, collects metadata, and aggregates this metadata in the `metadata` field of the [pghistory.models.Context][] model. Any nested calls will add or override the metadata for that session.
 
 For example, here we've started context collection and added a few keys and values in the midst of database queries:
 

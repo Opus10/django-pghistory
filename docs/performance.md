@@ -4,9 +4,15 @@ Here we overview some of the main things to consider regarding performance and s
 
 ## Trigger Execution
 
-[Postgres triggers](https://www.postgresql.org/docs/current/sql-createtrigger.html) are used to store events. When using a [pghistory.Snapshot][] tracker, for example, this means a snapshot of your model is saved every time it is created or updated. In other words, an `INSERT` statement for the event table is ran alongside the query that creates or updates data on the tracked model.
+[Postgres row-level triggers](https://www.postgresql.org/docs/current/sql-createtrigger.html) are used to store events. When using a [pghistory.InsertEvent][] tracker, for example, this means a snapshot of your model is saved every time it is inserted. In other words, an `INSERT` statement for the event table is ran alongside the query that creates or updates data on the tracked model.
+
+The same thing can be said for updates. If you update rows in a `objects.update()` command, there will be one hudred events created in separate queries in the database.
 
 While this will have a performance impact when creating or updating models, keep in mind that triggers run in the database and do not require expensive round trips from the application. This can result in substantially better performance when compared to traditional history tracking solutions that are implemented in the application and do separate round trips.
+
+!!! note
+
+    We have plans to support [statement level triggers](https://www.postgresql.org/docs/current/sql-createtrigger.html) in a future iteration of `django-pghistory`. This means there will be one bulk insert of events for every bulk insert or update of the tracked model.
 
 When triggers execute, the following happens:
 
@@ -58,6 +64,6 @@ Remember that there will be a performance hit for maintaining the foreign key co
 
 ## The `Events` Proxy Model
 
-The [pghistory.models.Events][] proxy model uses a common table expression (CTE) across event tables to query an aggregate view of data. Postgres 12 optimizes filters on CTEs, but you may experience performance issues if trying to directly filter `Events` on earlier versions of Postgres.
+The [pghistory.models.Events][] proxy model uses a common table expression (CTE) across event tables to query an aggregate view of data. Postgres 12 optimizes filters on CTEs, but you may experience performance issues if trying to directly filter `Events` on earlier versions of Postgres. Similarly, aggregating many large event tables is likely to simply just be slow given the nature of this query.
 
 See [Aggregating Events and Diffs](aggregating_events.md) for more information on how to use the special model manager methods to more efficiently filter events.

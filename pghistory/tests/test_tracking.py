@@ -51,17 +51,17 @@ def test_scope_inside_transaction():
     """
     # No context should be attached at first
     no_ctx = ddf.G("tests.EventModel")
-    assert no_ctx.event.get().pgh_context_id is None
+    assert no_ctx.events.get().pgh_context_id is None
 
     # Attach context
     with pghistory.context() as ctx:
         with_ctx = ddf.G("tests.EventModel")
-        assert with_ctx.event.get().pgh_context_id == ctx.id
+        assert with_ctx.events.get().pgh_context_id == ctx.id
 
     # Although we are out of the context manager, we are still in
     # a transaction, so local context variables will still persist
     with_local_ctx = ddf.G("tests.EventModel")
-    assert with_local_ctx.event.get().pgh_context_id == ctx.id
+    assert with_local_ctx.events.get().pgh_context_id == ctx.id
 
 
 @pytest.mark.django_db
@@ -74,7 +74,7 @@ def test_track_context_id(mocker):
         orig_dt = m.dt_field
         orig_int = m.int_field
 
-        assert list(m.event.values()) == [
+        assert list(m.events.values()) == [
             {
                 "pgh_created_at": mocker.ANY,
                 "pgh_context_id": ctx.id,
@@ -134,7 +134,7 @@ def test_track_context_metadata(mocker):
     with pghistory.context(key1="val1") as ctx:
         # Creating the EventModel will trigger an event, which will
         # attach the current context
-        m1 = ddf.G("tests.EventModel")
+        m1 = ddf.G("tests.EventModel", int_field=1)
 
         ctx1 = pghistory.models.Context.objects.get()
         assert ctx1.id == ctx.id
@@ -143,6 +143,7 @@ def test_track_context_metadata(mocker):
         # Attach additional metadata
         with pghistory.context(key2="val2"):
             # Perform another event so that context will be flushed
+            m1.int_field = 2
             m1.save()
 
             ctx1.refresh_from_db()
@@ -151,6 +152,7 @@ def test_track_context_metadata(mocker):
 
         # Even after exiting inner context, the metadata persists until
         # the end of the outer context
+        m1.int_field = 3
         m1.save()
         ctx1.refresh_from_db()
         assert ctx1.id == ctx.id
@@ -175,7 +177,7 @@ def test_nested_tracking(mocker):
             assert ctx.id == nested_ctx.id
             m = ddf.G("tests.EventModel", int_field=2)
 
-            assert list(m.event.values()) == [
+            assert list(m.events.values()) == [
                 {
                     "pgh_created_at": mocker.ANY,
                     "pgh_context_id": ctx.id,
@@ -188,16 +190,17 @@ def test_nested_tracking(mocker):
                 }
             ]
 
+        m.int_field = 3
         m.save()
 
-        assert list(m.event.values().order_by("pgh_id")) == [
+        assert list(m.events.values().order_by("pgh_id")) == [
             {
                 "pgh_created_at": mocker.ANY,
                 "pgh_context_id": ctx.id,
                 "dt_field": m.dt_field,
                 "pgh_id": mocker.ANY,
                 "pgh_label": "model.create",
-                "int_field": m.int_field,
+                "int_field": 2,
                 "pgh_obj_id": m.id,
                 "id": m.id,
             },
@@ -207,7 +210,7 @@ def test_nested_tracking(mocker):
                 "dt_field": m.dt_field,
                 "pgh_id": mocker.ANY,
                 "pgh_label": "before_update",
-                "int_field": m.int_field,
+                "int_field": 2,
                 "pgh_obj_id": m.id,
                 "id": m.id,
             },

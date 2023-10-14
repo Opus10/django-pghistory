@@ -23,17 +23,17 @@ def test_revert():
     m.save()
 
     assert test_models.DenormContextEvent.objects.count() == 3
-    assert m.event.count() == 3
+    assert m.events.count() == 3
 
-    r = m.event.filter(pgh_label="snapshot").order_by("pgh_id")[0].revert()
+    r = m.events.order_by("pgh_id")[0].revert()
     assert r.int_field == 1
     assert r.fk_field_id == user.id
 
-    r = m.event.filter(pgh_label="snapshot").order_by("pgh_id")[1].revert()
+    r = m.events.order_by("pgh_id")[1].revert()
     assert r.int_field == 2
     assert not r.fk_field_id
 
-    r = m.event.filter(pgh_label="snapshot").order_by("pgh_id")[2].revert()
+    r = m.events.order_by("pgh_id")[2].revert()
     assert r.int_field == 3
     assert not r.fk_field_id
 
@@ -207,7 +207,7 @@ def test_events_references_joining_filtering(django_assert_num_queries, mocker):
 
     assert list(
         pghistory.models.Events.objects.references(user1)
-        .filter(pgh_label="snapshot", pgh_data__int_field=3)
+        .filter(pgh_label__startswith="snapshot", pgh_data__int_field=3)
         .values()
     ) == [
         {
@@ -229,7 +229,7 @@ def test_events_references_joining_filtering(django_assert_num_queries, mocker):
                 "int_field": [2, 3],
             },
             "pgh_id": mocker.ANY,
-            "pgh_label": "snapshot",
+            "pgh_label": "snapshot_update",
             "pgh_model": "tests.SnapshotModelSnapshot",
             "pgh_obj_model": "tests.SnapshotModel",
             "pgh_obj_id": str(sm1.pk),
@@ -282,7 +282,7 @@ def test_events_multiple_references(django_assert_num_queries, mocker):
         "pgh_context": None,
         "pgh_created_at": mocker.ANY,
         "pgh_id": mocker.ANY,
-        "pgh_label": "snapshot",
+        "pgh_label": "snapshot_update",
         "pgh_model": "tests.SnapshotModelSnapshot",
         "pgh_obj_model": "tests.SnapshotModel",
         "pgh_obj_id": str(sm1.pk),
@@ -296,6 +296,7 @@ def test_events_multiple_references(django_assert_num_queries, mocker):
                 "id": sm1.id,
                 "int_field": 1,
             },
+            "pgh_label": "snapshot_insert",
             "pgh_diff": None,
         },
         {
@@ -306,6 +307,7 @@ def test_events_multiple_references(django_assert_num_queries, mocker):
                 "id": sm2.id,
                 "int_field": 10,
             },
+            "pgh_label": "snapshot_insert",
             "pgh_diff": None,
             "pgh_obj_id": str(sm2.pk),
         },
@@ -340,8 +342,8 @@ def test_events_multiple_references(django_assert_num_queries, mocker):
     assert (
         list(
             pghistory.models.Events.objects.references(sm1, sm2)
-            .filter(pgh_label="snapshot")
-            .order_by("pgh_created_at")
+            .filter(pgh_label__startswith="snapshot")
+            .order_by("pgh_id")
             .values()
         )
         == wanted_result
@@ -350,8 +352,8 @@ def test_events_multiple_references(django_assert_num_queries, mocker):
     assert (
         list(
             pghistory.models.Events.objects.references(test_models.SnapshotModel.objects.all())
-            .filter(pgh_label="snapshot")
-            .order_by("pgh_created_at")
+            .filter(pgh_label__startswith="snapshot")
+            .order_by("pgh_id")
             .values()
         )
         == wanted_result
@@ -404,7 +406,7 @@ def test_events_references_denorm_context(django_assert_num_queries, mocker):
 
     assert list(
         pghistory.models.Events.objects.references(user1)
-        .filter(pgh_label="snapshot", pgh_data__int_field=3)
+        .filter(pgh_label="update", pgh_data__int_field=3)
         .values()
     ) == [
         {
@@ -421,7 +423,7 @@ def test_events_references_denorm_context(django_assert_num_queries, mocker):
                 "int_field": [2, 3],
             },
             "pgh_id": mocker.ANY,
-            "pgh_label": "snapshot",
+            "pgh_label": "update",
             "pgh_model": "tests.DenormContextEvent",
             "pgh_obj_model": "tests.DenormContext",
             "pgh_obj_id": str(dc1.id),
@@ -477,14 +479,14 @@ def test_events_references_custom_pk(mocker):
             **default,
             "pgh_data": {"integer_field": 1, "my_pk": str(cm.pk)},
             "pgh_diff": None,
-            "pgh_label": "snapshot",
+            "pgh_label": "insert",
             "pgh_model": "tests.CustomModelSnapshot",
         },
         {
             **default,
             "pgh_data": {"integer_field": 2, "my_pk": str(cm.pk)},
             "pgh_diff": {"integer_field": [1, 2]},
-            "pgh_label": "snapshot",
+            "pgh_label": "update",
             "pgh_model": "tests.CustomModelSnapshot",
         },
     ]
@@ -563,7 +565,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 1,
             },
             "pgh_diff": None,
-            "pgh_label": "custom_snapshot",
+            "pgh_label": "custom_snapshot_insert",
             "pgh_model": "tests.CustomSnapshotModel",
         },
         {
@@ -575,7 +577,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 2,
             },
             "pgh_diff": {"int_field": [1, 2]},
-            "pgh_label": "custom_snapshot",
+            "pgh_label": "custom_snapshot_update",
             "pgh_model": "tests.CustomSnapshotModel",
         },
         {
@@ -587,14 +589,14 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 3,
             },
             "pgh_diff": {"int_field": [2, 3]},
-            "pgh_label": "custom_snapshot",
+            "pgh_label": "custom_snapshot_update",
             "pgh_model": "tests.CustomSnapshotModel",
         },
         {
             **default,
             "pgh_data": {"dt_field": "2020-06-17T00:00:00+00:00"},
             "pgh_diff": None,
-            "pgh_label": "dt_field_snapshot",
+            "pgh_label": "dt_field_snapshot_insert",
             "pgh_model": "tests.SnapshotModelDtFieldEvent",
         },
         {
@@ -606,7 +608,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                     "2020-06-19T00:00:00+00:00",
                 ]
             },
-            "pgh_label": "dt_field_snapshot",
+            "pgh_label": "dt_field_snapshot_update",
             "pgh_model": "tests.SnapshotModelDtFieldEvent",
         },
         {
@@ -616,7 +618,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 1,
             },
             "pgh_diff": None,
-            "pgh_label": "dt_field_int_field_snapshot",
+            "pgh_label": "dt_field_int_field_snapshot_insert",
             "pgh_model": "tests.SnapshotModelDtFieldIntFieldEvent",
         },
         {
@@ -626,7 +628,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 2,
             },
             "pgh_diff": {"int_field": [1, 2]},
-            "pgh_label": "dt_field_int_field_snapshot",
+            "pgh_label": "dt_field_int_field_snapshot_update",
             "pgh_model": "tests.SnapshotModelDtFieldIntFieldEvent",
         },
         {
@@ -642,7 +644,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 ],
                 "int_field": [2, 3],
             },
-            "pgh_label": "dt_field_int_field_snapshot",
+            "pgh_label": "dt_field_int_field_snapshot_update",
             "pgh_model": "tests.SnapshotModelDtFieldIntFieldEvent",
         },
         {
@@ -654,7 +656,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 1,
             },
             "pgh_diff": None,
-            "pgh_label": "snapshot",
+            "pgh_label": "snapshot_insert",
             "pgh_model": "tests.SnapshotModelSnapshot",
         },
         {
@@ -666,7 +668,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 2,
             },
             "pgh_diff": {"int_field": [1, 2]},
-            "pgh_label": "snapshot",
+            "pgh_label": "snapshot_update",
             "pgh_model": "tests.SnapshotModelSnapshot",
         },
         {
@@ -684,7 +686,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 ],
                 "int_field": [2, 3],
             },
-            "pgh_label": "snapshot",
+            "pgh_label": "snapshot_update",
             "pgh_model": "tests.SnapshotModelSnapshot",
         },
     ]
@@ -703,7 +705,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 1,
             },
             "pgh_diff": None,
-            "pgh_label": "custom_snapshot",
+            "pgh_label": "custom_snapshot_insert",
             "pgh_model": "tests.CustomSnapshotModel",
         },
         {
@@ -715,7 +717,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 2,
             },
             "pgh_diff": {"int_field": [1, 2]},
-            "pgh_label": "custom_snapshot",
+            "pgh_label": "custom_snapshot_update",
             "pgh_model": "tests.CustomSnapshotModel",
         },
         {
@@ -727,7 +729,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 3,
             },
             "pgh_diff": {"int_field": [2, 3]},
-            "pgh_label": "custom_snapshot",
+            "pgh_label": "custom_snapshot_update",
             "pgh_model": "tests.CustomSnapshotModel",
         },
         {
@@ -739,7 +741,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 33,
             },
             "pgh_diff": None,
-            "pgh_label": "custom_snapshot",
+            "pgh_label": "custom_snapshot_update",
             "pgh_model": "tests.CustomSnapshotModel",
             "pgh_obj_id": str(sm2.pk),
         },
@@ -752,7 +754,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 1,
             },
             "pgh_diff": None,
-            "pgh_label": "no_pgh_obj_snapshot",
+            "pgh_label": "no_pgh_obj_snapshot_insert",
             "pgh_model": "tests.NoPghObjSnapshot",
             "pgh_obj_id": None,
         },
@@ -765,7 +767,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 2,
             },
             "pgh_diff": None,
-            "pgh_label": "no_pgh_obj_snapshot",
+            "pgh_label": "no_pgh_obj_snapshot_update",
             "pgh_model": "tests.NoPghObjSnapshot",
             "pgh_obj_id": None,
         },
@@ -778,7 +780,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 3,
             },
             "pgh_diff": None,
-            "pgh_label": "no_pgh_obj_snapshot",
+            "pgh_label": "no_pgh_obj_snapshot_update",
             "pgh_model": "tests.NoPghObjSnapshot",
             "pgh_obj_id": None,
         },
@@ -791,7 +793,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 33,
             },
             "pgh_diff": None,
-            "pgh_label": "no_pgh_obj_snapshot",
+            "pgh_label": "no_pgh_obj_snapshot_update",
             "pgh_model": "tests.NoPghObjSnapshot",
             "pgh_obj_id": None,
         },
@@ -804,7 +806,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 1,
             },
             "pgh_diff": None,
-            "pgh_label": "snapshot",
+            "pgh_label": "snapshot_insert",
             "pgh_model": "tests.SnapshotModelSnapshot",
         },
         {
@@ -816,7 +818,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 2,
             },
             "pgh_diff": {"int_field": [1, 2]},
-            "pgh_label": "snapshot",
+            "pgh_label": "snapshot_update",
             "pgh_model": "tests.SnapshotModelSnapshot",
         },
         {
@@ -834,7 +836,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 ],
                 "int_field": [2, 3],
             },
-            "pgh_label": "snapshot",
+            "pgh_label": "snapshot_update",
             "pgh_model": "tests.SnapshotModelSnapshot",
         },
         {
@@ -846,7 +848,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 33,
             },
             "pgh_diff": None,
-            "pgh_label": "snapshot",
+            "pgh_label": "snapshot_update",
             "pgh_model": "tests.SnapshotModelSnapshot",
             "pgh_obj_id": str(sm2.pk),
         },
@@ -868,7 +870,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 1,
             },
             "pgh_diff": None,
-            "pgh_label": "custom_snapshot",
+            "pgh_label": "custom_snapshot_insert",
             "pgh_model": "tests.CustomSnapshotModel",
         },
         {
@@ -880,7 +882,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 2,
             },
             "pgh_diff": {"int_field": [1, 2]},
-            "pgh_label": "custom_snapshot",
+            "pgh_label": "custom_snapshot_update",
             "pgh_model": "tests.CustomSnapshotModel",
         },
         {
@@ -892,7 +894,7 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "int_field": 3,
             },
             "pgh_diff": {"int_field": [2, 3]},
-            "pgh_label": "custom_snapshot",
+            "pgh_label": "custom_snapshot_update",
             "pgh_model": "tests.CustomSnapshotModel",
         },
     ]

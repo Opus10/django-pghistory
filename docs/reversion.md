@@ -2,13 +2,10 @@
 
 Objects can be reverted using the `revert` method on the event model. This only works for event models that track every field. Trying to revert an event model that doesn't track every field will result in a `RuntimeError`.
 
-For example, say that we have a model with a [pghistory.Snapshot][] tracker:
+For example, say that we have a tracked model:
 
 ```python
-@pghistory.track(
-    pghistory.Snapshot(),
-    obj_field=pghistory.ObjForeignKey(related_name="events"),
-)
+@pghistory.track()
 class MyModel(models.Model):
     # Fields go here ...
 
@@ -20,10 +17,9 @@ class MyModel(models.Model):
             return self
 ```
 
-Above we've set up a tracker to track snapshots. The object field on the snapshot model has a related name of "events", allowing us to make a `rewind` method on `MyModel` to revert it back to the previous version.
+The `rewind` method on `MyModel` will revert it back to the previous version if it exists, returning the current version if no history exists.
 
-Note that we use the second-to-last snapshot in `rewind` above. This is because the latest snapshot always contains the current version
-of the model.
+Note that we use the second-to-last event in `rewind` above. This is because the latest snapshot always contains the current version of the model by default.
 
 !!! note
 

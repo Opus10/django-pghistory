@@ -2,6 +2,18 @@
 
 Event model fields such as the ones automatically added by `django-pghistory` can be configured in a number of ways. Here we discuss how to set global defaults for event models and how to override them on a per-model basis. We also discuss how one can denormalize context fields.
 
+Before we get started, remember that by default, all foreign keys on event models are unconstrained and have no cascading behavior. If the tracked model or any of its tracked foreign keys are deleted, the event models will still remain but possibly not point to valid rows in the database. The tracked foreign keys are still indexed by default, however, custom indices and unique constraints on the tracked model are not mirrored on the event models.
+
+`django-pghistory` has this as the default configuration for the following reason:
+
+- Unconstrained foreign keys allow us to still persist history, even if the related objects are deleted. It helps events be representative of changes that happened.
+- Foreign keys are still indexed since it's common to join on them. On the other hand, custom indices on the tracked model are dropped since these are typically more application-specific. This helps with write performance.
+- Custom unique constraints are dropped because the nature of event tables can easily create duplicate values that would violate constraints.
+
+This configuration helps ensure things work without issues. Users that desire a completely immutable event log can go a step further and enable this with using `append_only=True` in [pghistory.track][] or by specifying it as a global default via `settings.PGHISTORY_APPEND_ONLY = True`.
+
+Now that we have the default configuration out of the way, we'll overview the configuration hierarchy and how you can override this behavior either globally via settings, locally via the arguments to [pghistory.track][], or via custom event models.
+
 ## Configuration Hierarchy
 
 When configuring event models, keep in mind that all configuration follows a hierarchy. Defaults are first loaded from settings followed by per-model overrides.
@@ -106,6 +118,10 @@ When denormalizing context, one can configure the default ID field used with `se
 
 Set this to `None` to ignore storing the ID when denormalizing context.
 
+## Append-only Protection
+
+One can protect event models from being updated or deleted with `settings.PGHISTORY_APPEND_ONLY` or by supplying the `append_only=True` argument to [pghistory.track][] or [pghistory.create_event_model][]. It defaults to `False`. If true, any edits to event models will throw internal database errors.
+
 ## Configuration with `pghistory.track`
 
 [pghistory.track][] takes `obj_field`, `context_field`, and `context_id_field` arguments for overriding event fields on a per-model basis. These must be supplied configuration instances just like global settings. For example, `obj_field` takes [pghistory.ObjForeignKey][] instances.
@@ -152,12 +168,9 @@ import pghistory
 class TrackedModel(models.Model):
     ...
 
-BaseTrackedModelSnapshot = pghistory.create_event_model(
-    TrackedModel,
-    pghistory.Snapshot()
-)
+BaseTrackedModelEvent = pghistory.create_event_model(TrackedModel)
 
-class TrackedModelSnapshot(BaseTrackedModelSnapshot):
+class TrackedModelEvent(BaseTrackedModelEvent):
     class Meta:
         indexes = [
             models.Index(fields=["int_field"])
@@ -172,10 +185,9 @@ import pghistory
 class TrackedModel(models.Model):
     ...
 
-TrackedModelSnapshot = pghistory.create_event_model(
+TrackedModelEvent = pghistory.create_event_model(
     TrackedModel,
-    pghistory.Snapshot(),
-    model_name="TrackedModelSnapshot"
+    model_name="TrackedModelEvent"
 )
 ```
 
@@ -220,11 +232,11 @@ Context data is free-form JSON, but `django-pghistory` provides a [pghistory.Pro
 For example, let's create a snapshot tracker of a model and then proxy the `user` key from the context in an event model:
 
 ```python
-@pghistory.track(pghistory.Snapshot())
+@pghistory.track()
 class MyModel(models.model):
     ...
 
-class MyModelSnapshotProxy(MyModel.pgh_event_model):
+class MyModelEventProxy(MyModel.pgh_event_model):
     user = pghistory.ProxyField(
         "pgh_context__metadata__user",
         models.ForeignKey(

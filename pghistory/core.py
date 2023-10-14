@@ -2,16 +2,17 @@
 import copy
 import re
 import sys
-import warnings
 from typing import TYPE_CHECKING, Any, Dict, List, Type, Union
 
 import pgtrigger
+import pgtrigger.core
 from django.apps import apps
 from django.db import connections, models
 from django.db.models import sql
 from django.db.models.fields.related import RelatedField
 from django.db.models.sql import compiler
 from django.utils.module_loading import import_string
+from django.utils.text import slugify
 
 from pghistory import config, constants, trigger, utils
 
@@ -41,21 +42,16 @@ else:
 _registered_trackers = {}
 
 
-def _fmt_trigger_name(label):
-    """Given a history event label, generate a trigger name"""
-    if label:
-        return re.sub("[^0-9a-zA-Z]+", "_", label)
-    else:  # pragma: no cover
-        return None
-
-
 class Tracker:
     """For tracking an event when a condition happens on a model."""
 
     label: str = None
 
     def __init__(self, label=None):
-        self.label = label or self.label or self.__class__.__name__.lower()
+        self.label = label or self.label
+
+        if not self.label:  # pragma: no cover
+            raise ValueError("Must supply label attribute to event")
 
     def setup(self, event_model):
         """Set up the tracker for the event model"""
@@ -65,10 +61,10 @@ class Tracker:
         """Registers the tracker for the event model and calls user-defined setup"""
         tracked_model = event_model.pgh_tracked_model
 
-        if (tracked_model, self.label) in _registered_trackers:
+        if _registered_trackers.get((tracked_model, self.label), event_model) != event_model:
             raise ValueError(
-                f'Tracker with label "{self.label}" already exists'
-                f' for model "{tracked_model._meta.label}". Supply a'
+                f'Tracker with label "{self.label}" already exists for a different'
+                f' event model of "{tracked_model._meta.label}". Supply a'
                 " different label as the first argument to the tracker."
             )
 
@@ -77,251 +73,109 @@ class Tracker:
         self.setup(event_model)
 
 
-class ManualTracker(Tracker):
+class ManualEvent(Tracker):
     """For manually tracking an event."""
 
 
-class Event(Tracker):
-    """The deprecated base class for event trackers. Use `Tracker` instead"""
+class RowEvent(Tracker):
+    """For tracking an event automatically based on row-level changes."""
 
-    def __init__(self, label=None):
-        warnings.warn(
-            "The django-pghistory 'Event' class is deprecated and renamed to 'Tracker'.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super().__init__(label=label)
-
-
-class DatabaseTracker(Tracker):
-    """For tracking an event automatically based on database changes."""
-
-    when: pgtrigger.When = None
-    condition: Union[pgtrigger.Condition, None] = None
+    condition: Union[pgtrigger.Condition, None] = constants.UNSET
     operation: pgtrigger.Operation = None
-    snapshot: str = None
+    row: str = None
+    trigger_name: str = None
 
     def __init__(
         self,
         label: str = None,
         *,
-        when: pgtrigger.When = None,
-        condition: Union[pgtrigger.Condition, None] = None,
+        condition: Union[pgtrigger.Condition, None] = constants.UNSET,
         operation: pgtrigger.Operation = None,
-        snapshot: str = None,
+        row: str = None,
+        trigger_name: str = None,
     ):
         super().__init__(label=label)
 
-        self.when = when or self.when
         self.condition = condition or self.condition
         self.operation = operation or self.operation
-        self.snapshot = snapshot or self.snapshot
+        self.row = row or self.row
+        self.trigger_name = trigger_name or self.trigger_name or f"{self.label}_{self.operation}"
 
-    def add_event_trigger(
-        self, *, event_model, label, snapshot, when, operation, condition=None, name=None
-    ):
+        if self.condition is constants.UNSET:
+            self.condition = pgtrigger.AnyChange() if self.operation == pgtrigger.Update else None
+
+        if self.row not in ("OLD", "NEW"):  # pragma: no cover
+            raise ValueError("Row must be specified as pghistory.Old or pghistory.New")
+        elif self.operation == pgtrigger.Insert and self.row == "OLD":  # pragma: no cover
+            raise ValueError('There is no "OLD" row on insert events')
+        elif self.operation == pgtrigger.Delete and self.row == "NEW":  # pragma: no cover
+            raise ValueError('There is no "NEW" row on delete events')
+
+        if not self.operation:  # pragma: no cover
+            raise ValueError("Must provide operation to RowEvent")
+
+    def add_event_trigger(self, event_model):
         pgtrigger.register(
             trigger.Event(
                 event_model=event_model,
-                label=label,
-                name=_fmt_trigger_name(name or label),
-                snapshot=snapshot,
-                when=when,
-                operation=operation,
-                condition=condition,
+                label=self.label,
+                name=self.trigger_name,
+                row=self.row,
+                operation=self.operation,
+                condition=self.condition,
             )
         )(event_model.pgh_tracked_model)
 
     def setup(self, event_model):
-        self.add_event_trigger(
-            event_model=event_model,
-            label=self.label,
-            snapshot=self.snapshot,
-            when=self.when,
-            operation=self.operation,
-            condition=self.condition,
-        )
+        # If any _Change condition is used, modify the default fields to the tracked fields
+        if isinstance(self.condition, pgtrigger.core._Change) and not self.condition.fields:
+            self.condition = copy.deepcopy(self.condition)
+            model_fields = {f.name for f in event_model.pgh_tracked_model._meta.fields}
+            self.condition.fields = [
+                field.name for field in event_model._meta.fields if field.name in model_fields
+            ]
+
+        self.add_event_trigger(event_model)
 
 
-class DatabaseEvent(DatabaseTracker):
-    """
-    The deprecated base class for all trigger-based trackers.
-    Use `DatabaseTracker` instead.
-    """
+class InsertEvent(RowEvent):
+    """Creates events based on inserts to a model
 
-    def __init__(
-        self,
-        label: str = None,
-        *,
-        when: pgtrigger.When = None,
-        condition: Union[pgtrigger.Condition, None] = None,
-        operation: pgtrigger.Operation = None,
-        snapshot: str = None,
-    ):  # pragma: no cover
-        warnings.warn(
-            "The django-pghistory 'DatabaseEvent' class is deprecated and renamed to"
-            " 'DatabaseTracker'.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super().__init__(
-            label=label,
-            when=when,
-            condition=condition,
-            operation=operation,
-            snapshot=snapshot,
-        )
-
-
-class Changed(pgtrigger.Condition):
-    """A utilty to create conditions based on changes in the tracked model.
-
-    Given the event model, we create a condition as follows:
-
-    - If the event model trackes every field from the main model, we can
-      use a standard `OLD.* IS DISTINCT FROM NEW.*` condition to snapshot
-      every change on the main model.
-    - If the event model tracks a subset of the fields of the main model,
-      only changes to event fields will trigger a snapshot. In other words,
-      if the main model has an int and char field, but the event model only
-      tracks the char field, the condition will be
-      `OLD.char_field IS DISTINCT FROM NEW.char_field`.
-    - If one has fields on the event model and wishes to ignore them from
-      triggering snapshots, pass them to the `exclude` argument to this
-      utility.
+    The default label used is "insert".
     """
 
-    def __init__(self, event_model, exclude=None):
-        self.event_model = event_model
-        self.exclude = exclude or []
-
-    def resolve(self, model):
-        event_fields = [
-            field.name
-            for field in self.event_model._meta.fields
-            if not field.name.startswith("pgh_")
-        ]
-        model_fields = [f.name for f in model._meta.fields]
-
-        # By default, any field in both the main model and event model that
-        # change will trigger the condition. You can exclude fields from
-        # the event model that will trigger snapshots.
-        conditional_fields = [f for f in event_fields if f not in self.exclude]
-
-        if set(event_fields) == set(model_fields) == set(conditional_fields):
-            # We're tracking every field on any change
-            condition = pgtrigger.Condition("OLD.* IS DISTINCT FROM NEW.*")
-        else:
-            # We're either tracking a subset of fields or we have
-            condition = pgtrigger.Q()
-
-            for field in conditional_fields:
-                if hasattr(model, field):
-                    condition |= pgtrigger.Q(**{f"old__{field}__df": pgtrigger.F(f"new__{field}")})
-
-        return condition.resolve(model)
+    label: str = "insert"
+    row: str = "NEW"
+    operation: pgtrigger.Operation = pgtrigger.Insert
 
 
-class Snapshot(DatabaseTracker):
-    """
-    Tracks changes to fields.
-    A snapshot tracker tracks inserts and updates. It ensures that no
-    duplicate rows are created with a pre-configured condition.
+class UpdateEvent(RowEvent):
+    """Creates events based on updates to a model.
 
-    !!! note
+    By default,
 
-        Two triggers are created since Insert triggers do
-        not allow comparison against the OLD values. We could also
-        place this in one trigger and do the condition in the plpgsql code.
+    - The label used is "update".
+    - Attributes from the "new" row of the update are stored.
+    - It only fires when fields of the event model are changed.
+
+    All of this behavior can be overridden by supplying a label,
+    a condition, or the row to snapshot.
     """
 
-    def __init__(self, label=None, delayed=False):
-        self.delayed = delayed
-        return super().__init__(label=label)
-
-    def setup(self, event_model):
-        self.add_event_trigger(
-            event_model=event_model,
-            label=self.label,
-            name=f"{self.label}_insert",
-            snapshot="NEW",
-            when=pgtrigger.After,
-            operation=pgtrigger.Insert,
-        )
-
-        self.add_event_trigger(
-            event_model=event_model,
-            label=self.label,
-            name=f"{self.label}_update",
-            snapshot="NEW",
-            when=pgtrigger.After,
-            operation=pgtrigger.Update,
-            condition=Changed(event_model),
-        )
+    label: str = "update"
+    row: str = "NEW"
+    operation: pgtrigger.Operation = pgtrigger.Update
 
 
-class PreconfiguredDatabaseTracker(DatabaseTracker):
-    """
-    A base database tracker that only takes a condition. Subclasses
-    preconfigure the other parameters
+class DeleteEvent(RowEvent):
+    """Creates events based on deletes to a model
+
+    The default label used is "delete".
     """
 
-    def __init__(self, label=None, *, condition=None):
-        return super().__init__(label=label, condition=condition)
-
-
-class AfterInsertOrUpdate(PreconfiguredDatabaseTracker):
-    """
-    A database tracker that happens after insert/update
-    """
-
-    operation = pgtrigger.Insert | pgtrigger.Update
-    snapshot = "NEW"
-
-
-class AfterInsert(PreconfiguredDatabaseTracker):
-    """For trackers that fire after a database insert"""
-
-    operation = pgtrigger.Insert
-    snapshot = "NEW"
-
-
-class BeforeUpdate(PreconfiguredDatabaseTracker):
-    """
-    For trackers that fire before a database update. The OLD values of the row
-    will be snapshot to the event model
-    """
-
-    operation = pgtrigger.Update
-    snapshot = "OLD"
-
-
-class AfterUpdate(PreconfiguredDatabaseTracker):
-    """
-    For trackers that fire after a database update. The NEW values of the row
-    will be snapshot to the event model
-    """
-
-    operation = pgtrigger.Update
-    snapshot = "NEW"
-
-
-class BeforeDelete(PreconfiguredDatabaseTracker):
-    """
-    For trackers that fire before a database deletion.
-    """
-
-    operation = pgtrigger.Delete
-    snapshot = "OLD"
-
-
-class BeforeUpdateOrDelete(PreconfiguredDatabaseTracker):
-    """
-    A database tracker that snapshots the old row during an update or delete
-    """
-
-    operation = pgtrigger.Update | pgtrigger.Delete
-    snapshot = "OLD"
+    label: str = "delete"
+    row: str = "OLD"
+    operation: pgtrigger.Operation = pgtrigger.Delete
 
 
 def _pascalcase(string):
@@ -412,7 +266,7 @@ def _generate_related_name(base_model, fields):
     Generates a related name to the tracking model based on the base
     model and traked fields
     """
-    related_name = base_model._meta.object_name.lower()
+    related_name = slugify(base_model._meta.verbose_name_plural).replace("-", "_")
     return "_".join(fields) + f"_{related_name}" if fields else related_name
 
 
@@ -435,31 +289,13 @@ def _validate_event_model_path(*, app_label, model_name, abstract):
         )
 
 
-def _get_obj_field(*, obj_field, tracked_model, obj_fk, related_name, base_model, fields):
-    if obj_fk is not constants.UNSET:
-        warnings.warn(
-            "The django-pghistory 'obj_fk' argument is deprecated. Use 'obj_field' instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return obj_fk
-    elif obj_field is None:  # pragma: no cover
+def _get_obj_field(*, obj_field, tracked_model, base_model, fields):
+    if obj_field is None:  # pragma: no cover
         return None
     elif obj_field is constants.UNSET:
         obj_field = config.obj_field()
-
-        if related_name is not None:
-            warnings.warn(
-                "The django-pghistory 'related_name' argument is deprecated. Use the"
-                " 'related_name' option of 'obj_field' instead.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
         if obj_field._kwargs.get("related_name", constants.DEFAULT) == constants.DEFAULT:
-            obj_field._kwargs["related_name"] = related_name or _generate_related_name(
-                base_model, fields
-            )
+            obj_field._kwargs["related_name"] = _generate_related_name(base_model, fields)
 
     if isinstance(obj_field, config.ObjForeignKey):
         return models.ForeignKey(tracked_model, **obj_field.kwargs)
@@ -467,16 +303,8 @@ def _get_obj_field(*, obj_field, tracked_model, obj_fk, related_name, base_model
         raise TypeError("obj_field must be of type pghistory.ObjForeignKey.")
 
 
-def _get_context_field(*, context_field, context_fk):
-    if context_fk is not constants.UNSET:
-        warnings.warn(
-            "The django-pghistory 'context_fk' argument is deprecated. Use "
-            "'context_field' instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return context_fk
-    elif context_field is None:  # pragma: no cover
+def _get_context_field(*, context_field):
+    if context_field is None:  # pragma: no cover
         return None
     elif context_field is constants.UNSET:
         context_field = config.context_field()
@@ -509,13 +337,9 @@ def create_event_model(
     *trackers: Tracker,
     fields: Union[List[str], None] = None,
     exclude: Union[List[str], None] = None,
-    obj_fk: "ObjForeignKey" = constants.UNSET,
-    context_fk: Union["ContextForeignKey", "ContextJSONField"] = constants.UNSET,
     obj_field: "ObjForeignKey" = constants.UNSET,
     context_field: Union["ContextForeignKey", "ContextJSONField"] = constants.UNSET,
     context_id_field: "ContextUUIDField" = constants.UNSET,
-    related_name: Union[str, None] = None,
-    name: Union[str, None] = None,
     model_name: Union[str, None] = None,
     app_label: Union[str, None] = None,
     base_model: Type[models.Model] = None,
@@ -524,7 +348,7 @@ def create_event_model(
     abstract: bool = True,
 ) -> Type[models.Model]:
     """
-    Obtain a base event model.
+    Create an event model.
 
     Instead of using [pghistory.track][], which dynamically generates an event
     model, one can instead construct a event model themselves, which
@@ -532,12 +356,12 @@ def create_event_model(
 
     Args:
         tracked_model: The model that is being tracked.
-        *trackers: The event trackers. When using any tracker that
-            inherits [pghistory.DatabaseTracker][], such as
-            [pghistory.AfterInsert][], a Postgres trigger will be installed that
-            automatically tracks the event with a generated event model. Trackers
-            that do not inherit [pghistory.DatabaseTracker][] are assumed to have
-            manual events created by the user.
+        *trackers: The event trackers. When using any tracker that inherits
+            [pghistory.RowEvent][], such as [pghistory.InsertEvent][], a
+            Postgres trigger will be installed that automatically stores the event
+            into the generated event model. Trackers that do not inherit
+            [pghistory.RowEvent][] must be manually created. If no events are
+            supplied, defaults to `pghistory.InsertEvent` and `pghistory.UpdateEvent`.
         fields: The list of fields to snapshot when the event takes place. When
             no fields are provided, the entire model is snapshot when the event
             happens. Note that snapshotting of the OLD or NEW row is configured
@@ -545,8 +369,6 @@ def create_event_model(
             events must specify these fields during manual creation.
         exclude: Instead of providing a list of fields to snapshot, a user can
             instead provide a list of fields to not snapshot.
-        obj_fk: The old (and deprecated) object field.
-        context_fk: The old (and deprecated) context field.
         obj_field: The foreign key field configuration that references the tracked object.
             Defaults to an unconstrained non-nullable foreign key. Use `None` to create a
             event model with no reference to the tracked object.
@@ -556,8 +378,6 @@ def create_event_model(
             for the context_field. When using a denormalized context field, the ID
             field is used to track the UUID of the context. Use `None` to avoid using this
             field for denormalized context.
-        related_name: The old (and deprecated) related name field.
-        name: The old (and deprecated) model name field.
         model_name: Use a custom model name when the event model is generated. Otherwise
             a default name based on the tracked model and fields will be created.
         app_label: The app_label for the generated event model. Defaults to the app_label
@@ -573,14 +393,17 @@ def create_event_model(
         The event model class.
 
     Example:
-        Create a manual event model:
+        Create a custom event model:
 
             class MyEventModel(create_event_model(
                 TrackedModel,
-                pghistory.AfterInsert('model_create'),
+                pghistory.InsertEvent(),
             )):
                 # Add custom indices or change default field declarations...
     """  # noqa
+    if not trackers:
+        trackers = config.default_trackers() or [InsertEvent(), UpdateEvent()]
+
     event_model = import_string("pghistory.models.Event")
     base_model = base_model or config.base_model()
     assert issubclass(base_model, event_model)
@@ -588,22 +411,11 @@ def create_event_model(
     obj_field = _get_obj_field(
         obj_field=obj_field,
         tracked_model=tracked_model,
-        obj_fk=obj_fk,
-        related_name=related_name,
         base_model=base_model,
         fields=fields,
     )
-    context_field = _get_context_field(context_field=context_field, context_fk=context_fk)
+    context_field = _get_context_field(context_field=context_field)
     context_id_field = _get_context_id_field(context_id_field=context_id_field)
-
-    if name is not None:  # pragma: no cover
-        warnings.warn(
-            "The 'name' argument for pghistory.create_event_model is"
-            " deprecated. Use the 'model_name' argument",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        model_name = name
 
     model_name = model_name or _generate_event_model_name(base_model, tracked_model, fields)
     app_label = app_label or tracked_model._meta.app_label
@@ -641,17 +453,6 @@ def create_event_model(
     return event_model
 
 
-def get_event_model(*args: Any, **kwargs: Any) -> Type[models.Model]:
-    """Deprecated. Use `create_event_model` instead."""
-    warnings.warn(
-        "The django-pghistory 'get_event_model' function is deprecated. Use"
-        " 'create_event_model' instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return create_event_model(*args, **kwargs)
-
-
 def ProxyField(proxy: str, field: Type[models.Field]):
     """
     Proxies a JSON field from a model and adds it as a field in the queryset.
@@ -671,12 +472,9 @@ def track(
     *trackers: Tracker,
     fields: Union[List[str], None] = None,
     exclude: Union[List[str], None] = None,
-    obj_fk: "ObjForeignKey" = constants.UNSET,
-    context_fk: Union["ContextForeignKey", "ContextJSONField"] = constants.UNSET,
     obj_field: "ObjForeignKey" = constants.UNSET,
     context_field: Union["ContextForeignKey", "ContextJSONField"] = constants.UNSET,
     context_id_field: "ContextUUIDField" = constants.UNSET,
-    related_name: Union[str, None] = None,
     model_name: Union[str, None] = None,
     app_label: Union[str, None] = None,
     base_model: Type[models.Model] = None,
@@ -693,11 +491,11 @@ def track(
 
     Args:
         *trackers: The event trackers. When using any tracker that inherits
-            [pghistory.DatabaseTracker][], such as [pghistory.AfterInsert][], a
-            Postgres trigger will be installed that automatically tracks the event
-            with a generated event model. Trackers that do not inherit
-            [pghistory.DatabaseTracker][] are assumed to have manual events created
-            by the user.
+            [pghistory.RowEvent][], such as [pghistory.InsertEvent][], a
+            Postgres trigger will be installed that automatically stores the event
+            into the generated event model. Trackers that do not inherit
+            [pghistory.RowEvent][] must be manually created. If no events are
+            supplied, defaults to `pghistory.InsertEvent` and `pghistory.UpdateEvent`.
         fields: The list of fields to snapshot when the event takes place. When no fields
             are provided, the entire model is snapshot when the event happens. Note that
             snapshotting of the OLD or NEW row is configured by the `snapshot`
@@ -705,8 +503,6 @@ def track(
             these fields during manual creation.
         exclude: Instead of providing a list of fields to snapshot, a user can instead
             provide a list of fields to not snapshot.
-        obj_fk: The old (and deprecated) object field.
-        context_fk: The old (and deprecated) context field.
         obj_field: The foreign key field configuration that references the tracked object.
             Defaults to an unconstrained non-nullable foreign key. Use `None` to create a
             event model with no reference to the tracked object.
@@ -716,7 +512,6 @@ def track(
             the context_field. When using a denormalized context field, the ID field is used to
             track the UUID of the context. Use `None` to avoid using this field for denormalized
             context.
-        related_name: The old (and deprecated) related name field.
         model_name: Use a custom model name when the event model is generated. Otherwise a default
             name based on the tracked model and fields will be created.
         app_label: The app_label for the generated event model. Defaults to the app_label of the
@@ -734,13 +529,10 @@ def track(
             *trackers,
             fields=fields,
             exclude=exclude,
-            obj_fk=obj_fk,
-            context_fk=context_fk,
             obj_field=obj_field,
             context_field=context_field,
             context_id_field=context_id_field,
             model_name=model_name,
-            related_name=related_name,
             app_label=app_label,
             abstract=False,
             base_model=base_model,
@@ -854,13 +646,12 @@ def event_models(
     Returns:
         The list of event models
     """
-    from pghistory.models import Event, BaseAggregateEvent  # noqa
+    from pghistory.models import Event  # noqa
 
     models = models or [
         model
         for model in apps.get_models()
         if issubclass(model, Event)
-        and not issubclass(model, BaseAggregateEvent)
         and not model._meta.abstract
         and not model._meta.proxy
         and model._meta.managed
