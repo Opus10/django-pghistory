@@ -38,9 +38,9 @@ print(m.events.values("pgh_obj", "int_field"))
 > [{'pgh_obj': 1, 'int_field': 1}, {'pgh_obj': 1, 'int_field': 2}]
 ```
 
-Above we printed the history of `int_field`. We also printed `pgh_obj`, which references the tracked object. There are other special `pgh_` fields in the event models that we'll discuss later.
+Above we printed the history of `int_field`. We also printed `pgh_obj`, which references the tracked object. We'll cover how these fields and additional metadata fields are tracked later.
 
-`django-pghistory` can track a subset of fields and conditionally store events based on specific field transitions. Users can also store free-form context from the application that's referenced by the event model, all with no additional database queries. See the next steps below on how to dive deeper and configure it for your use case.
+`django-pghistory` can track a subset of fields and conditionally store events based on specific field transitions.  Users can also store free-form context from the application in event metadata, all with no additional database queries. See the next steps below on how to dive deeper and configure it for your use case.
 
 ## Compatibility
 

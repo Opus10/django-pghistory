@@ -303,7 +303,7 @@ def _get_obj_field(*, obj_field, tracked_model, base_model, fields):
         raise TypeError("obj_field must be of type pghistory.ObjForeignKey.")
 
 
-def _get_context_field(*, context_field):
+def _get_context_field(context_field):
     if context_field is None:  # pragma: no cover
         return None
     elif context_field is constants.UNSET:
@@ -320,7 +320,7 @@ def _get_context_field(*, context_field):
         )
 
 
-def _get_context_id_field(*, context_id_field):
+def _get_context_id_field(context_id_field):
     if context_id_field is None:
         return None
     elif context_id_field is constants.UNSET:  # pragma: no branch
@@ -332,6 +332,10 @@ def _get_context_id_field(*, context_id_field):
         raise TypeError("context_id_field must be of type pghistory.ContextUUIDField.")
 
 
+def _get_append_only(append_only):
+    return config.append_only() if append_only is constants.UNSET else append_only
+
+
 def create_event_model(
     tracked_model: Type[models.Model],
     *trackers: Tracker,
@@ -340,6 +344,7 @@ def create_event_model(
     obj_field: "ObjForeignKey" = constants.UNSET,
     context_field: Union["ContextForeignKey", "ContextJSONField"] = constants.UNSET,
     context_id_field: "ContextUUIDField" = constants.UNSET,
+    append_only: bool = constants.UNSET,
     model_name: Union[str, None] = None,
     app_label: Union[str, None] = None,
     base_model: Type[models.Model] = None,
@@ -378,6 +383,7 @@ def create_event_model(
             for the context_field. When using a denormalized context field, the ID
             field is used to track the UUID of the context. Use `None` to avoid using this
             field for denormalized context.
+        append_only: True if the event model is protected against updates and deletes.
         model_name: Use a custom model name when the event model is generated. Otherwise
             a default name based on the tracked model and fields will be created.
         app_label: The app_label for the generated event model. Defaults to the app_label
@@ -414,8 +420,9 @@ def create_event_model(
         base_model=base_model,
         fields=fields,
     )
-    context_field = _get_context_field(context_field=context_field)
-    context_id_field = _get_context_id_field(context_id_field=context_id_field)
+    context_field = _get_context_field(context_field)
+    context_id_field = _get_context_id_field(context_id_field)
+    append_only = _get_append_only(append_only)
 
     model_name = model_name or _generate_event_model_name(base_model, tracked_model, fields)
     app_label = app_label or tracked_model._meta.app_label
@@ -428,6 +435,12 @@ def create_event_model(
     meta = meta or {}
     exclude = exclude or []
     fields = fields or [f.name for f in tracked_model._meta.fields if f.name not in exclude]
+
+    if append_only:
+        meta["triggers"] = [
+            *meta.get("triggers", []),
+            pgtrigger.Protect(name="append_only", operation=pgtrigger.Update | pgtrigger.Delete),
+        ]
 
     class_attrs = {
         "__module__": models_module,
@@ -475,6 +488,7 @@ def track(
     obj_field: "ObjForeignKey" = constants.UNSET,
     context_field: Union["ContextForeignKey", "ContextJSONField"] = constants.UNSET,
     context_id_field: "ContextUUIDField" = constants.UNSET,
+    append_only: bool = constants.UNSET,
     model_name: Union[str, None] = None,
     app_label: Union[str, None] = None,
     base_model: Type[models.Model] = None,
@@ -512,6 +526,7 @@ def track(
             the context_field. When using a denormalized context field, the ID field is used to
             track the UUID of the context. Use `None` to avoid using this field for denormalized
             context.
+        append_only: True if the event model is protected against updates and deletes.
         model_name: Use a custom model name when the event model is generated. Otherwise a default
             name based on the tracked model and fields will be created.
         app_label: The app_label for the generated event model. Defaults to the app_label of the
@@ -532,6 +547,7 @@ def track(
             obj_field=obj_field,
             context_field=context_field,
             context_id_field=context_id_field,
+            append_only=append_only,
             model_name=model_name,
             app_label=app_label,
             abstract=False,

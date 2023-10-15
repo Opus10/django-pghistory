@@ -4,15 +4,13 @@ Here we overview some of the main things to consider regarding performance and s
 
 ## Trigger Execution
 
-[Postgres row-level triggers](https://www.postgresql.org/docs/current/sql-createtrigger.html) are used to store events. When using a [pghistory.InsertEvent][] tracker, for example, this means a snapshot of your model is saved every time it is inserted. In other words, an `INSERT` statement for the event table is ran alongside the query that creates or updates data on the tracked model.
+[Postgres row-level triggers](https://www.postgresql.org/docs/current/sql-createtrigger.html) are used to store events. When using a [pghistory.InsertEvent][] tracker, for example, this means a snapshot of your model is saved every time it is inserted or update. In other words, `Model.objects.bulk_create` or `Model.objects.update` can create multiple additional event rows across multiple queries.
 
-The same thing can be said for updates. If you update rows in a `objects.update()` command, there will be one hudred events created in separate queries in the database.
-
-While this will have a performance impact when creating or updating models, keep in mind that triggers run in the database and do not require expensive round trips from the application. This can result in substantially better performance when compared to traditional history tracking solutions that are implemented in the application and do separate round trips.
+While this will have a performance impact when creating or updating models, keep in mind that triggers run in the database and do not require expensive round trips from the application. This can result in substantially better performance when compared to traditional history tracking solutions that are implemented in the application.
 
 !!! note
 
-    We have plans to support [statement level triggers](https://www.postgresql.org/docs/current/sql-createtrigger.html) in a future iteration of `django-pghistory`. This means there will be one bulk insert of events for every bulk insert or update of the tracked model.
+    We have plans to support [statement level triggers](https://www.postgresql.org/docs/current/sql-createtrigger.html) in a future iteration of `django-pghistory`. This means there will be one bulk insert of events for every bulk operation on the tracked model.
 
 When triggers execute, the following happens:
 

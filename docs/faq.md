@@ -20,7 +20,7 @@ For those that are new to triggers and want additional confidence in their behav
 
 Although triggers will be issuing additional SQL statements to write events, keep in mind that this happens within the database instance itself. In other words, writing events does not incur additional expensive round-trip database calls. This results in a reduced performance impact when compared to other history tracking methods implemented in software.
 
-Note that currently `django-pghistory` uses row-level triggers, meaning a bulk update such as `objects.update` over one hundred elements could perform one hundred queries within the database instance. We're planning to address this in a future version of `django-pghistory` by using statement-level triggers instead.
+Note that currently `django-pghistory` uses row-level triggers, meaning a bulk update such as `Model.objects.update` over one hundred elements could perform one hundred queries within the database instance. We're planning to address this in a future version of `django-pghistory` by using statement-level triggers instead.
 
 See the [Performance and Scaling](performance.md) section for tips and tricks on large history tables.
 
@@ -48,7 +48,7 @@ See the [Configuring Event Models](event_models.md) section for details on how t
 
 ## How can I make my event models immutable?
 
-Use `append_only=True` for [pghistory.track][] or set `settings.PGHISTORY_APPEND_ONLY=True` to configure this as the default behavior globally. When configured, event models will have triggers that protect updates and deletes from happening, ensuring your event log is immutable.
+Use `append_only=True` for [pghistory.track][] or set `settings.PGHISTORY_APPEND_ONLY = True` to configure this as the default behavior globally. When configured, event models will have triggers that protect updates and deletes from happening, ensuring your event log is immutable.
 
 ## Can I query event models in my application?
 

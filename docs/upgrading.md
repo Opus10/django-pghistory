@@ -83,13 +83,13 @@ There are other subtle breaking changes:
 2. The replacement of the `pghistory.Changed` utility for creating conditions based on changes.
 3. Minor query behavior changes for the [pghistory.models.Events][] event aggregation proxy model.
 
-We cover all of these changes here in more detail, along with how to migrate if necessary.
+We cover all of these changes here in more detail, along with how to migrate or preserve old behavior.
 
-### Code already slated for deprecation that was removed
+### Deprecated code removed
 
-- `pghistory.Event` was fully removed. Use [pghistory.Tracker][] instead as the base class for custom trackers.
-- `pghistory.DatabaseEvent` was fully removed. Use [pghistory.RowEvent][] instead to customize row-level database events. Note that [pghistory.UpdateEvent][], [pghistory.InsertEvent][], and [pghistory.DeleteEvent][] may already suite needs of previous `pghistory.DatabaseEvent` usage.
-- `pghistory.get_event_model` was fully removed. Use [pghistory.create_event_model][] instead.
+- `pghistory.Event` was removed. Use [pghistory.Tracker][] instead as the base class for custom trackers.
+- `pghistory.DatabaseEvent` was removed. Use [pghistory.RowEvent][] instead to customize row-level database events. Note that [pghistory.UpdateEvent][], [pghistory.InsertEvent][], and [pghistory.DeleteEvent][] may already suite needs of previous `pghistory.DatabaseEvent` usage.
+- `pghistory.get_event_model` was removed. Use [pghistory.create_event_model][] instead.
 - The `obj_fk` argument to `pghistory.create_event_model` and `pghistory.track` was removed. Supply a [pghistory.ObjForeignKey][] object to `obj_field` instead.
 - The `context_fk` argument to `pghistory.create_event_model` and `pghistory.track` was removed. Supply a [pghistory.ContextForeignKey][] object to the`context_field` argument instead.
 - The `related_name` argument to `pghistory.create_event_model` and `pghistory.track` was removed. Use the `related_name` argument of the [pghistory.ObjForeignKey][] class supplied to the `object_field` argument instead.
@@ -100,9 +100,9 @@ We cover all of these changes here in more detail, along with how to migrate if 
 Previously `django-pghistory` had the following trackers:
 
 - `pghistory.Snapshot` for creating events based on inserts and updates to any tracked fields.
-- `pghistory.AfterInsert`, `pghistory.AfterInsertOrUpdate`, `pghistory.AfterUpdate`, `pghistory.BeforeDelete`, `pghistory.BeforeUpdate`, and `pghistory.BeforeUpdateOrDelete` for creating events outside of the default configuration.
+- `pghistory.AfterInsert`, `pghistory.AfterInsertOrUpdate`, `pghistory.AfterUpdate`, `pghistory.BeforeDelete`, `pghistory.BeforeUpdate`, and `pghistory.BeforeUpdateOrDelete` for customizing event tracking.
 
-All usage of these trackers has been replaced with [pghistory.InsertEvent][], [pghistory.UpdateEvent][], and [pghistory.DeleteEvent][]. These utility classes already have defaults configured, and one can use [pghistory.RowEvent][] to have no defaults configured for a custom row-level event.
+All trackers have been replaced with [pghistory.InsertEvent][], [pghistory.UpdateEvent][], and [pghistory.DeleteEvent][]. These utility classes already have defaults configured, and one can use [pghistory.RowEvent][] to have no defaults configured for a custom row-level event.
 
 For example, `pghistory.track(pghistory.Snapshot())` is the same as doing `pghistory.track(pghistory.InsertEvent(), pghistory.UpdateEvent())`. [pghistory.UpdateEvent][], like the update trigger installed previously by `pghistory.Snapshot`, conditionally tracks updates only to the tracked model fields.
 
@@ -111,26 +111,26 @@ For example, `pghistory.track(pghistory.Snapshot())` is the same as doing `pghis
     Previous usage of `pghistory.track(pghistory.Snapshot())` can simply be replaced with `pghistory.track()`. See the next section
     for more details.
 
-The other former trackers had no conditions configured by default. For example, `pghistory.AfterUpdate` would fire after every update of the tracked model regardless of what fields were being tracked in the event model. This is *not* the default behavior for [pghistory.UpdateEvent][], which only fires if tracked fields change. One must manually do `pghistory.UpdateEvent(condition=None)` to override this behavior or use a bare [pghistory.RowEvent][]
+Trackers other than `pghistory.Snapshot` had no conditions configured by default. For example, `pghistory.AfterUpdate` would fire after every update of the tracked model regardless of what fields were being tracked in the event model. This is *not* the default behavior for [pghistory.UpdateEvent][], which only fires if tracked fields change. One must manually do `pghistory.UpdateEvent(condition=None)` to override this behavior or use a bare [pghistory.RowEvent][]
 
-With these subtle changes in mind, let's go over how to re-create the exact tracking behavior of the previous non-default trackers:
+With these subtle changes in mind, let's go over how to re-create the exact tracking behavior of the previous custom trackers:
 
 - `pghistory.track(pghistory.AfterInsert())` = `pghistory.track(pghistory.InsertEvent())`
 - `pghistory.track(pghistory.AfterInsertOrUpdate())` = `pghistory.track(pghistory.InsertEvent(), pghistory.UpdateEvent(condition=None))`
 - `pghistory.track(pghistory.AfterUpdate())` = `pghistory.track(pghistory.UpdateEvent(condition=None))`
 - `pghistory.track(pghistory.BeforeDelete())` = `pghistory.track(pghistory.DeleteEvent)`
 - `pghistory.track(pghistory.BeforeUpdate())` = `pghistory.track(pghistory.UpdateEvent(row=pghistory.Old, condition=None))`
-- `pghistory.track(pghistory.BeforeUpdateOrDelete())` = `pghistory.track(pghistory.UpdateEvent(condition=None), pghistory.DeleteEvent())`
+- `pghistory.track(pghistory.BeforeUpdateOrDelete())` = `pghistory.track(pghistory.UpdateEvent(row=pghistory.Old, condition=None), pghistory.DeleteEvent())`
 
 ### New default trackers and default arguments to `pghistory.track`
 
-Previously one had to specify a tracker to [pghistory.track][], which was usually `pghistory.Snapshot`. Now one can use [pghistory.track][] with no arguments. The trackers default to using `settings.PGHISTORY_DEFAULT_TRACKERS` if no trackers are provided, and this setting defaults to `(pghistory.InsertEvent, pghistory.UpdateEvent())`.
+Previously one had to provide a tracker to [pghistory.track][], which was usually `pghistory.Snapshot`. Now one can use [pghistory.track][] with no arguments. The trackers default to `settings.PGHISTORY_DEFAULT_TRACKERS`, and this setting defaults to `(pghistory.InsertEvent, pghistory.UpdateEvent())`.
 
 In other words, if you were using `pghistory.track(pghistory.Snapshot())` and no other trackers, you can now just do `pghistory.track()`.
 
 ### New default label names
 
-For those depending on the `pgh_label` field of events, the default label names have changed for the default trackers.
+For those depending on the `pgh_label` field of events, the default label names have changed.
 
 Previously `pghistory.Snapshot` would default to using "snapshot" as the label for both insert and updates. The new tracker classes default to using different labels as follows:
 
@@ -151,7 +151,7 @@ PGHISTORY_DEFAULT_TRACKERS = (
 
 ### Replacement of `pghistory.Changed`
 
-The `pghistory.Changed` class was a utility for creating conditions based on changes to the event model. This helped one more succinctly create conditions for the non-default trackers like `pghistory.BeforeUpdate` in the previous version.
+The `pghistory.Changed` class was a utility for creating conditions based on changes to the event model. This helped one more succinctly create conditions for trackers like `pghistory.BeforeUpdate`.
 
 This condition utility is now a first-class citizen in `django-pgtrigger`, which now offers utility classes to create conditions based on field changes. These classes have been mirrored in `django-pghistory`:
 
@@ -162,12 +162,14 @@ This condition utility is now a first-class citizen in `django-pgtrigger`, which
 
 The conditions have the following behavior:
 
-- If no fields are supplied, they default to using the fields being tracked
+- If no fields are supplied, they default to the ones being tracked.
 - One can use `exclude` to exclude fields instead of supplying a list of fields.
 - One can use `exclude_auto` to automatically exclude `auto_now` and `auto_now_add` datetime fields from conditions.
 
 By default, [pghistory.UpdateEvent][] uses [pghistory.AnyChange][] as its condition.
 
-### Behavior difference in `pghistory.models.Events` proxy aggregate model
+### Query difference in `pghistory.models.Events` proxy aggregate model
 
-When using [pghistory.models.Events][] to aggregate events, one has the ability to render a diff between the current and previous event of the same event model. Previously the current and previous event would be determined by those that shared the same event model and `pgh_label`. Now the current and previous events are determined by those that share the same event model. If you track several custom events across the same event model with different labels, this could change the result of the diff. The default usage of [pghistory.track][] (i.e. formerly `pghistory.track(pghistory.Snapshot())`) has no breaking changes for the visualization of the diff (mostly used in the admin integration).
+When using [pghistory.models.Events][] to aggregate events, one has the ability to render a diff between the current and previous event of the same event model. Previously the current and previous event would be determined by both the event model and the `pgh_label` of events.
+
+Now the current and previous events are only determined only by those that share the same event model. The default usage of [pghistory.track][] (i.e. formerly `pghistory.track(pghistory.Snapshot())`) has no real breaking changes, but usage of multiple event labels may see different diffs computed.

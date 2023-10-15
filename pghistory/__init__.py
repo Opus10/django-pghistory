@@ -33,7 +33,7 @@ AnyChange = pgtrigger.AnyChange
 """If any supplied fields change, trigger the event.
 
 Args:
-    *fields (str): If any supplied fields change, trigger the condition.
+    *fields (str): If any supplied fields change, trigger the event.
         If no fields are supplied, defaults to all tracked fields.
     exclude (List[str]): Fields to exclude.
     exclude_auto (bool): Exclude all `auto_now` and `auto_now_add` fields automatically.
@@ -43,7 +43,7 @@ AnyDontChange = pgtrigger.AnyDontChange
 """If any supplied fields don't change, trigger the event.
 
 Args:
-    *fields (str): If any supplied fields don't change, trigger the condition.
+    *fields (str): If any supplied fields don't change, trigger the event.
         If no fields are supplied, defaults to all tracked fields.
     exclude (List[str]): Fields to exclude.
     exclude_auto (bool): Exclude all `auto_now` and `auto_now_add` fields automatically.

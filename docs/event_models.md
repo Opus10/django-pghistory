@@ -2,17 +2,19 @@
 
 Event model fields such as the ones automatically added by `django-pghistory` can be configured in a number of ways. Here we discuss how to set global defaults for event models and how to override them on a per-model basis. We also discuss how one can denormalize context fields.
 
+## The Default Configuration
+
 Before we get started, remember that by default, all foreign keys on event models are unconstrained and have no cascading behavior. If the tracked model or any of its tracked foreign keys are deleted, the event models will still remain but possibly not point to valid rows in the database. The tracked foreign keys are still indexed by default, however, custom indices and unique constraints on the tracked model are not mirrored on the event models.
 
-`django-pghistory` has this as the default configuration for the following reason:
+`django-pghistory` has this as the default configuration for the following reasons:
 
-- Unconstrained foreign keys allow us to still persist history, even if the related objects are deleted. It helps events be representative of changes that happened.
+- Unconstrained foreign keys allow us to still persist old history, even if the related objects are deleted.
 - Foreign keys are still indexed since it's common to join on them. On the other hand, custom indices on the tracked model are dropped since these are typically more application-specific. This helps with write performance.
-- Custom unique constraints are dropped because the nature of event tables can easily create duplicate values that would violate constraints.
+- Custom unique constraints are dropped because event tables can easily create duplicate values that would violate constraints.
 
-This configuration helps ensure things work without issues. Users that desire a completely immutable event log can go a step further and enable this with using `append_only=True` in [pghistory.track][] or by specifying it as a global default via `settings.PGHISTORY_APPEND_ONLY = True`.
+This configuration helps ensure that tracked history is completely reliable. Users that desire an immutable event log can go a step further and use `append_only=True` in [pghistory.track][] or specify it as a global default via `settings.PGHISTORY_APPEND_ONLY = True`.
 
-Now that we have the default configuration out of the way, we'll overview the configuration hierarchy and how you can override this behavior either globally via settings, locally via the arguments to [pghistory.track][], or via custom event models.
+Now that we have the default configuration out of the way, we'll overview the configuration hierarchy and how you can override this behavior either globally via settings, locally via the arguments to [pghistory.track][], or locally via custom event models.
 
 ## Configuration Hierarchy
 
@@ -120,7 +122,7 @@ Set this to `None` to ignore storing the ID when denormalizing context.
 
 ## Append-only Protection
 
-One can protect event models from being updated or deleted with `settings.PGHISTORY_APPEND_ONLY` or by supplying the `append_only=True` argument to [pghistory.track][] or [pghistory.create_event_model][]. It defaults to `False`. If true, any edits to event models will throw internal database errors.
+One can protect event models from being updated or deleted with `settings.PGHISTORY_APPEND_ONLY` or by supplying the `append_only=True` argument to [pghistory.track][] or [pghistory.create_event_model][]. It defaults to `False`. If true, any updates or deletes to event models will throw internal database errors.
 
 ## Configuration with `pghistory.track`
 

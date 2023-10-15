@@ -17,9 +17,7 @@ class MyModel(models.Model):
             return self
 ```
 
-The `rewind` method on `MyModel` will revert it back to the previous version if it exists, returning the current version if no history exists.
-
-Note that we use the second-to-last event in `rewind` above. This is because the latest snapshot always contains the current version of the model by default.
+The `rewind` method on `MyModel` will revert it back to the previous version if it exists. Note that we use the second-to-last event in `rewind` above. This is because the latest snapshot always contains the current version of the model by default.
 
 !!! note
 

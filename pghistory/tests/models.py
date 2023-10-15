@@ -50,7 +50,7 @@ class CustomModel(models.Model):
     int_field = models.IntegerField(db_column="integer_field")
 
 
-@pghistory.track(obj_field=pghistory.ObjForeignKey(related_name="snapshot"))
+@pghistory.track(obj_field=pghistory.ObjForeignKey(related_name="snapshot"), append_only=True)
 class UniqueConstraintModel(models.Model):
     """For testing tracking models with unique constraints"""
 

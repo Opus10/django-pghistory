@@ -25,7 +25,7 @@ The default tracker configuration works for most use cases, however, users can s
 
 ## Events
 
-An *event* is a historical version of a model stored by a tracker. For example, the [pghistory.InsertEvent][] tracker stores values of tracked fields after an insert into an *event model*.
+An *event* is a historical version of a model stored by a tracker. For example, the [pghistory.InsertEvent][] tracker stores values of inserted fields in an *event model*.
 
 By default, event models are created by `django-pghistory` and dynamically added to the models module where your tracked model resides. Although you won't see them declared in your `models.py`, you will see them show up in migrations.
 
@@ -54,4 +54,4 @@ Every event that happens in this context manager will now:
 1. Use the same `pgh_context` foreign key in their associated event model.
 2. Have access to the `user_id: 1` metadata that's stored in the [pghistory.models.Context][] model, which has a free-form `metadata` JSON field.
 
-Context tracking allows for rich metadata to be attached to events and grouping changes together. The [pghistory.middleware.HistoryMiddleware][] middleware automatically attaches the authenticated user and URL of the request, and it's easy to sprinkle in [pghistory.context][] in your application to aggregate more metadata about a particular request.
+Context tracking helps group events and associate metadata with them. The [pghistory.middleware.HistoryMiddleware][] middleware automatically attaches the authenticated user and URL of the request, and it's easy to sprinkle in [pghistory.context][] in your application to aggregate more metadata about a particular request.

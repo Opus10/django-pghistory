@@ -5,7 +5,7 @@ from contextlib import ExitStack as no_exception
 import ddf
 import pytest
 from django.apps import apps
-from django.db import models
+from django.db import DatabaseError, models
 from django.utils import timezone
 
 import pghistory
@@ -106,6 +106,24 @@ def test_unique_field_tracking():
     unique_model.my_int_field2 = 2
     unique_model.save()
     assert unique_model.snapshot.count() == 3
+
+
+@pytest.mark.django_db
+def test_append_only():
+    """Verify the append_only flag on the unique constraint event model works"""
+    unique_model = ddf.G(
+        test_models.UniqueConstraintModel,
+        my_char_field="1",
+        my_int_field1=1,
+        my_int_field2=2,
+    )
+    unique_model.my_int_field2 = 1
+    unique_model.save()
+    unique_model.my_int_field2 = 2
+    unique_model.save()
+
+    with pytest.raises(DatabaseError):
+        unique_model.snapshot.all().delete()
 
 
 @pytest.mark.django_db

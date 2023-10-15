@@ -27,6 +27,17 @@ def default_trackers() -> Union[Tuple["Tracker"], None]:
     return getattr(settings, "PGHISTORY_DEFAULT_TRACKERS", None)
 
 
+def append_only() -> bool:
+    """If event models should be append-only by default.
+
+    Protection triggers are installed for update and delete operations if `True`.
+
+    Returns:
+        `Tru`e if event models should be append-only by default.
+    """
+    return getattr(settings, "PGHISTORY_APPEND_ONLY", False)
+
+
 def middleware_methods() -> Tuple[str]:
     """
     Methods tracked by the pghistory middleware.
