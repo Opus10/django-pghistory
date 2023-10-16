@@ -1,6 +1,12 @@
 # Changelog
 
-## 3.0.0 (2023-10-15)
+## 3.0.1 (2023-10-16)
+
+### Trivial
+
+  - Add upgrading notes around the default related name changing. [Wesley Kendall, c5d8a1f]
+
+## 3.0.0 (2023-10-16)
 
 ### Api-Break
 
