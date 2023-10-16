@@ -1,5 +1,40 @@
 # Changelog
 
+## 3.0.0 (2023-10-15)
+
+### Api-Break
+
+  - V3 release with new event trackers [Wesley Kendall, 8849fc6]
+
+    Version three of `django-pghistory` has some of the following breaking changes:
+
+    - Removal of code deprecated in version 2.5 related to configuring event models
+    - Consolidation of the event trackers. `pghistory.Snapshot` and all custom
+      event trackers such as `pghistory.BeforeDelete` and `pghistory.AfterInsertOrUpdate`
+      were consolidated into three core event trackers: `pghistory.InsertEvent`,
+      `pghistory.UpdateEvent`, and `pghistory.DeleteEvent`.
+    - There are new default `pgh_label` values in the new event trackers
+    - The `pghistory.models.Events` proxy aggregate model has some minor breaking
+      functionality.
+
+    Along with this, default arguments to `pghistory.track` were changed and
+    a setting was introduced to override the global default history trackers.
+
+    There's an entire section called "Upgrading" in the docs
+    at django-pghistory.readthedocs.io that goes over the breaking changes in
+    more detail, along with how to preserve the default functionality from
+    version two.
+
+### Feature
+
+  - Support append-only event models [Wesley Kendall, 9002d35]
+
+    Supply `append_only=True` to `pghistory.track` or `pghistory.create_event_model` to
+    create event models that protect updates and deletes.
+
+    Set `settings.PGHISTORY_APPEND_ONLY = True` to make this the default for all event
+    models.
+
 ## 2.9.0 (2023-10-09)
 
 ### Feature
