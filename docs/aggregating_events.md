@@ -12,7 +12,7 @@ The [pghistory.models.Events][] proxy model treats all event tables as a unified
 * **pgh_created_at**: When the event was created.
 * **pgh_label**: The event label.
 * **pgh_data**: The raw data of the event.
-* **pgh_diff**: The diff against the previous event of the same label.
+* **pgh_diff**: The diff against the previous event of the same event model and object.
 * **pgh_context_id**: The context UUID.
 * **pgh_context**: The context JSON associated with the event.
 * **pgh_obj_model**: The object model.
@@ -21,7 +21,7 @@ The [pghistory.models.Events][] proxy model treats all event tables as a unified
 Let's create a snapshot tracker for a `User` model and query the associated events:
 
 ```python
-@pghistory.track(pghistory.Snapshot())
+@pghistory.track()
 class User(models.Model):
     username = models.CharField()
     name = models.CharField()
@@ -78,7 +78,7 @@ The events look like:
         "pgh_obj_id": "<user_id>"
     }]
 
-Above we see that `pgh_data` shows the raw data and `pgh_diff` shows the changes. The first diff is empty because there is no previous event of the same object and label.
+Above we see that `pgh_data` shows the raw data and `pgh_diff` shows the changes. The first diff is empty because there is no previous event of the same object.
 
 ## How does it work?
 

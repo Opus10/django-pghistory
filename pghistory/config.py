@@ -10,9 +10,32 @@ from pghistory import constants
 
 if TYPE_CHECKING:
     from django.core.serializers.json import DjangoJSONEncoder
-    from django.db.models import BaseModel, QuerySet
+    from django.db.models import QuerySet
+    from django.db.models.base import ModelBase
 
     from pghistory.admin import EventsAdmin
+    from pghistory.core import Tracker
+
+
+def default_trackers() -> Union[Tuple["Tracker"], None]:
+    """
+    The default event trackers.
+
+    Returns:
+        Default pghistory trackers
+    """
+    return getattr(settings, "PGHISTORY_DEFAULT_TRACKERS", None)
+
+
+def append_only() -> bool:
+    """If event models should be append-only by default.
+
+    Protection triggers are installed for update and delete operations if `True`.
+
+    Returns:
+        `Tru`e if event models should be append-only by default.
+    """
+    return getattr(settings, "PGHISTORY_APPEND_ONLY", False)
 
 
 def middleware_methods() -> Tuple[str]:
@@ -43,7 +66,7 @@ def json_encoder() -> "DjangoJSONEncoder":
     return encoder
 
 
-def base_model() -> "BaseModel":
+def base_model() -> "ModelBase":
     """The base model for event models.
 
     Returns:
@@ -170,7 +193,7 @@ def admin_ordering() -> List[str]:
     return ordering
 
 
-def admin_model() -> "BaseModel":
+def admin_model() -> "ModelBase":
     """The default list display for the events admin.
 
     Returns:

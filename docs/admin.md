@@ -61,7 +61,7 @@ to the functionality of the `Events` model shown in previous sections.
 Take the following model and associated tracker:
 
 ```python
-@pghistory.track(pghistory.Snapshot(), model_name="MyModelSnapshot")
+@pghistory.track(model_name="MyModelSnapshot")
 class MyModel(models.Model):
     dt_field = models.DateTimeField()
     int_field = models.IntegerField()

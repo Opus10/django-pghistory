@@ -1,7 +1,6 @@
 # Basics
 
-Here we briefly overview some of the concepts of `django-pghistory` that
-are useful to understand to make reading the docs and using the tool easier.
+Here we briefly overview some of the concepts of `django-pghistory` that are useful to understand to make reading the docs and using the tool easier.
 
 ## Triggers
 
@@ -13,31 +12,33 @@ Although it's not required to understand how triggers work to use `django-pghist
 
 Here are the main concepts to understand about triggers:
 
-1. Like indices, triggers are installed in migrations and are attached to database tables.
-2. Triggers can be configred to run based on insert, update, and delete operations on a table.
+1. Like database indices, triggers are installed in migrations and are attached to database tables.
+2. Triggers are functions that run in the database itself after inserts, updates, and deletes.
 3. Triggers have access to copies of the rows being modified, known as the *old* and *new* rows.
 4. Triggers can be conditionally executed based on the properites of the modified rows.
 
 ## Trackers
 
-`django-pghistory` provides *trackers* to track historical changes. Trackers are an abstraction on top of triggers. For example, [pghistory.Snapshot][] will install a trigger for inserts and another for updates, ensuring all versions of models are stored when they change.
+`django-pghistory` uses *trackers* to track model events. Trackers are an abstraction on top of triggers. For example, the default usage of [pghistory.track][] will use both a [pghistory.InsertEvent][] and [pghistory.UpdateEvent][] tracker to track changes to the model, both of which are installed as triggers in the database.
 
-There are several other trackers that we'll go over later for more advanced use cases: [pghistory.AfterInsert][], [pghistory.AfterUpdate][], [pghistory.BeforeUpdate][], [pghistory.AfterInsertOrUpdate][], and [pghistory.BeforeDelete][]. These trackers, like [pghistory.Snapshot][], are simply installing triggers for pre-defined database operations.
+The default tracker configuration works for most use cases, however, users can specify trackers directly to [pghistory.track][] or override `settings.PGHISTORY_DEFAULT_TRACKERS` to modify behavior or track customized events. For example, one can track deletions with [pghistory.DeleteEvent][] or add conditions such as [pghistory.AnyChange][] or [pghistory.Q][] to only track events based on specific changes to models.
 
 ## Events
 
-An *event* is a historical record stored by trackers. For example, the [pghistory.Snapshot][] tracker stores *snapshot* events. Event models mirror the tracked model and add a few additional tracking fields, all of which are configurable.
+An *event* is a historical version of a model stored by a tracker. For example, the [pghistory.InsertEvent][] tracker stores values of inserted fields in an *event model*.
 
-Let's revisit the quickstart example model:
+By default, event models are created by `django-pghistory` and dynamically added to the models module where your tracked model resides. Although you won't see them declared in your `models.py`, you will see them show up in migrations.
+
+Let's revisit the quickstart example model for the basic usage:
 
 ```python
-@pghistory.track(pghistory.Snapshot())
+@pghistory.track()
 class TrackedModel(models.Model):
     int_field = models.IntegerField()
     text_field = models.TextField()
 ```
 
-This generates an event model named `TrackedModelEvent` that has every field from `TrackedModel` plus some additional `pgh_*`-labeled fields. The additional fields help distinguish events, reference the tracked object, and supply additional tracked context. We'll cover these fields in more detail later.
+This generates an event model named `TrackedModelEvent` that has every field from `TrackedModel` plus some additional `pgh_*`-labeled fields. The additional fields help distinguish events, reference the tracked object, and supply additional tracked context. We'll cover this in more detail later.
 
 ## Context
 
@@ -48,6 +49,9 @@ with pghistory.context(user_id=1):
     # Do changes
 ```
 
-Every event will now point to the same context entry, which contains a JSON field with `user: 1` in it. Context tracking is implemented by propagating local Postgres variables in the executed SQL, meaning no additional queries happen when storing context from your application.
+Every event that happens in this context manager will now:
 
-Context tracking allows for rich metadata to be attached to events. The `django-pghistory` middleware automatically attaches the authenticated user and URL of the request, and it's easy to sprinkle in [pghistory.context][] when needed in your application.
+1. Use the same `pgh_context` foreign key in their associated event model.
+2. Have access to the `user_id: 1` metadata that's stored in the [pghistory.models.Context][] model, which has a free-form `metadata` JSON field.
+
+Context tracking helps group events and associate metadata with them. The [pghistory.middleware.HistoryMiddleware][] middleware automatically attaches the authenticated user and URL of the request, and it's easy to sprinkle in [pghistory.context][] in your application to aggregate more metadata about a particular request.

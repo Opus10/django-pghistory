@@ -1,14 +1,14 @@
 # django-pghistory
 
-`django-pghistory` tracks changes to your Django models using [Postgres triggers](https://www.postgresql.org/docs/current/sql-createtrigger.html). It offers several advantages over other apps:
+`django-pghistory` tracks changes to your Django models using [Postgres triggers](https://www.postgresql.org/docs/current/sql-createtrigger.html), providing:
 
-* No base models or managers to inherit, no signal handlers, and no custom save methods. All changes are reliably tracked, including bulk methods, with miniscule code.
-* Snapshot all changes to your models, create conditional event trackers, or only track the fields you care about.
-* Changes are stored in structured event tables that mirror your models. No JSON, and you can easily query events in your application.
-* Changes can be grouped together with additional context attached, such as the logged-in user. The middleware can do this automatically.
+* Reliable history tracking everywhere with no changes to your application code.
+* Structured history models that mirror the fields of your models.
+* Grouping of history with additional context attached, such as the logged-in user.
 
-`django-pghistory` has a number of ways in which you can configure tracking models for your application's needs and for performance and scale. An admin integration is included out of the box too.
+`django-pghistory` has a number of ways in which you can configure history tracking for your application's needs and for performance and scale. An admin integration and middleware is included out of the box too.
 
+<a id="quick_start"></a>
 ## Quick Start
 
 Decorate your model with `pghistory.track`. For example:
@@ -16,35 +16,31 @@ Decorate your model with `pghistory.track`. For example:
 ```python
 import pghistory
 
-@pghistory.track(pghistory.Snapshot())
+@pghistory.track()
 class TrackedModel(models.Model):
     int_field = models.IntegerField()
     text_field = models.TextField()
 ```
 
-Above we've registered a `pghistory.Snapshot` event tracker to `TrackedModel`. This event tracker stores every change in a dynamically-created model that mirrors fields in `TrackedModel`.
+Above we've tracked `TrackedModel`. Copies of the model will be stored in a dynamically-created event model on every insert and update.
 
 Run `python manage.py makemigrations` followed by `migrate` and *voila*, every change to `TrackedModel` is now stored. This includes bulk methods and even changes that happen in raw SQL. For example:
 
 ```python
 from myapp.models import TrackedModel
 
-# Even though we didn't declare TrackedModelEvent, django-pghistory
-# creates it for us in our app
-from myapp.models import TrackedModelEvent
-
 m = TrackedModel.objects.create(int_field=1, text_field="hello")
 m.int_field = 2
 m.save()
 
-print(TrackedModelEvent.objects.values("pgh_obj", "int_field"))
+print(m.events.values("pgh_obj", "int_field"))
 
 > [{'pgh_obj': 1, 'int_field': 1}, {'pgh_obj': 1, 'int_field': 2}]
 ```
 
-Above we printed the `pgh_obj` field, which is a special foreign key to the tracked object. There are a few other special `pgh_` fields that we'll discuss later.
+Above we printed the history of `int_field`. We also printed `pgh_obj`, which references the tracked object. We'll cover how these fields and additional metadata fields are tracked later.
 
-`django-pghistory` can track a subset of fields and conditionally store events based on specific field transitions. Users can also store free-form context from the application that's referenced by the event model, all with no additional database queries. See the next steps below on how to dive deeper and configure it for your use case.
+`django-pghistory` can track a subset of fields and conditionally store events based on specific field transitions. Users can also store free-form context from the application in event metadata, all with no additional database queries. See the next steps below on how to dive deeper and configure it for your use case.
 
 ## Compatibility
 

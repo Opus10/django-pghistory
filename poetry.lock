@@ -478,13 +478,13 @@ Django = ">=2.2"
 
 [[package]]
 name = "django-pgtrigger"
-version = "4.8.0"
+version = "4.9.0"
 description = "Postgres trigger support integrated with Django models."
 optional = false
 python-versions = ">=3.8.0,<4"
 files = [
-    {file = "django_pgtrigger-4.8.0-py3-none-any.whl", hash = "sha256:a3562311e2a0ed1c54343ad959adb2a340118ff9bf1da61867bedaa9fda9bfdc"},
-    {file = "django_pgtrigger-4.8.0.tar.gz", hash = "sha256:df253be6f8814d309bb6c0420dc8f43ce011d4524e25bde075653379853b0ec3"},
+    {file = "django_pgtrigger-4.9.0-py3-none-any.whl", hash = "sha256:d079566bd6d4a2235149754d7b7fb64f880905f54628865ae4ea1eb12d34779c"},
+    {file = "django_pgtrigger-4.9.0.tar.gz", hash = "sha256:45220796e1aae68893df4490c5d5a386dd293254bf619bd51898d26ee13372d3"},
 ]
 
 [package.dependencies]
@@ -1698,13 +1698,13 @@ files = [
 
 [[package]]
 name = "tldextract"
-version = "3.6.0"
+version = "5.0.0"
 description = "Accurately separates a URL's subdomain, domain, and public suffix, using the Public Suffix List (PSL). By default, this includes the public ICANN TLDs and their exceptions. You can optionally support the Public Suffix List's private domains as well."
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "tldextract-3.6.0-py3-none-any.whl", hash = "sha256:30a492de80f4de215aa998588ba5c2e625ee74ace3a2705cfb52b0021053bcbe"},
-    {file = "tldextract-3.6.0.tar.gz", hash = "sha256:a5d8b6583791daca268a7592ebcf764152fa49617983c49916ee9de99b366222"},
+    {file = "tldextract-5.0.0-py3-none-any.whl", hash = "sha256:1f4938a58ea6aa3fc5b374e22c9477ed43159a26c61a5c51a0bf0fdd694fd5e1"},
+    {file = "tldextract-5.0.0.tar.gz", hash = "sha256:959965f3a4715105c598ef44ef624db9c9f85ee201cbfc2e063a51f8f19b1a5b"},
 ]
 
 [package.dependencies]
@@ -1889,4 +1889,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.0,<4"
-content-hash = "8b4da05d9d28c3b3652e8ff3455240fdedfb1f7c228ec66d872d0b848c3183ea"
+content-hash = "d2c4e6feedf489a48dda00320b16d5da0b263570fe59a49fc3707b0a0f98eb69"

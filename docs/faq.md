@@ -20,6 +20,8 @@ For those that are new to triggers and want additional confidence in their behav
 
 Although triggers will be issuing additional SQL statements to write events, keep in mind that this happens within the database instance itself. In other words, writing events does not incur additional expensive round-trip database calls. This results in a reduced performance impact when compared to other history tracking methods implemented in software.
 
+Note that currently `django-pghistory` uses row-level triggers, meaning a bulk update such as `Model.objects.update` over one hundred elements could perform one hundred queries within the database instance. We're planning to address this in a future version of `django-pghistory` by using statement-level triggers instead.
+
 See the [Performance and Scaling](performance.md) section for tips and tricks on large history tables.
 
 ## How do I revert models?
@@ -44,9 +46,13 @@ You can configure the `pgh_obj` key globally by setting the `settings.PGHISTORY_
 
 See the [Configuring Event Models](event_models.md) section for details on how to set configuration options for event models.
 
-## Can I use event models in my application?
+## How can I make my event models immutable?
 
-Yes, one of the strengths of `django-pghistory` is that it uses structured event models that can be tailored to fit your application use case.
+Use `append_only=True` for [pghistory.track][] or set `settings.PGHISTORY_APPEND_ONLY = True` to configure this as the default behavior globally. When configured, event models will have triggers that protect updates and deletes from happening, ensuring your event log is immutable.
+
+## Can I query event models in my application?
+
+Yes, one of the strengths of `django-pghistory` is that it uses structured event models that can be tailored to fit your application use case. By default, you can use `my_model_object.events` to query events of a particular model instance. `MyModel.pgh_event_model` also contains a reverence to the event model if you want to do table-level filtering over the events.
 
 ## How can I keep the values of fields that have been removed?
 
