@@ -82,6 +82,7 @@ There are other subtle breaking changes:
 1. New default `pgh_label` label values for event trackers
 2. The replacement of the `pghistory.Changed` utility for creating conditions based on changes.
 3. Minor query behavior changes for the [pghistory.models.Events][] event aggregation proxy model.
+4. The default related name to the event model is now plural.
 
 We cover all of these changes here in more detail, along with how to migrate or preserve old behavior.
 
@@ -173,3 +174,9 @@ By default, [pghistory.UpdateEvent][] uses [pghistory.AnyChange][] as its condit
 When using [pghistory.models.Events][] to aggregate events, one has the ability to render a diff between the current and previous event of the same event model. Previously the current and previous event would be determined by both the event model and the `pgh_label` of events.
 
 Now the current and previous events are only determined only by those that share the same event model. The default usage of [pghistory.track][] (i.e. formerly `pghistory.track(pghistory.Snapshot())`) has no real breaking changes, but usage of multiple event labels may see different diffs computed.
+
+### Changes to default related names
+
+The `related_name` for event models used to default to the object name, which was `event`. Now it defaults to the verbose plural name, which is `events`.
+
+In other words, code that previously was `my_obj.event.filter(...)` needs to be changed to `my_obj.events.filter(...)` if the `related_name` was not set.
