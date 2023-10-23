@@ -1,3 +1,4 @@
+
 # django-pghistory
 
 `django-pghistory` tracks changes to your Django models using [Postgres triggers](https://www.postgresql.org/docs/current/sql-createtrigger.html), providing:
