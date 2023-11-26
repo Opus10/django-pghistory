@@ -44,7 +44,7 @@ Above we printed the history of `int_field`. We also printed `pgh_obj`, which re
 
 ## Compatibility
 
-`django-pghistory` is compatible with Python 3.8 - 3.12, Django 3.2 - 4.2, Psycopg 2 - 3, and Postgres 12 - 16.
+`django-pghistory` is compatible with Python 3.8 - 3.12, Django 3.2 - 5.0, Psycopg 2 - 3, and Postgres 12 - 16.
 
 ## Documentation
 
@@ -85,3 +85,4 @@ For information on setting up django-pghistory for development and contributing 
 - @dracos
 - @adamchainz
 - @eeriksp
+- @pfouque
