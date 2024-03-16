@@ -69,6 +69,10 @@ Install `django-pghistory` with:
 
 After this, add `pghistory` and `pgtrigger` to the `INSTALLED_APPS` setting of your Django project.
 
+## Other Material
+
+There's a [DjangoCon 2023 talk](https://www.youtube.com/watch?v=LFIAqFt) that walks through how the library works and an overview of problems that be solved through history-tracking in Django.
+
 ## Contributing Guide
 
 For information on setting up django-pghistory for development and contributing changes, view [CONTRIBUTING.md](CONTRIBUTING.md).
