@@ -71,7 +71,7 @@ After this, add `pghistory` and `pgtrigger` to the `INSTALLED_APPS` setting of y
 
 ## Other Material
 
-There's a [DjangoCon 2023 talk](https://www.youtube.com/watch?v=LFIAqFt) that walks through how the library works and an overview of problems that be solved through history-tracking in Django.
+There's a [DjangoCon 2023 talk](https://youtu.be/LFIAqFt9z2s?si=GQBchy9bVAk-b9ok) that walks through how the library works and provides an overview of problems that can be solved through history-tracking in Django, discussing context-tracking, event reversions, and soft-deletes.
 
 ## Contributing Guide
 
