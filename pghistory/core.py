@@ -485,7 +485,7 @@ def track(
     *trackers: Tracker,
     fields: Union[List[str], None] = None,
     exclude: Union[List[str], None] = None,
-    obj_field: "ObjForeignKey" = constants.UNSET,
+    obj_field: Union["ObjForeignKey", None] = constants.UNSET,
     context_field: Union["ContextForeignKey", "ContextJSONField"] = constants.UNSET,
     context_id_field: "ContextUUIDField" = constants.UNSET,
     append_only: bool = constants.UNSET,
