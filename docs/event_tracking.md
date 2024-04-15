@@ -334,8 +334,8 @@ from django.contrib.auth.models import User
 import pghistory
 
 @pghistory.track(
-    pghistory.AfterInsert("group.add"),
-    pghistory.BeforeDelete("group.remove"),
+    pghistory.InsertEvent("group.add"),
+    pghistory.DeleteEvent("group.remove"),
     obj_field=None,
 )
 class UserGroups(User.groups.through):
