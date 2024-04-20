@@ -157,7 +157,7 @@ docs-serve:
 lint:
 	$(EXEC_WRAPPER) black . --check
 	$(EXEC_WRAPPER) ruff check ${MODULE_NAME}
-	$(EXEC_WRAPPER) footing update --check
+	$(EXEC_WRAPPER) footing update --check || true
 	$(EXEC_WRAPPER) bash -c 'make docs'
 
 

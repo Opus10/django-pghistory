@@ -1,4 +1,5 @@
 """Core functionality and interface of pghistory"""
+
 import copy
 import re
 import sys
@@ -434,7 +435,11 @@ def create_event_model(
     attrs.update({"pgh_trackers": trackers})
     meta = meta or {}
     exclude = exclude or []
-    fields = fields or [f.name for f in tracked_model._meta.fields if f.name not in exclude]
+    fields = (
+        fields
+        if fields is not None
+        else [f.name for f in tracked_model._meta.fields if f.name not in exclude]
+    )
 
     if append_only:
         meta["triggers"] = [
