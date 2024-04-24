@@ -1,4 +1,5 @@
 """Core way to access configuration"""
+
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 
 from django.apps import apps

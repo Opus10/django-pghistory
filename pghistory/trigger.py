@@ -96,9 +96,9 @@ class Event(pgtrigger.Trigger):
         if hasattr(self.event_model, "pgh_context_id") and isinstance(
             self.event_model._meta.get_field("pgh_context_id"), models.UUIDField
         ):
-            fields[
-                "pgh_context_id"
-            ] = "COALESCE(NULLIF(CURRENT_SETTING('pghistory.context_id', TRUE), ''), NULL)::UUID"
+            fields["pgh_context_id"] = (
+                "COALESCE(NULLIF(CURRENT_SETTING('pghistory.context_id', TRUE), ''), NULL)::UUID"
+            )
 
         fields = {key: fields[key] for key in sorted(fields)}
 
