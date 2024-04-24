@@ -73,12 +73,13 @@ After this, add `pghistory` and `pgtrigger` to the `INSTALLED_APPS` setting of y
 
 For information on setting up django-pghistory for development and contributing changes, view [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Primary Authors
+## Creators
 
 - [Wes Kendall](https://github.com/wesleykendall)
 
 ## Other Contributors
 
+- @max-muoto
 - @shivananda-sahu
 - @asucrews
 - @Azurency
