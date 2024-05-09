@@ -1,4 +1,5 @@
 from django.core.handlers.wsgi import WSGIRequest as DjangoWSGIRequest
+from django.db import connection
 
 import pghistory
 from pghistory import config
@@ -17,7 +18,12 @@ class WSGIRequest(DjangoWSGIRequest):
 
     def __setattr__(self, attr, value):
         if attr == "user":
-            pghistory.context(user=value.pk if value and hasattr(value, "pk") else None)
+            user = (
+                value._meta.pk.get_db_prep_value(value.pk, connection)
+                if value and hasattr(value, "_meta")
+                else None
+            )
+            pghistory.context(user=user)
 
         return super().__setattr__(attr, value)
 
@@ -30,8 +36,8 @@ def HistoryMiddleware(get_response):
     def middleware(request):
         if request.method in config.middleware_methods():
             user = (
-                request.user.pk
-                if hasattr(request, "user") and hasattr(request.user, "pk")
+                request.user._meta.pk.get_db_prep_value(request.user.pk, connection)
+                if hasattr(request, "user") and hasattr(request.user, "_meta")
                 else None
             )
             with pghistory.context(user=user, url=request.path):
