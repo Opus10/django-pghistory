@@ -673,12 +673,13 @@ class MiddlewareEvents(Events):
         models.ForeignKey(
             settings.AUTH_USER_MODEL,
             on_delete=models.DO_NOTHING,
+            null=True,
             help_text="The user associated with the event.",
         ),
     )
     url = core.ProxyField(
         "pgh_context__url",
-        models.TextField(help_text="The url associated with the event."),
+        models.TextField(null=True, help_text="The url associated with the event."),
     )
 
     class Meta:
