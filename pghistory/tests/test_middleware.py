@@ -25,7 +25,7 @@ def test_post(client):
     assert test_models.SnapshotModelSnapshot.objects.get().pgh_context.metadata["user"] == user.id
 
 
-def test_middleware(rf, mocker):
+def test_middleware(rf):
     """
     Verifies pghistory context is tracked during certain requests
     with middleware in pghistory.middleware
@@ -44,7 +44,7 @@ def test_middleware(rf, mocker):
 
     # Authenticated users will be tracked
     mock_user_id = 3
-    mock_user = mocker.Mock(pk=mock_user_id)
+    mock_user = User(pk=mock_user_id)
     request = rf.post("/post/url2/")
     request.user = mock_user
     resp = pghistory.middleware.HistoryMiddleware(get_response)(request)
