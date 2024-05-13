@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.2.0 (2024-04-20)
+
+### Bug
+
+  - Fix Empty List being passed into create_event_model [Maxwell Muoto, b89c86d]
+
+    Fix Empty List being passed into create_event_model
+
+## 3.1.1 (2024-04-06)
+
+### Trivial
+
+  - Fix ReadTheDocs builds. [Wesley Kendall, eda0741]
+
 ## 3.1.0 (2023-11-26)
 
 ### Feature

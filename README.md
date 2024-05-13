@@ -77,12 +77,13 @@ There's a [DjangoCon 2023 talk](https://youtu.be/LFIAqFt9z2s?si=GQBchy9bVAk-b9ok
 
 For information on setting up django-pghistory for development and contributing changes, view [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Primary Authors
+## Creators
 
 - [Wes Kendall](https://github.com/wesleykendall)
 
 ## Other Contributors
 
+- @max-muoto
 - @shivananda-sahu
 - @asucrews
 - @Azurency
