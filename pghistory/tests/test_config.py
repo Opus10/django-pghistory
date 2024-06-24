@@ -1,6 +1,6 @@
 from django.db import models
 
-from pghistory import config, constants
+from pghistory import config, constants, core
 
 
 def test_admin_ordering(settings):
@@ -149,3 +149,20 @@ def test_foreign_key_field(settings):
         "related_name": "+",
         "db_constraint": True,
     }
+
+
+def test_default_trackers(settings):
+    assert config.default_trackers() is None
+
+    settings.PGHISTORY_DEFAULT_TRACKERS = [
+        core.InsertEvent(),
+        core.UpdateEvent(),
+        core.DeleteEvent(),
+    ]
+
+    for expected_tracker, tracker in zip(
+        settings.PGHISTORY_DEFAULT_TRACKERS, config.default_trackers()
+    ):
+        # Trackers should be the same type, but different instances due to copying
+        assert type(expected_tracker) == type(tracker)
+        assert expected_tracker is not tracker
