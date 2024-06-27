@@ -22,6 +22,12 @@ def test_generate_history_field(settings):
 
     pghistory.core._generate_history_field(test_models.SnapshotModel, "int_field")
 
+    # AutoField and BigAutoField are converted to IntegerField and BigIntegerField, respectively
+    field = pghistory.core._generate_history_field(test_models.SnapshotModel, "id")
+    assert isinstance(field, models.IntegerField)
+    field = pghistory.core._generate_history_field(test_models.BigAutoFieldModel, "id")
+    assert isinstance(field, models.BigIntegerField)
+
 
 @pytest.mark.django_db
 def test_image_field_snapshot():
