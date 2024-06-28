@@ -13,6 +13,11 @@ class UntrackedModel(models.Model):
     untracked = models.CharField(max_length=64)
 
 
+@pghistory.track()
+class BigAutoFieldModel(models.Model):
+    id = models.BigAutoField(primary_key=True)
+
+
 @pghistory.track(context_field=pghistory.ContextJSONField())
 @pghistory.track(
     pghistory.InsertEvent("snapshot_no_id_insert"),

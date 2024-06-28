@@ -237,10 +237,10 @@ def _generate_history_field(tracked_model, field):
     """
     field = tracked_model._meta.get_field(field)
 
-    if isinstance(field, models.AutoField):
-        return models.IntegerField()
-    elif isinstance(field, models.BigAutoField):  # pragma: no cover
+    if isinstance(field, models.BigAutoField):
         return models.BigIntegerField()
+    elif isinstance(field, models.AutoField):
+        return models.IntegerField()
     elif not field.concrete:  # pragma: no cover
         # Django doesn't have any non-concrete fields that appear
         # in ._meta.fields, but packages like django-prices have
