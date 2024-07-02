@@ -661,7 +661,7 @@ def event_models(
         models: The starting list of event models.
         references_model: Filter by event models that reference this model.
         tracks_model: Filter by models that directly track this model and have pgh_obj fields
-        including_missing_pgh_obj: Return tracked models even if the pgh_obj field is not
+        include_missing_pgh_obj: Return tracked models even if the pgh_obj field is not
             available.
 
     Returns:
@@ -679,24 +679,31 @@ def event_models(
     ]
 
     if references_model:
+        if references_model._meta.proxy:
+            references_model = references_model._meta.concrete_model
+
         models = [
             model
             for model in models
             if any(utils.related_model(field) == references_model for field in model._meta.fields)
         ]
 
-    if tracks_model and not include_missing_pgh_obj:
-        models = [
-            model
-            for model in models
-            if "pgh_obj" in (f.name for f in model._meta.fields)
-            and utils.related_model(model._meta.get_field("pgh_obj")) == tracks_model
-        ]
-    elif tracks_model and include_missing_pgh_obj:
-        models = [
-            model
-            for model in models
-            if model.pgh_tracked_model._meta.concrete_model == tracks_model
-        ]
+    if tracks_model:
+        if tracks_model._meta.proxy:
+            tracks_model = tracks_model._meta.concrete_model
+
+        if not include_missing_pgh_obj:
+            models = [
+                model
+                for model in models
+                if "pgh_obj" in (f.name for f in model._meta.fields)
+                and utils.related_model(model._meta.get_field("pgh_obj")) == tracks_model
+            ]
+        else:
+            models = [
+                model
+                for model in models
+                if model.pgh_tracked_model._meta.concrete_model == tracks_model
+            ]
 
     return models
