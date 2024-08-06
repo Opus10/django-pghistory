@@ -180,6 +180,17 @@ def exclude_field_kwargs() -> Dict["Field", List[str]]:
     return exclude_field_kwargs
 
 
+def created_at_function() -> str:
+    """The default PostgreSQL function used to populate the "pgh_created_at" field.
+
+    Use `clock_timestamp()` to set the actual current time and not the time of the transaction.
+
+    Returns:
+        PostgreSQL function to be used as a default value for the "pgh_created_at" field.
+    """
+    return getattr(settings, "PGHISTORY_CREATED_AT_FUNCTION", "NOW()")
+
+
 def admin_ordering() -> List[str]:
     """The default ordering for the events admin.
 
