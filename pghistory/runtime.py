@@ -79,10 +79,6 @@ def _execute_wrapper(execute_result):
 
 def _inject_history_context(execute, sql, params, many, context):
     if _can_inject_variable(context["cursor"], sql):
-        # Metadata is stored as a serialized JSON string with escaped
-        # single quotes
-        serialized_metadata = json.dumps(_tracker.value.metadata, cls=config.json_encoder())
-
         inject_sql = (
             "SELECT set_config('pghistory.context_id', %s, true), "
             "set_config('pghistory.context_metadata', %s, true); "
@@ -91,7 +87,28 @@ def _inject_history_context(execute, sql, params, many, context):
             sql = inject_sql.encode("utf-8") + sql
         else:
             sql = inject_sql + sql
-        params = [str(_tracker.value.id), serialized_metadata, *(params or ())]
+ 
+        # Metadata is stored as a serialized JSON string with escaped
+        # single quotes
+        serialized_metadata = json.dumps(_tracker.value.metadata, cls=config.json_encoder())
+        context_params = {
+            "pghistory__context_id": str(_tracker.value.id),
+            "pghistory__context_metadata": serialized_metadata,
+        }
+        # psycopg does not allow params to be mixed (named and series), so we
+        # try to preserve what it was.
+        if isinstance(params, dict):
+            sql = (
+                "SELECT set_config('pghistory.context_id', %(pghistory__context_id)s, true), "
+                "set_config('pghistory.context_metadata', %(pghistory__context_metadata)s, true); "
+            ) + sql
+            params.update(context_params)
+        else:
+            sql = (
+                "SELECT set_config('pghistory.context_id', %s, true), "
+                "set_config('pghistory.context_metadata', %s, true); "
+            ) + sql
+            params = (*context_params.values(), *(params or ()))
 
     return _execute_wrapper(execute(sql, params, many, context))
 
