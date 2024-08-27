@@ -1,5 +1,34 @@
 # Changelog
 
+## 3.3.0 (2024-08-27)
+
+#### Features
+
+- `PGHISTORY_INSTALL_CONTEXT_FUNC_ON_MIGRATE` setting to configure installation of tracking function after migrations by [@wesleykendall](https://github.com/wesleykendall) in [#140](https://github.com/Opus10/django-pghistory/pull/140).
+- `PGHISTORY_CREATED_AT_FUNCTION` setting to configure the function for determining the current time in history triggers by [@lokhman](https://github.com/lokhman) in [#137](https://github.com/Opus10/django-pghistory/pull/137).
+- Add ASGI support by [@pablogadhi](https://github.com/pablogadhi) in [#127](https://github.com/Opus10/django-pghistory/pull/127).
+
+#### Fixes
+
+- Ensure `BigAutoField`s are properly mirrored in history models by [@tobiasmcnulty](https://github.com/tobiasmcnulty) in [#134](https://github.com/Opus10/django-pghistory/pull/134).
+
+    !!! warning
+
+        If you have event models for models with `BigAutoField` primary keys, you will see new migrations to convert `pgh_obj_id` to a bigint.
+
+- Support filtering event models by referenced proxy models by [@lokhman](https://github.com/lokhman) in [#135](https://github.com/Opus10/django-pghistory/pull/135).
+- Ensure `bytes` representations of SQL are handled by [@tobiasmcnulty](https://github.com/tobiasmcnulty) in [#136](https://github.com/Opus10/django-pghistory/pull/136).
+- Fix setting default trackers with the `PGHISTORY_DEFAULT_TRACKERS` setting by [@SupImDos](https://github.com/SupImDos) in [#133](https://github.com/Opus10/django-pghistory/pull/133).
+- Don't install pghistory's context tracking function on non-postgres databases by [@pmdevita](https://github.com/pmdevita) in [#132](https://github.com/Opus10/django-pghistory/pull/132).
+- Ensure `MiddlewareEvents` doesn't filter out non-middleware events in the admin by [@lokhman](https://github.com/lokhman) in [#130](https://github.com/Opus10/django-pghistory/pull/130).
+- Support custom primary keys for the aggregate `Events` proxy model by [@lokhman](https://github.com/lokhman) in[#128](https://github.com/Opus10/django-pghistory/pull/128).
+
+#### Changes
+
+- Django 5.1 compatibility, dropped Django 3.2 / Postgres 12 support by [@wesleykendall](https://github.com/wesleykendall) in [#139](https://github.com/Opus10/django-pghistory/pull/139).
+- Added section in FAQ for handling issues with concrete inheritance by [@xaitec](https://github.com/xaitec) in [#138](https://github.com/Opus10/django-pghistory/pull/138).
+- Add reference to DjangoCon talk in the docs by [@max-muoto](https://github.com/max-muoto) in [#114](https://github.com/Opus10/django-pghistory/pull/114).
+
 ## 3.2.0 (2024-04-20)
 
 #### Bug
