@@ -1,5 +1,6 @@
 """Core way to access configuration"""
 
+import copy
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 
 from django.apps import apps
@@ -25,7 +26,14 @@ def default_trackers() -> Union[Tuple["Tracker"], None]:
     Returns:
         Default pghistory trackers
     """
-    return getattr(settings, "PGHISTORY_DEFAULT_TRACKERS", None)
+    default_trackers = getattr(settings, "PGHISTORY_DEFAULT_TRACKERS", None)
+
+    # Copy the default trackers, otherwise we end up with the same instances used across
+    # all models which causes issues
+    if default_trackers:
+        default_trackers = copy.deepcopy(default_trackers)
+
+    return default_trackers
 
 
 def append_only() -> bool:
