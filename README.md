@@ -97,3 +97,4 @@ For information on setting up django-pghistory for development and contributing 
 - @pmdevita
 - @pablogadhi
 - @xaitec
+- @foobarna

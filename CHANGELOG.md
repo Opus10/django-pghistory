@@ -21,7 +21,9 @@
 - Fix setting default trackers with the `PGHISTORY_DEFAULT_TRACKERS` setting by [@SupImDos](https://github.com/SupImDos) in [#133](https://github.com/Opus10/django-pghistory/pull/133).
 - Don't install pghistory's context tracking function on non-postgres databases by [@pmdevita](https://github.com/pmdevita) in [#132](https://github.com/Opus10/django-pghistory/pull/132).
 - Ensure `MiddlewareEvents` doesn't filter out non-middleware events in the admin by [@lokhman](https://github.com/lokhman) in [#130](https://github.com/Opus10/django-pghistory/pull/130).
-- Support custom primary keys for the aggregate `Events` proxy model by [@lokhman](https://github.com/lokhman) in[#128](https://github.com/Opus10/django-pghistory/pull/128).
+- Support custom primary keys for the aggregate `Events` proxy model by [@lokhman](https://github.com/lokhman) in [#128](https://github.com/Opus10/django-pghistory/pull/128).
+- Fix type hints for `pghistory.track` by [@SebastianDix](https://github.com/SebastianDix) in [#118](https://github.com/SebastianDix)[https://github.com/Opus10/django-pghistory/pull/118].
+- Support named arguments in SQL by (@foobarna)[https://github.com/foobarna] in (#111)[https://github.com/Opus10/django-pghistory/pull/111].
 
 #### Changes
 
