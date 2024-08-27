@@ -22,6 +22,12 @@ def test_generate_history_field(settings):
 
     pghistory.core._generate_history_field(test_models.SnapshotModel, "int_field")
 
+    # AutoField and BigAutoField are converted to IntegerField and BigIntegerField, respectively
+    field = pghistory.core._generate_history_field(test_models.SnapshotModel, "id")
+    assert isinstance(field, models.IntegerField)
+    field = pghistory.core._generate_history_field(test_models.BigAutoFieldModel, "id")
+    assert isinstance(field, models.BigIntegerField)
+
 
 @pytest.mark.django_db
 def test_image_field_snapshot():
@@ -630,6 +636,13 @@ def test_factory(model_name, obj_field, fields, expected_model_name, expected_re
 
     assert cls.__name__ == expected_model_name
     assert cls._meta.get_field("pgh_obj").remote_field.related_name == expected_related_name
+
+
+def test_empty_fields():
+    """Test that fields=[] works as expected"""
+    cls = pghistory.core.create_event_model(test_models.EventModel, fields=[])
+    # We shouldn't have `dt_field` or `int_field` as fields
+    assert not any(f.name in ["dt_field", "int_field"] for f in cls._meta.fields)
 
 
 @pytest.mark.parametrize(

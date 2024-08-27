@@ -3,7 +3,7 @@ import re
 import pgtrigger
 from django.db import models
 
-from pghistory import utils
+from pghistory import config, utils
 
 
 def _get_pgh_obj_pk_col(history_model):
@@ -76,7 +76,7 @@ class Event(pgtrigger.Trigger):
             and f.name in tracked_model_fields
             and f.concrete
         }
-        fields["pgh_created_at"] = "NOW()"
+        fields["pgh_created_at"] = config.created_at_function()
         fields["pgh_label"] = f"'{self.label}'"
 
         if hasattr(self.event_model, "pgh_obj"):
@@ -96,9 +96,9 @@ class Event(pgtrigger.Trigger):
         if hasattr(self.event_model, "pgh_context_id") and isinstance(
             self.event_model._meta.get_field("pgh_context_id"), models.UUIDField
         ):
-            fields[
-                "pgh_context_id"
-            ] = "COALESCE(NULLIF(CURRENT_SETTING('pghistory.context_id', TRUE), ''), NULL)::UUID"
+            fields["pgh_context_id"] = (
+                "COALESCE(NULLIF(CURRENT_SETTING('pghistory.context_id', TRUE), ''), NULL)::UUID"
+            )
 
         fields = {key: fields[key] for key in sorted(fields)}
 

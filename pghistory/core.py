@@ -1,4 +1,5 @@
 """Core functionality and interface of pghistory"""
+
 import copy
 import re
 import sys
@@ -236,10 +237,10 @@ def _generate_history_field(tracked_model, field):
     """
     field = tracked_model._meta.get_field(field)
 
-    if isinstance(field, models.AutoField):
-        return models.IntegerField()
-    elif isinstance(field, models.BigAutoField):  # pragma: no cover
+    if isinstance(field, models.BigAutoField):
         return models.BigIntegerField()
+    elif isinstance(field, models.AutoField):
+        return models.IntegerField()
     elif not field.concrete:  # pragma: no cover
         # Django doesn't have any non-concrete fields that appear
         # in ._meta.fields, but packages like django-prices have
@@ -434,7 +435,11 @@ def create_event_model(
     attrs.update({"pgh_trackers": trackers})
     meta = meta or {}
     exclude = exclude or []
-    fields = fields or [f.name for f in tracked_model._meta.fields if f.name not in exclude]
+    fields = (
+        fields
+        if fields is not None
+        else [f.name for f in tracked_model._meta.fields if f.name not in exclude]
+    )
 
     if append_only:
         meta["triggers"] = [
@@ -485,7 +490,7 @@ def track(
     *trackers: Tracker,
     fields: Union[List[str], None] = None,
     exclude: Union[List[str], None] = None,
-    obj_field: "ObjForeignKey" = constants.UNSET,
+    obj_field: Union["ObjForeignKey", None] = constants.UNSET,
     context_field: Union["ContextForeignKey", "ContextJSONField"] = constants.UNSET,
     context_id_field: "ContextUUIDField" = constants.UNSET,
     append_only: bool = constants.UNSET,
@@ -656,7 +661,7 @@ def event_models(
         models: The starting list of event models.
         references_model: Filter by event models that reference this model.
         tracks_model: Filter by models that directly track this model and have pgh_obj fields
-        including_missing_pgh_obj: Return tracked models even if the pgh_obj field is not
+        include_missing_pgh_obj: Return tracked models even if the pgh_obj field is not
             available.
 
     Returns:
@@ -674,24 +679,31 @@ def event_models(
     ]
 
     if references_model:
+        if references_model._meta.proxy:
+            references_model = references_model._meta.concrete_model
+
         models = [
             model
             for model in models
             if any(utils.related_model(field) == references_model for field in model._meta.fields)
         ]
 
-    if tracks_model and not include_missing_pgh_obj:
-        models = [
-            model
-            for model in models
-            if "pgh_obj" in (f.name for f in model._meta.fields)
-            and utils.related_model(model._meta.get_field("pgh_obj")) == tracks_model
-        ]
-    elif tracks_model and include_missing_pgh_obj:
-        models = [
-            model
-            for model in models
-            if model.pgh_tracked_model._meta.concrete_model == tracks_model
-        ]
+    if tracks_model:
+        if tracks_model._meta.proxy:
+            tracks_model = tracks_model._meta.concrete_model
+
+        if not include_missing_pgh_obj:
+            models = [
+                model
+                for model in models
+                if "pgh_obj" in (f.name for f in model._meta.fields)
+                and utils.related_model(model._meta.get_field("pgh_obj")) == tracks_model
+            ]
+        else:
+            models = [
+                model
+                for model in models
+                if model.pgh_tracked_model._meta.concrete_model == tracks_model
+            ]
 
     return models

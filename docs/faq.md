@@ -38,6 +38,50 @@ Currently concrete inheritance isn't well supported since `django-pghistory` sim
 
 We plan to add a guide on this in the future.
 
+However, a simple example of how it can be achieved as such.
+
+``` python
+@pghistory.track()
+class Parent(models.Model):
+    field_a = models.CharField(default="unknown")
+
+
+@pghistory.track()
+class Child(Parent):
+    field_b = models.CharField(default="unknown")
+```
+
+Given the use case of just two models, a patent and a child as shown above the following error will be raised:
+```
+mmp_metadata.ChildEvent.pgh_obj: (fields.E304) Reverse accessor 'Child.events' for 'mmp_metadata.ChildEvent.pgh_obj' clashes with reverse accessor for 'mmp_metadata.ParentEvent.pgh_obj'.
+        HINT: Add or change a related_name argument to the definition for 'mmp_metadata.ChildEvent.pgh_obj' or 'mmp_metadata.ParentEvent.pgh_obj'.
+mmp_metadata.ChildEvent.pgh_obj: (fields.E305) Reverse query name for 'mmp_metadata.ChildEvent.pgh_obj' clashes with reverse query name for 'mmp_metadata.ParentEvent.pgh_obj'.
+        HINT: Add or change a related_name argument to the definition for 'mmp_metadata.ChildEvent.pgh_obj' or 'mmp_metadata.ParentEvent.pgh_obj'.
+```
+
+This error is due to multiple foreign keys ahving the same 'default' name. By manualy setting the relation and query names for the event model we can aviod this clash.
+
+``` python
+@pghistory.track(
+    obj_field=pghistory.ObjForeignKey(
+        related_name="parent_event",
+        related_query_name="parent_event_query",
+    )
+)
+class Parent(models.Model):
+    field_a = models.CharField(default="unknown")
+
+
+@pghistory.track(
+    obj_field=pghistory.ObjForeignKey(
+        related_name="child_event",
+        related_query_name="child_event_query",
+    )
+)
+class Child(Parent):
+    field_b = models.CharField(default="unknown")
+```
+
 ## Can my event models be cascade deleted?
 
 By default, event models use unconstrained foreign keys and instruct Django to do nothing when tracked models are deleted. This applies not only to the `pgh_obj` field that maintains a reference to the tracked model, but every foreign key that's tracked.
@@ -63,6 +107,12 @@ If you need data for fields that have been dropped, we recommend two approaches:
 1. Make the field nullable instead of removing it.
 2. Use [django-pgtrigger](https://github.com/Opus10/django-pgtrigger) to create a custom trigger that dumps a JSON record of the row at that point in time.
 
-## How can I contact the author?
+## How can I report issues or request features
 
-The primary author, Wes Kendall, loves to talk to users. Message him at [wesleykendall@protonmail.com](mailto:wesleykendall@protonmail.com) for any feedback. Any questions, feature requests, or bugs should be reported as [issues here](https://github.com/Opus10/django-pghistory/issues).
+Open a [discussion](https://github.com/Opus10/django-pghistory/discussions) for a feature request. You're welcome to pair this with a pull request, but it's best to open a discussion first if the feature request is not trivial.
+
+For bugs, open an [issue](https://github.com/Opus10/django-pghistory/issues).
+
+## How can I support the author?
+
+By sponsoring [Wes Kendall](https://github.com/sponsors/wesleykendall). Even the smallest sponsorships are a nice motivation to maintain and enhance Opus10 libraries like django-pghistory.

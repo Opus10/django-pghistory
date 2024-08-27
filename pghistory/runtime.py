@@ -28,7 +28,10 @@ def _is_concurrent_statement(sql):
     True if the sql statement is concurrent and cannot be ran in a transaction
     """
     sql = sql.strip().lower() if sql else ""
-    return sql.startswith("create") and "concurrently" in sql
+    if isinstance(sql, bytes):
+        return sql.startswith(b"create") and b"concurrently" in sql
+    else:
+        return sql.startswith("create") and "concurrently" in sql
 
 
 def _is_transaction_errored(cursor):
@@ -76,6 +79,15 @@ def _execute_wrapper(execute_result):
 
 def _inject_history_context(execute, sql, params, many, context):
     if _can_inject_variable(context["cursor"], sql):
+        inject_sql = (
+            "SELECT set_config('pghistory.context_id', %s, true), "
+            "set_config('pghistory.context_metadata', %s, true); "
+        )
+        if isinstance(sql, bytes):
+            sql = inject_sql.encode("utf-8") + sql
+        else:
+            sql = inject_sql + sql
+ 
         # Metadata is stored as a serialized JSON string with escaped
         # single quotes
         serialized_metadata = json.dumps(_tracker.value.metadata, cls=config.json_encoder())

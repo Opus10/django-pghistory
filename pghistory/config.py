@@ -1,4 +1,6 @@
 """Core way to access configuration"""
+
+import copy
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 
 from django.apps import apps
@@ -24,7 +26,14 @@ def default_trackers() -> Union[Tuple["Tracker"], None]:
     Returns:
         Default pghistory trackers
     """
-    return getattr(settings, "PGHISTORY_DEFAULT_TRACKERS", None)
+    default_trackers = getattr(settings, "PGHISTORY_DEFAULT_TRACKERS", None)
+
+    # Copy the default trackers, otherwise we end up with the same instances used across
+    # all models which causes issues
+    if default_trackers:
+        default_trackers = copy.deepcopy(default_trackers)
+
+    return default_trackers
 
 
 def append_only() -> bool:
@@ -177,6 +186,17 @@ def exclude_field_kwargs() -> Dict["Field", List[str]]:
     }
 
     return exclude_field_kwargs
+
+
+def created_at_function() -> str:
+    """The default PostgreSQL function used to populate the "pgh_created_at" field.
+
+    Use `clock_timestamp()` to set the actual current time and not the time of the transaction.
+
+    Returns:
+        PostgreSQL function to be used as a default value for the "pgh_created_at" field.
+    """
+    return getattr(settings, "PGHISTORY_CREATED_AT_FUNCTION", "NOW()")
 
 
 def admin_ordering() -> List[str]:

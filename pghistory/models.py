@@ -415,14 +415,20 @@ class EventsQueryCompiler(SQLCompiler):
         else:
             return ""
 
-        if isinstance(rows, models.QuerySet) or len(rows) > 1:
-            opt = "IN"
-            # TODO: Use a subquery
-            pks = "','".join(f"{o.pk}" for o in rows)
-            pks = f"('{pks}')"
-        else:
-            opt = "="
-            pks = f"'{rows[0].pk}'"
+        with self.connection.cursor() as cursor:
+            if isinstance(rows, models.QuerySet) or len(rows) > 1:
+                opt = "IN"
+                # TODO: Use a subquery
+                fmt = ",".join(["%s"] * len(rows))
+                val = [o._meta.pk.get_db_prep_value(o.pk, self.connection) for o in rows]
+                pks = cursor.mogrify(f"({fmt})", val)
+            else:
+                opt = "="
+                val = rows[0]._meta.pk.get_db_prep_value(rows[0].pk, self.connection)
+                pks = cursor.mogrify("%s", [val])
+
+        if isinstance(pks, bytes):  # psycopg2 returns bytes
+            pks = pks.decode("utf-8")
 
         return "WHERE " + " OR ".join(f"_event.{col} {opt} {pks}" for col in cols)
 
@@ -673,12 +679,13 @@ class MiddlewareEvents(Events):
         models.ForeignKey(
             settings.AUTH_USER_MODEL,
             on_delete=models.DO_NOTHING,
+            null=True,
             help_text="The user associated with the event.",
         ),
     )
     url = core.ProxyField(
         "pgh_context__url",
-        models.TextField(help_text="The url associated with the event."),
+        models.TextField(null=True, help_text="The url associated with the event."),
     )
 
     class Meta:

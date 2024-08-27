@@ -44,7 +44,7 @@ Above we printed the history of `int_field`. We also printed `pgh_obj`, which re
 
 ## Compatibility
 
-`django-pghistory` is compatible with Python 3.8 - 3.12, Django 3.2 - 5.0, Psycopg 2 - 3, and Postgres 12 - 16.
+`django-pghistory` is compatible with Python 3.8 - 3.12, Django 4.2 - 5.1, Psycopg 2 - 3, and Postgres 13 - 16.
 
 ## Documentation
 
@@ -69,16 +69,21 @@ Install `django-pghistory` with:
 
 After this, add `pghistory` and `pgtrigger` to the `INSTALLED_APPS` setting of your Django project.
 
+## Other Material
+
+There's a [DjangoCon 2023 talk](https://youtu.be/LFIAqFt9z2s?si=GQBchy9bVAk-b9ok) that walks through how the library works and provides an overview of problems that can be solved through history-tracking in Django, discussing context-tracking, event reversions, and soft-deletes.
+
 ## Contributing Guide
 
 For information on setting up django-pghistory for development and contributing changes, view [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Primary Authors
+## Creators
 
 - [Wes Kendall](https://github.com/wesleykendall)
 
 ## Other Contributors
 
+- @max-muoto
 - @shivananda-sahu
 - @asucrews
 - @Azurency
