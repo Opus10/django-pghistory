@@ -63,6 +63,12 @@ If you need data for fields that have been dropped, we recommend two approaches:
 1. Make the field nullable instead of removing it.
 2. Use [django-pgtrigger](https://github.com/Opus10/django-pgtrigger) to create a custom trigger that dumps a JSON record of the row at that point in time.
 
-## How can I contact the author?
+## How can I report issues or request features
 
-The primary author, Wes Kendall, loves to talk to users. Message him at [wesleykendall@protonmail.com](mailto:wesleykendall@protonmail.com) for any feedback. Any questions, feature requests, or bugs should be reported as [issues here](https://github.com/Opus10/django-pghistory/issues).
+Open a [discussion](https://github.com/Opus10/django-pghistory/discussions) for a feature request. You're welcome to pair this with a pull request, but it's best to open a discussion first if the feature request is not trivial.
+
+For bugs, open an [issue](https://github.com/Opus10/django-pghistory/issues).
+
+## How can I support the author?
+
+By sponsoring [Wes Kendall](https://github.com/sponsors/wesleykendall). Even the smallest sponsorships are a nice motivation to maintain and enhance Opus10 libraries like django-pghistory.
