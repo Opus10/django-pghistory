@@ -42,7 +42,7 @@ def append_only() -> bool:
     Protection triggers are installed for update and delete operations if `True`.
 
     Returns:
-        `Tru`e if event models should be append-only by default.
+        `True` if event models should be append-only by default.
     """
     return getattr(settings, "PGHISTORY_APPEND_ONLY", False)
 
@@ -57,6 +57,17 @@ def middleware_methods() -> Tuple[str]:
     return getattr(
         settings, "PGHISTORY_MIDDLEWARE_METHODS", ("GET", "POST", "PUT", "PATCH", "DELETE")
     )
+
+
+def install_context_func_on_migrate() -> bool:
+    """True if the pghistory context tracking function is installed after migration.
+
+    Defaults to `False`.
+
+    Returns:
+        `True` if the _pgh_attach_context() Postgres func is installed after migration.
+    """
+    return getattr(settings, "PGHISTORY_INSTALL_CONTEXT_FUNC_ON_MIGRATE", False)
 
 
 def json_encoder() -> "DjangoJSONEncoder":
