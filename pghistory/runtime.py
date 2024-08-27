@@ -3,7 +3,7 @@ import contextlib
 import json
 import threading
 import uuid
-from typing import Any
+from typing import Any, Dict, Tuple, Union
 
 from django.db import connection
 
@@ -23,15 +23,13 @@ _tracker = threading.local()
 Context = collections.namedtuple("Context", ["id", "metadata"])
 
 
-def _is_concurrent_statement(sql):
+def _is_concurrent_statement(sql: Union[str, bytes]):
     """
     True if the sql statement is concurrent and cannot be ran in a transaction
     """
     sql = sql.strip().lower() if sql else ""
-    if isinstance(sql, bytes):
-        return sql.startswith(b"create") and b"concurrently" in sql
-    else:
-        return sql.startswith("create") and "concurrently" in sql
+    sql = sql.decode() if isinstance(sql, bytes) else sql
+    return sql.startswith("create") and "concurrently" in sql
 
 
 def _is_transaction_errored(cursor):
@@ -77,17 +75,14 @@ def _execute_wrapper(execute_result):
     return execute_result
 
 
-def _inject_history_context(execute, sql, params, many, context):
+def _inject_history_context(
+    execute, sql: Union[str, bytes], params: Union[Dict[str, Any], Tuple[Any, ...]], many, context
+):
+    is_bytes = isinstance(sql, bytes)
+    sql = sql.decode() if is_bytes else sql
+    inject_vars = ""
+
     if _can_inject_variable(context["cursor"], sql):
-        inject_sql = (
-            "SELECT set_config('pghistory.context_id', %s, true), "
-            "set_config('pghistory.context_metadata', %s, true); "
-        )
-        if isinstance(sql, bytes):
-            sql = inject_sql.encode("utf-8") + sql
-        else:
-            sql = inject_sql + sql
- 
         # Metadata is stored as a serialized JSON string with escaped
         # single quotes
         serialized_metadata = json.dumps(_tracker.value.metadata, cls=config.json_encoder())
@@ -95,21 +90,25 @@ def _inject_history_context(execute, sql, params, many, context):
             "pghistory__context_id": str(_tracker.value.id),
             "pghistory__context_metadata": serialized_metadata,
         }
+
         # psycopg does not allow params to be mixed (named and series), so we
         # try to preserve what it was.
         if isinstance(params, dict):
-            sql = (
-                "SELECT set_config('pghistory.context_id', %(pghistory__context_id)s, true), "
-                "set_config('pghistory.context_metadata', %(pghistory__context_metadata)s, true); "
-            ) + sql
+            id_placeholder = "%(pghistory__context_id)s"
+            metadata_placeholder = "%(pghistory__context_metadata)s"
             params.update(context_params)
+
         else:
-            sql = (
-                "SELECT set_config('pghistory.context_id', %s, true), "
-                "set_config('pghistory.context_metadata', %s, true); "
-            ) + sql
+            id_placeholder = metadata_placeholder = "%s"
             params = (*context_params.values(), *(params or ()))
 
+        inject_vars = (
+            f"SELECT set_config('pghistory.context_id', {id_placeholder}, true), "
+            f"set_config('pghistory.context_metadata', {metadata_placeholder}, true); "
+        )
+
+    sql = inject_vars + sql
+    sql = sql.encode() if is_bytes else sql
     return _execute_wrapper(execute(sql, params, many, context))
 
 
