@@ -14,6 +14,18 @@ The JSON encoder class or class path to use when serializing context.
 
 **Default** `"django.core.serializers.json.DjangoJSONEncoder"`
 
+## PGHISTORY_INSTALL_CONTEXT_FUNC_ON_MIGRATE
+
+Install the Postgres `_pgh_attach_context` function after migrations. Ensures pghistory context tracking works even without running migrations, typically for test suites.
+
+**Default** `False`
+
+## PGHISTORY_CREATED_AT_FUNCTION
+
+Pghistory uses `NOW()` to determine the current time, which is the same timestamp for the entire transaction. Configure this setting to `CLOCK_TIMESTAMP()`, for example, if you'd like to use a different SQL function for determining the current time.
+
+**Default** `"NOW()"`
+
 ## PGHISTORY_BASE_MODEL
 
 The base model to use for event models.

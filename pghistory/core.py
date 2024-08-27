@@ -679,7 +679,7 @@ def event_models(
     ]
 
     if references_model:
-        if references_model._meta.proxy:
+        if references_model._meta.proxy:  # pragma: no cover
             references_model = references_model._meta.concrete_model
 
         models = [
@@ -689,7 +689,7 @@ def event_models(
         ]
 
     if tracks_model:
-        if tracks_model._meta.proxy:
+        if tracks_model._meta.proxy:  # pragma: no cover
             tracks_model = tracks_model._meta.concrete_model
 
         if not include_missing_pgh_obj:

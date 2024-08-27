@@ -164,5 +164,5 @@ def test_default_trackers(settings):
         settings.PGHISTORY_DEFAULT_TRACKERS, config.default_trackers()
     ):
         # Trackers should be the same type, but different instances due to copying
-        assert type(expected_tracker) == type(tracker)
+        assert type(expected_tracker) is type(tracker)
         assert expected_tracker is not tracker

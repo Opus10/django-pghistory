@@ -20,7 +20,7 @@ For those that are new to triggers and want additional confidence in their behav
 
 Although triggers will be issuing additional SQL statements to write events, keep in mind that this happens within the database instance itself. In other words, writing events does not incur additional expensive round-trip database calls. This results in a reduced performance impact when compared to other history tracking methods implemented in software.
 
-Note that currently `django-pghistory` uses row-level triggers, meaning a bulk update such as `Model.objects.update` over one hundred elements could perform one hundred queries within the database instance. We're planning to address this in a future version of `django-pghistory` by using statement-level triggers instead.
+Note that currently `django-pghistory` uses row-level triggers, meaning a bulk update such as `Model.objects.update` over one hundred elements could perform one hundred queries within the database instance. We're planning to address this in a future version of `django-pghistory` by using statement-level triggers instead. See the [discussion here in django-pgtrigger](https://github.com/Opus10/django-pgtrigger/discussions/166).
 
 See the [Performance and Scaling](performance.md) section for tips and tricks on large history tables.
 
@@ -34,11 +34,9 @@ Add a condition to your tracker. See the [Conditional Tracking](event_tracking.m
 
 ## How do I track models with concrete inheritance?
 
-Currently concrete inheritance isn't well supported since `django-pghistory` simply snapshots the fields on the underlying table. Since concrete inheritance uses foreign keys to other tables, you'll need to set up trackers on all tables.
+`django-pghistory` simply snapshots the fields on the underlying table, meaning you'll need to set up trackers on all inherited tables. We plan to make this easier in the future.
 
-We plan to add a guide on this in the future.
-
-However, a simple example of how it can be achieved as such.
+When tracking child models, remember to set proper reverse foreign key names, otherwise collisions can happen. For example:
 
 ``` python
 @pghistory.track()
@@ -51,7 +49,7 @@ class Child(Parent):
     field_b = models.CharField(default="unknown")
 ```
 
-Given the use case of just two models, a patent and a child as shown above the following error will be raised:
+These models will raise the following:
 ```
 mmp_metadata.ChildEvent.pgh_obj: (fields.E304) Reverse accessor 'Child.events' for 'mmp_metadata.ChildEvent.pgh_obj' clashes with reverse accessor for 'mmp_metadata.ParentEvent.pgh_obj'.
         HINT: Add or change a related_name argument to the definition for 'mmp_metadata.ChildEvent.pgh_obj' or 'mmp_metadata.ParentEvent.pgh_obj'.
@@ -59,7 +57,7 @@ mmp_metadata.ChildEvent.pgh_obj: (fields.E305) Reverse query name for 'mmp_metad
         HINT: Add or change a related_name argument to the definition for 'mmp_metadata.ChildEvent.pgh_obj' or 'mmp_metadata.ParentEvent.pgh_obj'.
 ```
 
-This error is due to multiple foreign keys ahving the same 'default' name. By manualy setting the relation and query names for the event model we can aviod this clash.
+This error is due to multiple foreign keys having the same 'default' name. Manually set the relation and query names to avoid this clash.
 
 ``` python
 @pghistory.track(
@@ -106,6 +104,14 @@ If you need data for fields that have been dropped, we recommend two approaches:
 
 1. Make the field nullable instead of removing it.
 2. Use [django-pgtrigger](https://github.com/Opus10/django-pgtrigger) to create a custom trigger that dumps a JSON record of the row at that point in time.
+
+## I'm getting `function _pgh_attach_context() does not exist`
+
+If you don't run migrations in your test suite, pghistory's custom context tracking function won't be installed. Set `PGHISTORY_INSTALL_CONTEXT_FUNC_ON_MIGRATE=True` in your test settings.
+
+!!! note
+
+    This is harmless to enable in all environments, but it will issue a redundant SQL statement after running `migrate`.
 
 ## How can I report issues or request features
 

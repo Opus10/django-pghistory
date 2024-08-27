@@ -52,7 +52,7 @@ def HistoryMiddleware(get_response):
             with pghistory.context(user=user, url=request.path):
                 if isinstance(request, DjangoWSGIRequest):  # pragma: no branch
                     request.__class__ = WSGIRequest
-                elif isinstance(request, DjangoASGIRequest):  # pragma: no branch
+                elif isinstance(request, DjangoASGIRequest):  # pragma: no cover
                     request.__class__ = ASGIRequest
 
                 return get_response(request)

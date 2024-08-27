@@ -1,10 +1,18 @@
 import django.apps
-from django.db.models.signals import class_prepared
+from django.db.models.signals import class_prepared, post_migrate
+
+from pghistory import config
 
 
 def pgh_setup(sender, **kwargs):
     if hasattr(sender, "pghistory_setup"):
         sender.pghistory_setup()
+
+
+def install_on_migrate(using, **kwargs):  # pragma: no cover
+    if config.install_context_func_on_migrate():
+        Context = django.apps.apps.get_model("pghistory", "Context")
+        Context.install_pgh_attach_context_func(using=using)
 
 
 class PGHistoryConfig(django.apps.AppConfig):
@@ -23,3 +31,5 @@ class PGHistoryConfig(django.apps.AppConfig):
     def ready(self):
         # Register custom checks
         from pghistory import checks  # noqa
+
+        post_migrate.connect(install_on_migrate, sender=self)

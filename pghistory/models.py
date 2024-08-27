@@ -22,7 +22,7 @@ class Context(models.Model):
     metadata = utils.JSONField(default=dict)
 
     @classmethod
-    def install_pgh_attach_context_func(cls, using=DEFAULT_DB_ALIAS):
+    def install_pgh_attach_context_func(cls, using: str = DEFAULT_DB_ALIAS) -> None:
         """
         Installs a custom store procedure for upserting context
         for historical events. The upsert is aware of when tracking is
@@ -30,7 +30,11 @@ class Context(models.Model):
 
         This stored procedure is automatically installed in pghistory migration 0004.
         """
-        with connections[using].cursor() as cursor:
+        connection = connections[using]
+        if not connection.vendor.startswith("postgres"):  # pragma: no cover
+            return
+
+        with connection.cursor() as cursor:
             cursor.execute(
                 f"""
                 CREATE OR REPLACE FUNCTION _pgh_attach_context()
