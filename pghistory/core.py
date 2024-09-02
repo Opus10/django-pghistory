@@ -3,7 +3,7 @@
 import copy
 import re
 import sys
-from typing import TYPE_CHECKING, Any, Dict, List, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
 import pgtrigger
 import pgtrigger.core
@@ -46,7 +46,7 @@ _registered_trackers = {}
 class Tracker:
     """For tracking an event when a condition happens on a model."""
 
-    label: str = None
+    label: Optional[str] = None
 
     def __init__(self, label=None):
         self.label = label or self.label
@@ -81,19 +81,19 @@ class ManualEvent(Tracker):
 class RowEvent(Tracker):
     """For tracking an event automatically based on row-level changes."""
 
-    condition: Union[pgtrigger.Condition, None] = constants.UNSET
-    operation: pgtrigger.Operation = None
-    row: str = None
-    trigger_name: str = None
+    condition: Union[Optional[pgtrigger.Condition], constants.Unset] = constants.UNSET
+    operation: Optional[pgtrigger.Operation] = None
+    row: Optional[str] = None
+    trigger_name: Optional[str] = None
 
     def __init__(
         self,
-        label: str = None,
+        label: Optional[str] = None,
         *,
-        condition: Union[pgtrigger.Condition, None] = constants.UNSET,
-        operation: pgtrigger.Operation = None,
-        row: str = None,
-        trigger_name: str = None,
+        condition: Union[Optional[pgtrigger.Condition], constants.Unset] = constants.UNSET,
+        operation: Optional[pgtrigger.Operation] = None,
+        row: Optional[str] = None,
+        trigger_name: Optional[str] = None,
     ):
         super().__init__(label=label)
 
@@ -145,9 +145,9 @@ class InsertEvent(RowEvent):
     The default label used is "insert".
     """
 
-    label: str = "insert"
-    row: str = "NEW"
-    operation: pgtrigger.Operation = pgtrigger.Insert
+    label: Optional[str] = "insert"
+    row: Optional[str] = "NEW"
+    operation: Optional[pgtrigger.Operation] = pgtrigger.Insert
 
 
 class UpdateEvent(RowEvent):
@@ -163,9 +163,9 @@ class UpdateEvent(RowEvent):
     a condition, or the row to snapshot.
     """
 
-    label: str = "update"
-    row: str = "NEW"
-    operation: pgtrigger.Operation = pgtrigger.Update
+    label: Optional[str] = "update"
+    row: Optional[str] = "NEW"
+    operation: Optional[pgtrigger.Operation] = pgtrigger.Update
 
 
 class DeleteEvent(RowEvent):
@@ -174,9 +174,9 @@ class DeleteEvent(RowEvent):
     The default label used is "delete".
     """
 
-    label: str = "delete"
-    row: str = "OLD"
-    operation: pgtrigger.Operation = pgtrigger.Delete
+    label: Optional[str] = "delete"
+    row: Optional[str] = "OLD"
+    operation: Optional[pgtrigger.Operation] = pgtrigger.Delete
 
 
 def _pascalcase(string):
@@ -342,15 +342,17 @@ def create_event_model(
     *trackers: Tracker,
     fields: Union[List[str], None] = None,
     exclude: Union[List[str], None] = None,
-    obj_field: "ObjForeignKey" = constants.UNSET,
-    context_field: Union["ContextForeignKey", "ContextJSONField"] = constants.UNSET,
-    context_id_field: "ContextUUIDField" = constants.UNSET,
-    append_only: bool = constants.UNSET,
+    obj_field: Union["ObjForeignKey", constants.Unset] = constants.UNSET,
+    context_field: Union[
+        "ContextForeignKey", "ContextJSONField", constants.Unset
+    ] = constants.UNSET,
+    context_id_field: Union["ContextUUIDField", constants.Unset] = constants.UNSET,
+    append_only: Union[bool, constants.Unset] = constants.UNSET,
     model_name: Union[str, None] = None,
     app_label: Union[str, None] = None,
-    base_model: Type[models.Model] = None,
-    attrs: Dict[str, Any] = None,
-    meta: Dict[str, Any] = None,
+    base_model: Optional[Type[models.Model]] = None,
+    attrs: Optional[Dict[str, Any]] = None,
+    meta: Optional[Dict[str, Any]] = None,
     abstract: bool = True,
 ) -> Type[models.Model]:
     """
@@ -488,17 +490,19 @@ def ProxyField(proxy: str, field: Type[models.Field]):
 
 def track(
     *trackers: Tracker,
-    fields: Union[List[str], None] = None,
-    exclude: Union[List[str], None] = None,
-    obj_field: Union["ObjForeignKey", None] = constants.UNSET,
-    context_field: Union["ContextForeignKey", "ContextJSONField"] = constants.UNSET,
-    context_id_field: "ContextUUIDField" = constants.UNSET,
-    append_only: bool = constants.UNSET,
-    model_name: Union[str, None] = None,
-    app_label: Union[str, None] = None,
-    base_model: Type[models.Model] = None,
-    attrs: Dict[str, Any] = None,
-    meta: Dict[str, Any] = None,
+    fields: Optional[List[str]] = None,
+    exclude: Optional[List[str]] = None,
+    obj_field: Union[Optional["ObjForeignKey"], constants.Unset] = constants.UNSET,
+    context_field: Union[
+        "ContextForeignKey", "ContextJSONField", constants.Unset
+    ] = constants.UNSET,
+    context_id_field: Union["ContextUUIDField", constants.Unset] = constants.UNSET,
+    append_only: Union[bool, constants.Unset] = constants.UNSET,
+    model_name: Optional[str] = None,
+    app_label: Optional[str] = None,
+    base_model: Optional[Type[models.Model]] = None,
+    attrs: Optional[Dict[str, Any]] = None,
+    meta: Optional[Dict[str, Any]] = None,
 ):
     """
     A decorator for tracking events for a model.
@@ -649,9 +653,9 @@ def create_event(obj: models.Model, *, label: str, using: str = "default") -> mo
 
 
 def event_models(
-    models: List[Type[models.Model]] = None,
-    references_model: Type[models.Model] = None,
-    tracks_model: Type[models.Model] = None,
+    models: Optional[List[Type[models.Model]]] = None,
+    references_model: Optional[Type[models.Model]] = None,
+    tracks_model: Optional[Type[models.Model]] = None,
     include_missing_pgh_obj: bool = False,
 ) -> List[Type[models.Model]]:
     """
