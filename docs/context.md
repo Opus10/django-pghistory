@@ -74,6 +74,7 @@ if __name__ == "__main__":
     if (
         len(sys.argv) > 1
         and not sys.argv[1].startswith("runserver")
+        and not sys.argv[1] == "migrate"
     ):
         # Group history context under the same management command if
         # we aren't running a server.
@@ -86,6 +87,10 @@ if __name__ == "__main__":
 ```
 
 Above we ignore tracking context for `runserver` commands. Otherwise every single change in a development session would be grouped under the same context.
+
+!!! note
+
+    We also ignore `migrate`. Some custom schema-altering SQL can disrupt pghistory's context tracking. See [Issue #109](https://github.com/Opus10/django-pghistory/issues/109) for more information.
 
 ## Celery Tasks
 
