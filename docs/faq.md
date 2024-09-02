@@ -1,5 +1,7 @@
 # Frequently Asked Questions
 
+Some frequently asked questions are here. Check out [the Q/A discussions board here](https://github.com/Opus10/django-pghistory/discussions/categories/q-a?discussions_q=category%3AQ%26A+) or make [a new Q/A discussion](https://github.com/Opus10/django-pghistory/discussions/new?category=q-a) if you have a question.
+
 ## How does `django-pghistory` track everything?
 
 By using [Postgres triggers](https://www.postgresql.org/docs/current/sql-createtrigger.html). In other words, historical event records are created in the database alongside the database operation, providing a reliable way to track events regardless of where it happens in your code.
