@@ -370,11 +370,10 @@ def create_event_model(
             into the generated event model. Trackers that do not inherit
             [pghistory.RowEvent][] must be manually created. If no events are
             supplied, defaults to `pghistory.InsertEvent` and `pghistory.UpdateEvent`.
-        fields: The list of fields to snapshot when the event takes place. When
-            no fields are provided, the entire model is snapshot when the event
-            happens. Note that snapshotting of the OLD or NEW row is configured
-            by the `snapshot` attribute of the `DatabaseTracker` object. Manual
-            events must specify these fields during manual creation.
+        fields: The list of fields to store when the event takes place. When
+            no fields are provided, all fields are stored. Note that storing
+            the OLD or NEW row is configured by the `row` attribute of the `RowEvent` object.
+            Manual events must specify these fields during manual creation.
         exclude: Instead of providing a list of fields to snapshot, a user can
             instead provide a list of fields to not snapshot.
         obj_field: The foreign key field configuration that references the tracked object.
