@@ -113,6 +113,14 @@ If you don't run migrations in your test suite, pghistory's custom context track
 
     This is harmless to enable in all environments, but it will issue a redundant SQL statement after running `migrate`.
 
+## How can I backfill events?
+
+You may want to backfill events for data that's already in the database. One approach is to use the [manual event tracking](event_tracking.md#manual_tracking) feature to manually create tracking events. Remember to use the actual model class instead of the fake migration model.
+
+For large backfills, consider bulk creating events. Get the event model by importing the model in your migration and referencing `model.pgh_event_model` (or `model.pgh_event_models["label"]` if there's more than one).
+
+Consider opening a pull request if you'd like to contribute a more comprehensive backfill example to the docs or a top-level `backfill` function in the interface to help facilitate this.
+
 ## How can I report issues or request features
 
 Open a [discussion](https://github.com/Opus10/django-pghistory/discussions) for a feature request. You're welcome to pair this with a pull request, but it's best to open a discussion first if the feature request is not trivial.
