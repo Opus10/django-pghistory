@@ -1,12 +1,10 @@
 # Event Tracking
 
-## Prerequisites
+Here we overview how event tracking works and how to customize it. It's useful to read both the [Quick Start](index.md#quick_start) and [Basics](basics.md) sections for a primer on terminology and concepts.
 
-It's useful to read both the [Quick Start](index.md#quick_start) and [Basics](basics.md) sections for a primer on terminology and concepts.
+## `pghistory.track`
 
-## Using `pghistory.track`
-
-[pghistory.track][] is the primary way to configure event tracking on models. For example, let's say that we have the following model:
+[pghistory.track][] is the primary way to track model events. For example, let's say that we have the following model:
 
 ```python
 class TrackedModel(models.Model):
@@ -25,78 +23,11 @@ class TrackedModel(models.Model):
     ...
 ```
 
-Here's what's happening under the hood:
+By default, [pghistory.track][] registers [pghistory.InsertEvent][] and [pghistory.UpdateEvent][] trackers. See [custom trackers](#custom_trackers) below for how to override this behavior.
 
-1. By default, [pghistory.track][] registers [pghistory.InsertEvent][] and [pghistory.UpdateEvent][] trackers on `TrackedModel` that perform the change tracking.  Trackers can be supplied as the initial arguments to [pghistory.track][] to override the default trackers.
-2.  Triggers are installed and configured by these trackers using [django-pgtrigger](https://github.com/Opus10/django-pgtrigger). Changes are written by the triggers to an auto-generated event model. By default, the model will be named `TrackedModelEvent`. It contains every field in `TrackedModel` plus a few additional tracking fields.
+When trackers are added, an [auto-generated event model](event_models.md) is created and populated by triggers installed by [django-pgtrigger](https://github.com/Opus10/django-pgtrigger). By default, the model will be named `TrackedModelEvent`. It contains every field in `TrackedModel` plus a few additional tracking fields.
 
-Running `python manage.py makemigrations` will produce migrations for both the triggers and the event model.
-
-This is what the generated event model looks like by default:
-
-```python
-class TrackedModelEvent(pghistory.models.Event):
-    # The primary key
-    pgh_id = models.AutoField(primary_key=True)
-
-    # A foreign key to the tracked model
-    pgh_obj = models.ForeignKey(
-        TrackedModel,
-        on_delete=models.DO_NOTHING,
-        related_name="event",
-        db_constraint=False
-    )
-
-    # An identifying label for the event. Configurable in the tracker.
-    # Defaults to "insert" for insert events and "update" for update events.
-    pgh_label = models.TextField()
-
-    # Additional context stored in JSON in the pghistory.Context model
-    pgh_context = models.ForeignKey(
-        "pghistory.Context",
-        null=True,
-        on_delete=models.DO_NOTHING,
-        related_name="+",
-        db_constraint=False
-    )
-
-    # When the event was created
-    pgh_created_at = models.DatetimeField(auto_now_add=True)
-
-    # These fields are copied from the original model. Primary
-    # keys and non-foreign key indices are removed. Foreign keys
-    # are unconstrained. This behavior can be overridden
-    id = models.IntegerField()
-    int_field = models.IntegerField()
-    char_field = models.CharField(max_length=16)
-    user = models.ForeignKey(
-        "auth.User",
-        on_delete=models.DO_NOTHING,
-        db_constraint=False
-    )
-```
-
-Here are some important notes about the event models:
-
-* Event models are dynamically created inside the same module as the tracked model when using [pghistory.track][]. Although event models aren't in models.py, they're still imported, migrated, and accessed like a normal model.
-* All `pgh_*` fields store additional tracked metadata. We'll discuss the `pgh_context` field in greater detail in the [Collecting Context](context.md) section.
-* All other fields are copies of the fields from the tracked model with a few modifications. For example, foreign keys are unconstrained and non-foreign key indices are not included.
-* The model name and default field/foreign key behavior can be configured globally or for each event event model. We'll cover a few options here and discuss it in depth in the [Configuring Event Models](event_models.md) section.
-* The `pgh_label` field is provided by the tracker. By default, [pghistory.InsertEvent][] and [pghistory.UpdateEvent][] trackers use "insert" and "update" as the label.
-
-[pghistory.track][] also takes several configuration parameters for the generated event model, such as:
-
-* `fields`: Provide a list of fields to track, otherwise all fields are tracked. If fields are provided, the default model name changes, only those fields are tracked, and snapshots are only created when those fields change.
-* `exclude`: Track every field but these. `fields` and `exclude` are mutually exclusive.
-* `model_name`: The name of the generated model. If all fields are tracked, defaults to `<OriginalModelName>Event`.
-
-There are other parameters for configuring `pgh_*` fields (`obj_field`, `context_field`, and `context_id_field`) that we will discuss in the [Configuring Event Models](event_models.md) section. There's also an `app_label` field for [configuring trackers on third party models](#third_party_models). The final parameters are for low-level configuration of the event model (`meta`, `base_model`, and `attrs`). See [pghistory.track][] for all arguments.
-
-!!! note
-
-    One can also explicitly define the event model without using [pghistory.track][]. This is covered in the [Custom Event Models](event_models.md#custom_event_models) section.
-
-We finish this section with an example of our trackers in action. Below we create a `TrackedModel`, update it, and print the resulting event values:
+For example, let's create a `TrackedModel`, update it, and print the resulting event values:
 
 ```python
 from myapp.models import TrackedModel
@@ -147,6 +78,7 @@ In this case, we'll track both `char_field` and `user`. Inserts and updates to e
 
     One can further override event model configuration, such as creating custom database indices, by directly creating a custom event model. [See this section for more details](event_models.md#custom_event_models).
 
+<a id="custom_trackers"></a>
 ## Custom Trackers
 
 We've only shown [pghistory.track][] with the default configuration. Let's say that we wish to only create events on model deletion. We can configure this behavior using the [pghistory.DeleteEvent][] tracker:
@@ -157,22 +89,22 @@ class TrackedModel(models.Model):
     ...
 ```
 
-Remember, we've overridden the default trackers by doing this. Only deletions will be tracked. One can add back in the default behavior of tracking inserts and updates as follows:
+!!! remember
 
-```python
-@pghistory.track(
-    pghistory.InsertEvent(), pghistory.UpdateEvent(), pghistory.DeleteEvent()
-)
-class TrackedModel(models.Model):
-    ...
-```
+    We've overridden the default trackers by doing this. Only deletions will be tracked. One can add back in the default behavior of tracking inserts and updates as follows:
+
+    ```python
+    @pghistory.track(
+        pghistory.InsertEvent(), pghistory.UpdateEvent(), pghistory.DeleteEvent()
+    )
+    class TrackedModel(models.Model):
+        ...
+    ```
 
 The [pghistory.InsertEvent][], [pghistory.UpdateEvent][], and [pghistory.DeleteEvent][] trackers all inherit [pghistory.RowEvent][] and specify some defaults, such as:
 
 - The `pgh_label` that will be generated. [pghistory.DeleteEvent][], for example, will use "delete" as the label of the event. Customize this by providing the label as the first argument, i.e. `pghistory.DeleteEvent("my_custom_label")`.
 - The row and trigger conditions. [pghistory.UpdateEvent][], for example, has its condition configured to only fire if any tracked fields change. It also stores the `NEW` row of the update. If one desires to store the row as it was *before* the update, do `pghistory.UpdateEvent(row=pghistory.Old)`.
-
-We'll go into examples of customizing conditional tracking next.
 
 <a id="conditional_tracking"></a>
 ## Conditional Tracking
@@ -277,6 +209,33 @@ class Cash(models.Model):
 ```
 
 See the [django-pgtrigger docs](https://django-pgtrigger.readthedocs.io) to learn more about trigger conditions and how the `Q` and `F` objects can be used.
+
+## Multiple Trackers
+
+Use multiple invocations of [pghistory.track][] to track events with different schemas:
+
+```python
+@pghistory.track(
+    pghistory.UpdateEvent(
+        "email_changed",
+        row=pghistory.Old,
+        condition=pghistory.AnyChange("email")
+    ),
+    fields=["email"],
+    model_name="UserEmailHistory"
+)
+@pghistory.track(
+    pghistory.UpdateEvent(
+        "username_changed",
+        row=pghistory.Old,
+        condition=pghistory.AnyChange("username")
+    ),
+    fields=["username"],
+    model_name="UserUsernameHistory"
+)
+class TrackedModel(models.Model):
+    ...
+```
 
 ## Manual Tracking
 

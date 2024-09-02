@@ -85,7 +85,7 @@ nav:
       - Basics: basics.md
       - Event Tracking: event_tracking.md
       - Collecting Context: context.md
-      - Configuring Event Models: event_models.md
+      - Event Models: event_models.md
       - Aggregating Events and Diffs: aggregating_events.md
       - Admin Integration: admin.md
       - Reverting Objects: reversion.md
@@ -96,6 +96,6 @@ nav:
       - Upgrading: upgrading.md
   - API:
       - Settings: settings.md
-      - Module: module.md
+      - Reference: module.md
       - Release Notes: release_notes.md
       - Contributing Guide: contributing.md
