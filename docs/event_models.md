@@ -1,26 +1,85 @@
-# Configuring Event Models
+# Event Models
 
-Event model fields such as the ones automatically added by `django-pghistory` can be configured in a number of ways. Here we discuss how to set global defaults for event models and how to override them on a per-model basis. We also discuss how one can denormalize context fields.
+When trackers are added to models, an auto-generated event model is created and populated by triggers installed by [django-pgtrigger](https://github.com/Opus10/django-pgtrigger).
 
-## The Default Configuration
+Here we overview what these models look like, how they can be configured, and advanced options such as [custom event models](#custom_event_models) and [denormalizing context](#denormalizing_context).
 
-Before we get started, remember that by default, all foreign keys on event models are unconstrained and have no cascading behavior. If the tracked model or any of its tracked foreign keys are deleted, the event models will still remain but possibly not point to valid rows in the database. The tracked foreign keys are still indexed by default, however, custom indices and unique constraints on the tracked model are not mirrored on the event models.
+## Event Model Overview
 
-`django-pghistory` has this as the default configuration for the following reasons:
+Say we have a model called `TrackedModel` tracked by [pghistory.track][]. The default event model will be named `TrackedModelEvent` and will have the following fields:
 
-- Unconstrained foreign keys allow us to still persist old history, even if the related objects are deleted.
-- Foreign keys are still indexed since it's common to join on them. On the other hand, custom indices on the tracked model are dropped since these are typically more application-specific. This helps with write performance.
-- Custom unique constraints are dropped because event tables can easily create duplicate values that would violate constraints.
+```python
+class TrackedModelEvent(pghistory.models.Event):
+    # The primary key
+    pgh_id = models.AutoField(primary_key=True)
 
-This configuration helps ensure that tracked history is completely reliable. Users that desire an immutable event log can go a step further and use `append_only=True` in [pghistory.track][] or specify it as a global default via `settings.PGHISTORY_APPEND_ONLY = True`.
+    # An unconstrained foreign key to the tracked model
+    pgh_obj = models.ForeignKey(TrackedModel, on_delete=models.DO_NOTHING, related_name="event", db_constraint=False)
 
-Now that we have the default configuration out of the way, we'll overview the configuration hierarchy and how you can override this behavior either globally via settings, locally via the arguments to [pghistory.track][], or locally via custom event models.
+    # An identifying label for the event. Configurable in the tracker.
+    # Defaults to "insert" for insert events and "update" for update events.
+    pgh_label = models.TextField()
 
-## Configuration Hierarchy
+    # Additional context stored in JSON in the pghistory.Context model
+    pgh_context = models.ForeignKey("pghistory.Context", null=True, on_delete=models.DO_NOTHING, related_name="+", db_constraint=False)
 
-When configuring event models, keep in mind that all configuration follows a hierarchy. Defaults are first loaded from settings followed by per-model overrides.
+    # When the event was created
+    pgh_created_at = models.DatetimeField(auto_now_add=True)
 
-Field behavior also follows a hierarchy. If, for example, the default foreign key configuration is changed, this will affect every foreign key unless overridden. We'll get into more examples throughout this section. First we start with the base field configuration that applies to every field on an event model.
+    # These fields are copied from the original model. Primary
+    # keys and non-foreign key indices are removed. Foreign keys
+    # are unconstrained. This behavior can be overridden
+    id = models.IntegerField()
+    int_field = models.IntegerField()
+    char_field = models.CharField(max_length=16)
+    user = models.ForeignKey("auth.User", on_delete=models.DO_NOTHING, db_constraint=False)
+```
+
+Here are some important notes about the default event models:
+
+* Event models are dynamically created inside the same module as the tracked model when using [pghistory.track][]. Although event models aren't in models.py, they're still imported, migrated, and accessed like a normal model.
+* All `pgh_*` fields store metadata. For example, the `pgh_context` collects [context from the application](context.md).
+* All other fields are snapshot from the original model. To ensure we don't have integrity issues, foreign keys are unconstrained and unique constraints are dropped.
+* The `pgh_label` field is provided by the tracker. By default, [pghistory.InsertEvent][] and [pghistory.UpdateEvent][] trackers use "insert" and "update" as the label. Override this by providing the label as the first argument, i.e. `pghistory.DeleteEvent("my_custom_label")`.
+
+Event models can be configured in a number of ways. First we'll go over the general hierarchy and then discuss specific configuration options.
+
+## Configuration Overview
+
+To configure event models, do either of:
+
+- Apply model-specific defaults with [pghistory.track][] or by [creating a custom event model](#custom_event_models).
+- Apply global defaults with settings.
+
+See the [arguments to `pghistory.track`][] for most configuration options, which typically have a corresponding setting. For example, say we'd like to override the default `pgh_obj` field. Do this on an individual model with:
+
+```python
+@pghistory.track(
+    obj_field=pghistory.ObjForeignKey(
+        on_delete=models.CASCADE,
+        db_constraint=True
+    )
+)
+class TrackedModel(models.Model):
+    ...
+```
+
+Or globally with:
+
+```python
+PGHISTORY_OBJ_FIELD = pghistory.ForeignKey(
+    on_delete=models.CASCADE,
+    db_constraint=True
+)
+```
+
+There are a few settings that influence the default fields, related fields, or foreign key field behavior:
+
+- `PGHISTORY_FIELD` - Default field configuration for all fields on event models.
+- `PGHISTORY_RELATED_FIELD` - Default related field configuration for all related fields on event models.
+- `PGHISTORY_FOREIGN_KEY_FIELD` - Default foreign key field configuration for all foreign keys on event models.
+
+For example, do `PGHISTORY_RELATED_FIELD = pghistory.RelatedField(null=True)` to ensure all related fields are nullable by default. We cover this in more detail below.
 
 ## Default Fields
 
@@ -28,15 +87,15 @@ Every field on an event model, including the ones derived from the tracked model
 
 The [pghistory.Field][] object has the following attributes that can be configured, some of which already have overrides:
 
-    primary_key=False
-    unique=False
-    blank=pghistory.DEFAULT
-    null=pghistory.DEFAULT
-    db_index=False
-    editable=pghistory.DEFAULT
-    unique_for_date=None
-    unique_for_month=None
-    unique_for_year=None
+- `primary_key=False`
+- `unique=False`
+- `blank=pghistory.DEFAULT`
+- `null=pghistory.DEFAULT`
+- `db_index=False`
+- `editable=pghistory.DEFAULT`
+- `unique_for_date=None`
+- `unique_for_month=None`
+- `unique_for_year=None`
 
 Any attribute with `pghistory.DEFAULT` means it will use the attribute from the tracked field. All others are overrides.
 
@@ -54,8 +113,8 @@ One can override the behavior of related fields by using the `pghistory.RelatedF
 
 This configuration class uses all of the attributes of [pghistory.Field][] and provides these additional attributes:
 
-    related_name="+"
-    related_query_name="+"
+- `related_name="+"`
+- `related_query_name="+"`
 
 In other words, related names are reset to prevent clashes. Let's say you'd like related names to not be overridden, along with ensuring every related field has `null=True`. You would do this:
 
@@ -77,8 +136,8 @@ Going a step beyond related fields, one can specifically target foreign keys (an
 
 This configuration class uses all of the attributes of `pghistory.RelatedField` field and provides these attributes:
 
-    on_delete=models.DO_NOTHING
-    db_constraint=False
+- `on_delete=models.DO_NOTHING`
+- `db_constraint=False`
 
 In other words, all foreign keys are unconstrained by default. Event models will *not* be cascade deleted by default. Along with this, `pghistory.ForeignKey` overrides  `db_index=True` to ensure all foreign keys are indexed by default.
 
@@ -99,8 +158,8 @@ PGHISTORY_FOREIGN_KEY_FIELD = pghistory.ForeignKey(
 
 The default `pgh_obj` field of event models can be set with `settings.PGHISTORY_OBJ_FIELD` or by supplying the `obj_field` argument to [pghistory.track][] or [pghistory.create_event_model][]. It must be set to a [pghistory.ObjForeignKey][] instance, which overrides the following attributes:
 
-    related_name=pghistory.DEFAULT
-    related_query_name=pghistory.DEFAULT
+- `related_name=pghistory.DEFAULT`
+- `related_query_name=pghistory.DEFAULT`
 
 In other words, `pgh_obj` will have the default related name applied. Since `pgh_obj` is generated by `django-pghistory`, the default related name is "events". In version 3, this behavior will be changed to remove the related name.
 
@@ -128,8 +187,7 @@ One can protect event models from being updated or deleted with `settings.PGHIST
 
 [pghistory.track][] takes `obj_field`, `context_field`, and `context_id_field` arguments for overriding event fields on a per-model basis. These must be supplied configuration instances just like global settings. For example, `obj_field` takes [pghistory.ObjForeignKey][] instances.
 
-Keep in mind that these overrides still follow the configuration hierachy
-and inherit any overrides from the settings.
+Keep in mind that these overrides still follow the configuration hierachy and inherit any overrides from the settings.
 
 [pghistory.track][] also takes the following attributes:
 

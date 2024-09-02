@@ -1,4 +1,4 @@
-# Module
+# Reference
 
 ::: pghistory
 ::: pghistory.admin
