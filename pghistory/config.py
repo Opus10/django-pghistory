@@ -1,7 +1,7 @@
 """Core way to access configuration"""
 
 import copy
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Type, Union
 
 from django.apps import apps
 from django.conf import settings
@@ -12,8 +12,7 @@ from pghistory import constants
 
 if TYPE_CHECKING:
     from django.core.serializers.json import DjangoJSONEncoder
-    from django.db.models import QuerySet
-    from django.db.models.base import ModelBase
+    from django.db.models import Model, QuerySet
 
     from pghistory.admin import EventsAdmin
     from pghistory.core import Tracker
@@ -47,7 +46,7 @@ def append_only() -> bool:
     return getattr(settings, "PGHISTORY_APPEND_ONLY", False)
 
 
-def middleware_methods() -> Tuple[str]:
+def middleware_methods() -> Tuple[str, ...]:
     """
     Methods tracked by the pghistory middleware.
 
@@ -86,7 +85,7 @@ def json_encoder() -> "DjangoJSONEncoder":
     return encoder
 
 
-def base_model() -> "ModelBase":
+def base_model() -> Type["Model"]:
     """The base model for event models.
 
     Returns:
@@ -224,7 +223,7 @@ def admin_ordering() -> List[str]:
     return ordering
 
 
-def admin_model() -> "ModelBase":
+def admin_model() -> Type["Model"]:
     """The default list display for the events admin.
 
     Returns:
@@ -244,7 +243,7 @@ def admin_queryset() -> "QuerySet":
     )
 
 
-def admin_class() -> "EventsAdmin":
+def admin_class() -> Type["EventsAdmin"]:
     """The admin class to use for the events admin.
 
     Returns:
@@ -315,15 +314,15 @@ class Field:
     def __init__(
         self,
         *,
-        primary_key: bool = constants.UNSET,
-        unique: bool = constants.UNSET,
-        blank: bool = constants.UNSET,
-        null: bool = constants.UNSET,
-        db_index: bool = constants.UNSET,
-        editable: bool = constants.UNSET,
-        unique_for_date: bool = constants.UNSET,
-        unique_for_month: bool = constants.UNSET,
-        unique_for_year: bool = constants.UNSET,
+        primary_key: Union[bool, constants.Unset, constants.Default] = constants.UNSET,
+        unique: Union[bool, constants.Unset, constants.Default] = constants.UNSET,
+        blank: Union[bool, constants.Unset, constants.Default] = constants.UNSET,
+        null: Union[bool, constants.Unset, constants.Default] = constants.UNSET,
+        db_index: Union[bool, constants.Unset, constants.Default] = constants.UNSET,
+        editable: Union[bool, constants.Unset, constants.Default] = constants.UNSET,
+        unique_for_date: Union[bool, None, constants.Unset, constants.Default] = constants.UNSET,
+        unique_for_month: Union[bool, None, constants.Unset, constants.Default] = constants.UNSET,
+        unique_for_year: Union[bool, None, constants.Unset, constants.Default] = constants.UNSET,
     ):
         self._kwargs = _get_kwargs(locals())
         self._finalized = False
@@ -367,8 +366,8 @@ class RelatedField(Field):
     def __init__(
         self,
         *,
-        related_name: str = constants.UNSET,
-        related_query_name: str = constants.UNSET,
+        related_name: Union[str, constants.Unset, constants.Default] = constants.UNSET,
+        related_query_name: Union[str, constants.Unset, constants.Default] = constants.UNSET,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -398,7 +397,7 @@ class ForeignKey(RelatedField):
         self,
         *,
         on_delete: Any = constants.UNSET,
-        db_constraint: bool = constants.UNSET,
+        db_constraint: Union[bool, constants.Unset, constants.Default] = constants.UNSET,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -423,10 +422,12 @@ class ContextForeignKey(ForeignKey):
     """
 
     def __init__(
-        self, *, null: bool = True, related_query_name: str = constants.DEFAULT, **kwargs: Any
+        self,
+        *,
+        null: bool = True,
+        related_query_name: Union[str, constants.Unset, constants.Default] = constants.UNSET,
+        **kwargs: Any,
     ):
-        # Note: We will be changing the default context field to have on_delete=PROTECT
-        # in version 3.
         super().__init__(null=null, related_query_name=related_query_name, **kwargs)
         self._kwargs.update(_get_kwargs(locals()))
 
@@ -466,8 +467,8 @@ class ObjForeignKey(ForeignKey):
     def __init__(
         self,
         *,
-        related_name: str = constants.DEFAULT,
-        related_query_name: str = constants.DEFAULT,
+        related_name: Union[str, constants.Unset, constants.Default] = constants.UNSET,
+        related_query_name: Union[str, constants.Unset, constants.Default] = constants.UNSET,
         **kwargs,
     ):
         # Note: We will be changing the default object field to nullable with on_delete=SET_NULL
