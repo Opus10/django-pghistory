@@ -270,6 +270,7 @@ class TrackedModel(models.Model):
     ...
 ```
 
+<a id="manual_tracking"></a>
 ## Manual Tracking
 
 Sometimes it is not possible to express an event based on a series of changes to a model. Some use cases, such as backfilling data, also require that events are manually created.
