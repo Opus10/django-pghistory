@@ -109,11 +109,15 @@ The [pghistory.InsertEvent][], [pghistory.UpdateEvent][], and [pghistory.DeleteE
 <a id="conditional_tracking"></a>
 ## Conditional Tracking
 
-In some cases, one may wish to track changes when specific field transitions happen, for example, storing email addresses every time a user's email changes. Similarly it may not be desirable to track changes for every row and instead only track changes to "active" ones.
+By default, [pghistory.track][] stores events for all changes to the `fields` specified (or every field if no `fields` are specified). Supply conditional trackers to specify when events are created. We show examples of this below.
 
-### Update Conditions
+!!! tip
 
-`django-pghistory` trackers accept a `condition` as an argument to help configure this functionality. Let's show an example of storing user email changes:
+    All examples here mostly pass through to [django-pgtrigger's conditional interface](https://django-pgtrigger.readthedocs.io/en/stable/conditional/). Check out those docs for more examples.
+
+### Basic Example
+
+Here we create a conditional tracker that only fires whenever the `email` is updated:
 
 ```python
 import pghistory
@@ -124,19 +128,19 @@ import pghistory
         row=pghistory.Old,
         condition=pghistory.AnyChange("email")
     ),
-    fields=["email"],
     model_name="UserEmailHistory"
 )
 class MyUser(models.Model):
     username = models.CharField(max_length=128)
     email = models.EmailField()
+    address = models.TextField()
 ```
 
 There are two key things going on here:
 
 1. The [pghistory.UpdateEvent][] tracker runs on updates of `MyUser`, storing what the row looked like right before the update (i.e. the "old" row).
 2. We use [pghistory.AnyChange][] to specify that the event should fire on any change to `email`.
-3. We've named our event model `UserEmailHistory`. It only stores the `email` field of the `MyUser` model.
+3. We've named our event model `UserEmailHistory`. It stores every field of the `MyUser` model.
 
 Let's see what this looks like when we change the `email` field:
 
@@ -155,6 +159,8 @@ print(UserEmailHistory.objects.filter(pgh_obj=u).values_list("email", flat=True)
 
 > ["hello@hello.com"]
 ```
+
+### Condition Utilities
 
 `django-pghistory` provides the following utilities for creating change conditions, all of which are from the [django-pgtrigger library](https://django-pgtrigger.readthedocs.io):
 
