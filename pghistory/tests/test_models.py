@@ -5,7 +5,7 @@ import django
 import pytest
 from django.core.management import call_command
 
-import pghistory.models
+import pghistory.runtime
 import pghistory.tests.models as test_models
 
 

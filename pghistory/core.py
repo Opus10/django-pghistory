@@ -15,7 +15,7 @@ from django.db.models.sql import compiler
 from django.utils.module_loading import import_string
 from django.utils.text import slugify
 
-from pghistory import config, constants, trigger, utils
+from pghistory import config, constants, runtime, trigger, utils
 
 if TYPE_CHECKING:
     from pghistory import ContextForeignKey, ContextJSONField, ContextUUIDField, ObjForeignKey
@@ -605,42 +605,53 @@ def create_event(obj: models.Model, *, label: str, using: str = "default") -> mo
         )
 
     event_model = _registered_trackers[(obj.__class__, label)]
+    tracked_model_fields = {field.attname for field in obj._meta.fields}
     event_model_kwargs = {
         "pgh_label": label,
         **{
             field.attname: getattr(obj, field.attname)
             for field in event_model._meta.fields
-            if not field.name.startswith("pgh_")
+            if not field.name.startswith("pgh_") and field.attname in tracked_model_fields
         },
     }
     if hasattr(event_model, "pgh_obj"):
         event_model_kwargs["pgh_obj"] = obj
 
-    event_obj = event_model(**event_model_kwargs)
+    if hasattr(event_model, "pgh_context") and isinstance(
+        event_model.pgh_context.field, utils.JSONField
+    ):
+        if hasattr(runtime._tracker, "value"):
+            event_model_kwargs["pgh_context"] = runtime._tracker.value.metadata
 
-    # The event model is inserted manually with a custom SQL compiler
-    # that attaches the context using the _pgh_attach_context
-    # stored procedure. Django does not allow one to use F()
-    # objects to reference stored procedures, so we have to
-    # inject it with a custom SQL compiler here.
-    query = sql.InsertQuery(event_model)
-    query.insert_values(
-        [field for field in event_model._meta.fields if not isinstance(field, models.AutoField)],
-        [event_obj],
-    )
+            if hasattr(event_model, "pgh_context_id"):
+                event_model_kwargs["pgh_context_id"] = runtime._tracker.value.id
 
-    if utils.psycopg_maj_version == 3:
-        connections[using].connection.adapters.register_dumper(Literal, LiteralDumper)
-
-    vals = _InsertEventCompiler(query, connections[using], using=using).execute_sql(
-        event_model._meta.fields
-    )
-
-    # Django <= 2.2 does not support returning fields from a bulk create,
-    # which requires us to fetch fields again to populate the context
-    if isinstance(vals, int):  # pragma: no cover
-        return event_model.objects.get(pgh_id=vals)
+        return event_model.objects.create(**event_model_kwargs)
     else:
+        event_obj = event_model(**event_model_kwargs)
+
+        # The event model is inserted manually with a custom SQL compiler
+        # that attaches the context using the _pgh_attach_context
+        # stored procedure. Django does not allow one to use F()
+        # objects to reference stored procedures, so we have to
+        # inject it with a custom SQL compiler here.
+        query = sql.InsertQuery(event_model)
+        query.insert_values(
+            [
+                field
+                for field in event_model._meta.fields
+                if not isinstance(field, models.AutoField)
+            ],
+            [event_obj],
+        )
+
+        if utils.psycopg_maj_version == 3:
+            connections[using].connection.adapters.register_dumper(Literal, LiteralDumper)
+
+        vals = _InsertEventCompiler(query, connections[using], using=using).execute_sql(
+            event_model._meta.fields
+        )
+
         # Django >= 3.1 returns the values as a list of one element
         if isinstance(vals, list) and len(vals) == 1:  # pragma: no branch
             vals = vals[0]

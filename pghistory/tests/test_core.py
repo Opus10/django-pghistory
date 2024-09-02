@@ -217,6 +217,41 @@ def test_create_event():
 
 
 @pytest.mark.django_db
+def test_create_event_denormed_context():
+    """
+    Test manually creating an event with denormalized context
+    """
+    user = ddf.G("auth.User")
+    with pghistory.context(user=user.id):
+        dc = ddf.G(test_models.DenormContext, int_field=1, fk_field=user)
+        assert dc.event_no_id.count() == 1
+        assert dc.events.count() == 1
+
+        event = pghistory.create_event(dc, label="snapshot_no_id_update")
+        assert dc.event_no_id.count() == 2
+        assert event.pgh_context == {"user": user.id}
+
+        event = pghistory.create_event(dc, label="insert")
+        assert dc.event_no_id.count() == 2
+        assert event.pgh_context_id == pghistory.runtime._tracker.value.id
+        assert event.pgh_context == {"user": user.id}
+
+    event = pghistory.create_event(dc, label="snapshot_no_id_update")
+    assert event.pgh_context is None
+
+
+@pytest.mark.django_db
+def test_create_event_no_context():
+    """
+    Test creating an event when context tracking is suppressed
+    """
+    user = ddf.G("auth.User")
+    with pghistory.context(user=user.id):
+        dc = ddf.G(test_models.SnapshotModel, int_field=1)
+        assert pghistory.create_event(dc, label="custom_snapshot_insert")
+
+
+@pytest.mark.django_db
 def test_events_on_event_model(mocker):
     """
     Verifies events are created properly for EventModel
