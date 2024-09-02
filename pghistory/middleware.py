@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from django.core.handlers.asgi import ASGIRequest as DjangoASGIRequest
 from django.core.handlers.wsgi import WSGIRequest as DjangoWSGIRequest
 from django.db import connection
@@ -37,26 +39,32 @@ class ASGIRequest(DjangoRequest, DjangoASGIRequest):
     pass
 
 
-def HistoryMiddleware(get_response):
+class HistoryMiddleware:
     """
     Annotates the user/url in the pghistory context.
+
+    Add more context by inheriting the middleware and overriding the `get_context` method.
     """
 
-    def middleware(request):
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def get_context(self, request) -> Dict[str, Any]:
+        user = (
+            request.user._meta.pk.get_db_prep_value(request.user.pk, connection)
+            if hasattr(request, "user") and hasattr(request.user, "_meta")
+            else None
+        )
+        return {'user': user, 'url': request.path}
+
+    def __call__(self, request):
         if request.method in config.middleware_methods():
-            user = (
-                request.user._meta.pk.get_db_prep_value(request.user.pk, connection)
-                if hasattr(request, "user") and hasattr(request.user, "_meta")
-                else None
-            )
-            with pghistory.context(user=user, url=request.path):
+            with pghistory.context(**self.get_context(request)):
                 if isinstance(request, DjangoWSGIRequest):  # pragma: no branch
                     request.__class__ = WSGIRequest
                 elif isinstance(request, DjangoASGIRequest):  # pragma: no cover
                     request.__class__ = ASGIRequest
 
-                return get_response(request)
+                return self.get_response(request)
         else:
-            return get_response(request)
-
-    return middleware
+            return self.get_response(request)

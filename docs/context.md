@@ -42,6 +42,18 @@ Since the middleware starts context collection at the beginning of the request, 
 
 Use `settings.PGHISTORY_MIDDLEWARE_METHODS` to configure the requests that are tracked. It defaults to `("GET", "POST", "PUT", "PATCH", "DELETE")`.
 
+Add more context to the middleware by overriding the middleware's `get_context` method. For example, here we add the IP address:
+
+```python
+import pghistory.middleware
+
+class HistoryMiddleware(pghistory.middleware.HistoryMiddleware):
+    def get_context(self, request):
+        return super().get_context(request) | {
+            "ip_address": request.META.get('REMOTE_ADDR', 'unknown'),
+        }
+```
+
 ## Management Commands
 
 To capture all events issued under a management command, instrument `manage.py` like so:
