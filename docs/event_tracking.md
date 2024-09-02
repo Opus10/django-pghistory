@@ -140,16 +140,24 @@ There are two key things going on here:
 
 1. The [pghistory.UpdateEvent][] tracker runs on updates of `MyUser`, storing what the row looked like right before the update (i.e. the "old" row).
 2. We use [pghistory.AnyChange][] to specify that the event should fire on any change to `email`.
-3. We've named our event model `UserEmailHistory`. It stores every field of the `MyUser` model.
 
 Let's see what this looks like when we change the `email` field:
 
 ```python
 from myapp.models import MyUser, UserEmailHistory
 
-u = MyUser.objects.create(username="hello", email="hello@hello.com")
+u = MyUser.objects.create(
+    username="hello",
+    email="hello@hello.com",
+    address="123 Main St"
+)
 
 # Events are only tracked on updates, so nothing has been stored yet
+assert not UserEmailHistory.objects.exists()
+
+# Change the address. An event is not created
+u.address = "456 Main St"
+u.save()
 assert not UserEmailHistory.objects.exists()
 
 # Change the email. An event should be stored
@@ -164,15 +172,34 @@ print(UserEmailHistory.objects.filter(pgh_obj=u).values_list("email", flat=True)
 
 `django-pghistory` provides the following utilities for creating change conditions, all of which are from the [django-pgtrigger library](https://django-pgtrigger.readthedocs.io):
 
-- [pghistory.AnyChange][]: For storing an event on any changes to the provided fields. If no fields are provided, the default behavior is to fire on any change being tracked.
-- Similar to [pghistory.AnyChange][], [pghistory.AnyDontChange][] fires when any of the provided fields don't change. [pghistory.AllChange][] and [pghistory.AllDontChange][] also fire when all provided fields change or all of them don't change. As mentioned before, if no fields are provided, the conditions fire based on the fields being tracked.
+- [pghistory.AnyChange][] fires when any fields change.
+- [pghistory.AnyDontChange][] fires when any fields don't change.
+- [pghistory.AllChange][] fires when all fields change.
+- [pghistory.AllDontChange][] fires when all fields don't change.
 
-Here are some brief examples of these conditions:
+Here are some brief examples:
 
 - `pghistory.AnyChange("field_one", "field_two")`: Fire when `field_one` or `field_two` change.
-- `pghistory.AnyChange(exclude=["my_field"])`: Fire when any field except for `my_field` changes.
-- `pghistory.AnyChange(exclude_auto=True)`: Fire when any field except for fields with `auto_now` or `auto_now_add` attributes are set (e.g. `DateField` and `DateTimeField`).
+- `pghistory.AnyChange(exclude=["my_field"])`: Fire when any tracked field except for `my_field` changes.
+- `pghistory.AnyChange(exclude_auto=True)`: Exclude `auto_now=True` or `auto_now_add=True` fields (e.g. `DateField` and `DateTimeField`).
 - `pghistory.AllChange("field_three", "field_four")`. Fire only when both `field_three` and `field_four` change in the same update.
+
+Remember, the tracked fields are the default if no fields are provided and the starting point before excluding fields. For example, here we are tracking changes to `char_field` and `int_field`:
+
+```python
+@pghistory.track(
+    pghistory.UpdateEvent(
+        condition=pghistory.AnyChange()
+    ),
+    fields=["char_field", "int_field"]
+)
+class TrackedModel(models.Model):
+    int_field = models.IntegerField()
+    char_field = models.CharField(max_length=16, db_index=True)
+    user = models.ForeignKey("auth.User", on_delete=models.CASCADE)
+```
+
+Events can still be fired for untracked fields, but they must be explicitly provided, for example, `pghistory.AnyChange("user")`.
 
 !!! remember
 
