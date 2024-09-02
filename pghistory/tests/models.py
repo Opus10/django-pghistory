@@ -208,6 +208,15 @@ class UserGroups(User.groups.through):
     pghistory.UpdateEvent(row=pghistory.Old, condition=pghistory.AnyChange(exclude_auto=True)),
     pghistory.DeleteEvent(),
     obj_field=pghistory.ObjForeignKey(related_name="no_auto_fields_event"),
+    fields=["created_at", "updated_at", "my_char_field", "my_int_field"],
+)
+@pghistory.track(
+    pghistory.UpdateEvent(
+        "untracked_field", row=pghistory.Old, condition=pghistory.AnyChange("untracked_field")
+    ),
+    fields=["created_at", "updated_at", "my_char_field", "my_int_field"],
+    obj_field=pghistory.ObjForeignKey(related_name="untracked_field_event"),
+    model_name="SnapshotUntrackedField",
 )
 class IgnoreAutoFieldsSnapshotModel(models.Model):
     """For testing the IgnoreAutoFieldsSnapshot tracker"""
@@ -216,3 +225,4 @@ class IgnoreAutoFieldsSnapshotModel(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     my_char_field = models.CharField(max_length=32)
     my_int_field = models.IntegerField()
+    untracked_field = models.CharField(max_length=32)
