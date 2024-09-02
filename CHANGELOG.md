@@ -1,5 +1,32 @@
 # Changelog
 
+## 3.4.0 (2024-09-02)
+
+#### Features
+
+- Make context middleware extensible by [@wesleykendall](https://github.com/wesleykendall) in [#141](https://github.com/Opus10/django-pghistory/pull/141).
+
+    Inherit `pghistory.context.HistoryMiddleware` and override `get_context` to add additional context data for every request.
+
+- Support offline documentation formats by [@wesleykendall](https://github.com/wesleykendall) in [#144](https://github.com/Opus10/django-pghistory/pull/144).
+
+    PDF versions of documentation are built via ReadTheDocs.
+
+#### Fixes
+
+- Check that the execute result is not `None` before trying to access `execute_result.nextset()` by [@wesleykendall](https://github.com/wesleykendall) in [#156](https://github.com/Opus10/django-pghistory/pull/156).
+- Ensure `pghistory.create_event` works when using denormalized context by [@wesleykendall](https://github.com/wesleykendall) in [#154](https://github.com/Opus10/django-pghistory/pull/154).
+- More accurate type hints for the public interface by [@wesleykendall](https://github.com/wesleykendall) in [#143](https://github.com/Opus10/django-pghistory/pull/143).
+- Fix minor docstring issue in `pghistory.create_event_model` by [@wesleykendall](https://github.com/wesleykendall) in [#148](https://github.com/Opus10/django-pghistory/pull/148).
+
+#### Documentation
+
+- Clean up configuration section of docs, ensure all settings are documented by [@wesleykendall](https://github.com/wesleykendall) in [#142](https://github.com/Opus10/django-pghistory/pull/142).
+- Modify conditional tracking examples by [@wesleykendall](https://github.com/wesleykendall) in [#145](https://github.com/Opus10/django-pghistory/pull/145).
+- Add section to FAQ on backfilling data by [@wesleykendall](https://github.com/wesleykendall) in [#146](https://github.com/Opus10/django-pghistory/pull/146).
+- Adjust guide on tracking management commands by [@wesleykendall](https://github.com/wesleykendall) in [#150](https://github.com/Opus10/django-pghistory/pull/150).
+- Note the Q/A discussions in the FAQ by [@wesleykendall](https://github.com/wesleykendall) in [#152](https://github.com/Opus10/django-pghistory/pull/152).
+
 ## 3.3.0 (2024-08-27)
 
 #### Features
