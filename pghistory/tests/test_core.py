@@ -682,15 +682,25 @@ def test_validate_event_model_path(app_label, model_name, abstract, expected_exc
 def test_custom_ignore_auto_fields_tracker():
     """
     Verifies that the custom IgnoreAutoFieldsSnapshot tracker, which makes use of
-    pghistory.Changed, works.
+    pghistory.AnyChange, works.
     """
-    m = ddf.G(test_models.IgnoreAutoFieldsSnapshotModel, my_int_field=0, my_char_field="0")
+    m = ddf.G(
+        test_models.IgnoreAutoFieldsSnapshotModel,
+        my_int_field=0,
+        my_char_field="0",
+        untracked_field="0",
+    )
     snapshot_model = m.no_auto_fields_event.model
 
     # This tracker does not create events on insert
     assert not m.no_auto_fields_event.all()
 
     # Empty updates will not produce an event
+    m.save()
+    assert not m.no_auto_fields_event.all()
+
+    # Updating the non-tracked field will not produce an event
+    m.untracked_field = "1"
     m.save()
     assert not m.no_auto_fields_event.all()
 
@@ -711,3 +721,34 @@ def test_custom_ignore_auto_fields_tracker():
     m.delete()
 
     assert snapshot_model.objects.count() == 2
+
+
+@pytest.mark.django_db
+def test_conditional_untracked_field():
+    """
+    Verifies that one can still conditionally fire events on an untracked field
+    """
+    m = ddf.G(
+        test_models.IgnoreAutoFieldsSnapshotModel,
+        my_int_field=0,
+        my_char_field="0",
+        untracked_field="0",
+    )
+    snapshot_model = m.untracked_field_event.model
+
+    # This tracker does not create events on insert
+    assert not snapshot_model.objects.exists()
+
+    # Empty updates will not produce an event
+    m.save()
+    assert not snapshot_model.objects.exists()
+
+    # Updating the non-tracked field will produce an event
+    m.untracked_field = "1"
+    m.save()
+    assert snapshot_model.objects.count() == 1
+
+    # Updating other field will produce an event
+    m.my_int_field = 1
+    m.save()
+    assert snapshot_model.objects.count() == 1
