@@ -55,7 +55,7 @@ class HistoryMiddleware:
             if hasattr(request, "user") and hasattr(request.user, "_meta")
             else None
         )
-        return {'user': user, 'url': request.path}
+        return {"user": user, "url": request.path}
 
     def __call__(self, request):
         if request.method in config.middleware_methods():
