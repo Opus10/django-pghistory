@@ -425,7 +425,7 @@ class ContextForeignKey(ForeignKey):
         self,
         *,
         null: bool = True,
-        related_query_name: Union[str, constants.Unset, constants.Default] = constants.UNSET,
+        related_query_name: Union[str, constants.Unset, constants.Default] = constants.DEFAULT,
         **kwargs: Any,
     ):
         super().__init__(null=null, related_query_name=related_query_name, **kwargs)
@@ -467,8 +467,8 @@ class ObjForeignKey(ForeignKey):
     def __init__(
         self,
         *,
-        related_name: Union[str, constants.Unset, constants.Default] = constants.UNSET,
-        related_query_name: Union[str, constants.Unset, constants.Default] = constants.UNSET,
+        related_name: Union[str, constants.Unset, constants.Default] = constants.DEFAULT,
+        related_query_name: Union[str, constants.Unset, constants.Default] = constants.DEFAULT,
         **kwargs,
     ):
         # Note: We will be changing the default object field to nullable with on_delete=SET_NULL
