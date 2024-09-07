@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.4.1 (2024-09-06)
+
+#### Fixes
+
+- The `related_query_name` setting for tracked foreign keys had the default value mistakenly changed in v3.4.0. Fixed by [@wesleykendall](https://github.com/wesleykendall) in [#163](https://github.com/Opus10/django-pghistory/pull/163).
+
 ## 3.4.0 (2024-09-02)
 
 #### Features
