@@ -226,3 +226,12 @@ class IgnoreAutoFieldsSnapshotModel(models.Model):
     my_char_field = models.CharField(max_length=32)
     my_int_field = models.IntegerField()
     untracked_field = models.CharField(max_length=32)
+
+
+class ConcreteParent(models.Model):
+    name = models.CharField(max_length=32)
+
+
+@pghistory.track()
+class ConcreteChild(ConcreteParent):
+    age = models.IntegerField()
