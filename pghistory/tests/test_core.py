@@ -787,3 +787,12 @@ def test_conditional_untracked_field():
     m.my_int_field = 1
     m.save()
     assert snapshot_model.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_concrete_inheritance():
+    """
+    Verifies that triggers work with concrete inheritance
+    """
+    m = ddf.G(test_models.ConcreteChild, name="John", age=20)
+    assert m.events.all().count() == 1

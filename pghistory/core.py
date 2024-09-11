@@ -410,7 +410,7 @@ def create_event_model(
                 # Add custom indices or change default field declarations...
     """  # noqa
     if not trackers:
-        trackers = config.default_trackers() or [InsertEvent(), UpdateEvent()]
+        trackers = config.default_trackers() or (InsertEvent(), UpdateEvent())
 
     event_model = import_string("pghistory.models.Event")
     base_model = base_model or config.base_model()
@@ -436,10 +436,9 @@ def create_event_model(
     attrs.update({"pgh_trackers": trackers})
     meta = meta or {}
     exclude = exclude or []
+    all_fields = (tracked_model._meta.concrete_model or tracked_model)._meta.local_fields
     fields = (
-        fields
-        if fields is not None
-        else [f.name for f in tracked_model._meta.fields if f.name not in exclude]
+        fields if fields is not None else [f.name for f in all_fields if f.name not in exclude]
     )
 
     if append_only:

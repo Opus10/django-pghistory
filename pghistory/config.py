@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from pghistory.core import Tracker
 
 
-def default_trackers() -> Union[Tuple["Tracker"], None]:
+def default_trackers() -> Union[Tuple["Tracker", ...], None]:
     """
     The default event trackers.
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.4.2 (2024-09-10)
+
+#### Fixes
+
+- Fix using `@pghistory.track()` on models that have concrete inheritance by [@wesleykendall](https://github.com/wesleykendall) in [#164](https://github.com/Opus10/django-pghistory/pull/164).
+
 ## 3.4.1 (2024-09-06)
 
 #### Fixes
