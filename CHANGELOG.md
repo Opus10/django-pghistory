@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.4.3 (2024-09-14)
+
+#### Fixes
+
+  - Add missing py.typed file by [@max-muoto](https://github.com/max-muoto) in [#166](https://github.com/Opus10/django-pghistory/pull/166).
+
 ## 3.4.2 (2024-09-10)
 
 #### Fixes
