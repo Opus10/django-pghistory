@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.4.5 (2024-09-13)
+
+#### Fixes
+
+  - Add missing py.typed file by [@max-muoto](https://github.com/max-muoto) in [#15](https://github.com/Opus10/django-pglock/pull/15).
+
 ## 3.4.2 (2024-09-10)
 
 #### Fixes
