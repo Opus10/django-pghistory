@@ -18,6 +18,14 @@ class BigAutoFieldModel(models.Model):
     id = models.BigAutoField(primary_key=True)
 
 
+class CustomAutoFieldModel(models.Model):
+    id = models.AutoField(primary_key=True, db_column="pk_id")
+
+
+class CustomBigAutoFieldModel(models.Model):
+    id = models.BigAutoField(primary_key=True, db_column="pk_id")
+
+
 @pghistory.track(context_field=pghistory.ContextJSONField())
 @pghistory.track(
     pghistory.InsertEvent("snapshot_no_id_insert"),
