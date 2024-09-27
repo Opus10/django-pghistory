@@ -237,6 +237,8 @@ def _generate_history_field(tracked_model, field):
     """
     field = tracked_model._meta.get_field(field)
 
+    # db_column is always a value even if the user didn't set it, so we
+    # need to double-check that it's different before we pass it through
     db_column = field.db_column if field.db_column != field.name else None
 
     if isinstance(field, models.BigAutoField):
