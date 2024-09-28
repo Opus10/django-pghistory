@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.4.4 (2024-09-27)
+
+#### Fixes
+
+  - Fix db_column not being passed through on tracked AutoFields by [@pmdevita](https://github.com/pmdevita) in [#166](https://github.com/Opus10/django-pghistory/pull/168).
+
 ## 3.4.3 (2024-09-14)
 
 #### Fixes
