@@ -28,6 +28,12 @@ def test_generate_history_field(settings):
     field = pghistory.core._generate_history_field(test_models.BigAutoFieldModel, "id")
     assert isinstance(field, models.BigIntegerField)
 
+    # AutoField and BigAutoField should take a custom column name from the original
+    field = pghistory.core._generate_history_field(test_models.CustomAutoFieldModel, "id")
+    assert field.db_column == "pk_id"
+    field = pghistory.core._generate_history_field(test_models.CustomBigAutoFieldModel, "id")
+    assert field.db_column == "pk_id"
+
 
 @pytest.mark.django_db
 def test_image_field_snapshot():
