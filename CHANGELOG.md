@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.4.5 (2024-09-29)
+
+#### Fixes
+
+  - Ensure `EventQuerySet` is generic for proper type-checking by [@max-muoto](https://github.com/max-muoto) in [#170](https://github.com/Opus10/django-pghistory/pull/170).
+
+
 ## 3.4.4 (2024-09-27)
 
 #### Fixes
