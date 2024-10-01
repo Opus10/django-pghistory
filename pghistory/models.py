@@ -1,5 +1,6 @@
 import uuid
 import warnings
+from typing import TYPE_CHECKING, TypeVar
 
 import django
 from django.apps import apps
@@ -10,6 +11,8 @@ from django.db.models.sql import Query
 from django.db.models.sql.compiler import SQLCompiler
 
 from pghistory import core, utils
+
+_M = TypeVar("_M", bound=models.Model)
 
 # This class is to preserve backwards compatibility with migrations
 PGHistoryJSONField = utils.JSONField
@@ -129,7 +132,13 @@ class EventQuery(Query):
         return compiler
 
 
-class EventQuerySet(models.QuerySet):
+if TYPE_CHECKING:
+    _EventQuerySetBase = models.QuerySet[_M]
+else:
+    _EventQuerySetBase = models.QuerySet
+
+
+class EventQuerySet(_EventQuerySetBase):
     """QuerySet with support for proxy fields"""
 
     def __init__(self, model=None, query=None, using=None, hints=None):
