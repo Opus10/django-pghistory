@@ -3,10 +3,11 @@ import warnings
 import django
 from django.apps import apps
 from django.contrib import admin
+from django.contrib.admin.utils import unquote
 from django.contrib.admin.views.main import ChangeList
 from django.utils.encoding import force_str
 
-from pghistory import config, core
+from pghistory import config, core, models
 
 
 def _get_model(model):
@@ -227,4 +228,11 @@ class EventsAdmin(BaseEventAdmin):
         return filters
 
     def get_queryset(self, request):
-        return config.admin_queryset()
+        queryset = config.admin_queryset()
+        if isinstance(queryset, models.EventsQuerySet):
+            object_id = request.resolver_match.kwargs.get("object_id")
+            if object_id is not None:
+                target_model = _get_model(unquote(object_id).partition(":")[0])
+                if target_model:
+                    queryset = queryset.across(target_model)
+        return queryset
