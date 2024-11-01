@@ -18,7 +18,7 @@ INSTALLED_APPS = [
 
 # Database url comes from the DATABASE_URL env var
 DATABASES = {"default": dj_database_url.config()}
-DATABASES['default']['OPTIONS'] = {'options': '-c jit=off'}
+DATABASES["default"]["OPTIONS"] = {"options": "-c jit=off"}
 
 # Force postgres timezones to be UTC for tests
 USE_TZ = True
