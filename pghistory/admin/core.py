@@ -7,7 +7,7 @@ from django.contrib.admin.utils import unquote
 from django.contrib.admin.views.main import ChangeList
 from django.utils.encoding import force_str
 
-from pghistory import config, core, models
+from pghistory import config, core
 
 
 def _get_model(model):
@@ -228,11 +228,13 @@ class EventsAdmin(BaseEventAdmin):
         return filters
 
     def get_queryset(self, request):
+        from pghistory.models import EventsQuerySet
+
         queryset = config.admin_queryset()
-        if isinstance(queryset, models.EventsQuerySet):
+        if isinstance(queryset, EventsQuerySet):  # pragma: no branch
             object_id = request.resolver_match.kwargs.get("object_id")
             if object_id is not None:
                 target_model = _get_model(unquote(object_id).partition(":")[0])
-                if target_model:
+                if target_model:  # pragma: no branch
                     queryset = queryset.across(target_model)
         return queryset

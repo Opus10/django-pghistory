@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.5.0 (2024-11-01)
+
+### Features
+
+  - Optimized `Events` diff queries by ~100x via a subquery instead of `LAG` windows by [@lokhman](https://github.com/lokhman) in [#173](https://github.com/Opus10/django-pghistory/pull/173).
+  - Optimized object-level `Events` queries in the django admin by avoiding `UNION` queries by [@lokhman](https://github.com/lokhman) in [#174](https://github.com/Opus10/django-pghistory/pull/174).
+
+### Changes
+
+  - Added Python 3.13 support, dropped Python 3.8. Added Postgres17 support by [@wesleykendall](https://github.com/wesleykendall) in [#175](https://github.com/Opus10/django-pghistory/pull/175).
+
 ## 3.4.4 (2024-09-27)
 
 #### Fixes
