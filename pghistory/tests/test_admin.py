@@ -1,6 +1,5 @@
 import bs4
 import ddf
-import django
 import pytest
 from django import urls
 
@@ -72,16 +71,20 @@ def test_events_page(authed_client, settings):
 
     # Don't show events on unfiltered views
     settings.PGHISTORY_ADMIN_ALL_EVENTS = False
-
     resp = authed_client.get(url)
     assert resp.status_code == 200
     html = resp.content.decode("utf-8")
+    assert "0 events" in html
 
-    if django.VERSION < (3, 1):  # pragma: no cover
-        num_events = models.Events.objects.count()
-        assert f"{num_events} events" in html
-    else:
-        assert "0 events" in html
+    # View the admin for an individual event
+    first_snapshot = test_models.SnapshotModelSnapshot.objects.first()
+
+    url = urls.reverse(
+        "admin:pghistory_events_change",
+        kwargs={"object_id": f"tests.SnapshotModelSnapshot:{first_snapshot.pk}"},
+    )
+    resp = authed_client.get(url)
+    assert resp.status_code == 200
 
 
 @pytest.mark.django_db

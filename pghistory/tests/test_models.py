@@ -740,7 +740,9 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "id": sm2.id,
                 "int_field": 33,
             },
-            "pgh_diff": None,
+            "pgh_diff": {
+                "fk_field_id": [user2.id, user1.id],
+            },
             "pgh_label": "custom_snapshot_update",
             "pgh_model": "tests.CustomSnapshotModel",
             "pgh_obj_id": str(sm2.pk),
@@ -847,7 +849,9 @@ def test_events_references_no_obj_tracking_filters(mocker):
                 "id": sm2.id,
                 "int_field": 33,
             },
-            "pgh_diff": None,
+            "pgh_diff": {
+                "fk_field_id": [user2.id, user1.id],
+            },
             "pgh_label": "snapshot_update",
             "pgh_model": "tests.SnapshotModelSnapshot",
             "pgh_obj_id": str(sm2.pk),
