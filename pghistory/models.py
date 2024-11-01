@@ -456,19 +456,20 @@ class EventsQueryCompiler(SQLCompiler):
             annotated_context_columns_clause,
         ) = self._get_context_clauses(event_model)
 
-        prev_data_clause = """
-            LAG(row_to_json(_event))
-              OVER (
-                PARTITION BY _event.pgh_obj_id
-                ORDER BY _event.pgh_id
-              ) AS _prev_data
+        event_table = event_model._meta.db_table
+        prev_data_clause = f"""
+            (
+              SELECT row_to_json(_prev_event) FROM {event_table} _prev_event
+              WHERE _prev_event.pgh_obj_id = _event.pgh_obj_id
+                AND _prev_event.pgh_id < _event.pgh_id
+              ORDER BY _prev_event.pgh_id DESC LIMIT 1
+            ) AS _prev_data
         """
         pgh_obj_id_column_clause = "pgh_obj_id::TEXT"
         if not hasattr(event_model, "pgh_obj_id"):
             prev_data_clause = "NULL::JSONB AS _prev_data"
             pgh_obj_id_column_clause = "NULL::TEXT AS pgh_obj_id"
 
-        event_table = event_model._meta.db_table
         return f"""
             SELECT
               CONCAT('{event_model._meta.label}', ':', _pgh_obj_event.pgh_id) AS pgh_slug,
@@ -536,7 +537,7 @@ class EventsQueryCompiler(SQLCompiler):
         if not inner_cte:
             inner_cte = self._get_empty_select()
 
-        return f"WITH {events_table} AS (\n" + inner_cte + "\n)\n"
+        return f"WITH {events_table} AS (\n{inner_cte}\n)\n"
 
     def as_sql(self, *args, **kwargs):
         self._validate()
